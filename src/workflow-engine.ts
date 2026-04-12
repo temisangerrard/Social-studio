@@ -39,11 +39,9 @@ export function resolveVideoOptions(request: GenerationRequest): VideoOptions {
 
 export function buildWorkflowReferenceAssets(request: GenerationRequest, brand: BrandProfile): ReferenceAsset[] {
   const references = [...(request.referenceAssets ?? [])];
-  const visualMode = resolveVisualMode(request);
-  const shouldIncludeMascotRefs = Boolean(brand.mascot) && (visualMode === "mascot-led" || visualMode === "mixed");
 
-  if (shouldIncludeMascotRefs) {
-    const mascotReferences = (brand.mascot?.referenceImages ?? []).map((url, index) => ({
+  if (brand.mascot) {
+    const mascotReferences = (brand.mascot.referenceImages ?? []).map((url, index) => ({
       id: `brand-mascot-${index + 1}`,
       label: `${brand.mascot?.name ?? brand.name} Reference ${index + 1}`,
       url,

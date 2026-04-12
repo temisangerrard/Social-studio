@@ -51,8 +51,52 @@ function mascotSummary(brand: BrandProfile): string[] {
     `Mascot visual prompt: ${mascot.visualPrompt}`,
     `Mascot usage rules: ${mascot.usageRules.join(" | ") || "none"}`,
     `Mascot reference images: ${mascot.referenceImages.join(", ") || "none"}`,
-    "Treat the mascot as the recurring face of the social account and feature it in visual variants unless the slide is explicitly food-only."
+    "CRITICAL CONSISTENCY RULES:",
+    "- Treat the mascot as the recurring face of the social account.",
+    "- Every image_prompt that includes the mascot MUST start with the full mascot visualPrompt text above.",
+    "- Only vary pose and expression per slide role. Never vary body shape, colors, bandana, face proportions, or art style.",
+    "- Do NOT add text overlays, watermarks, or photorealistic elements — the mascot is strictly flat 2D cartoon.",
+    "- If a slide is food-only (meal_reveal, benefit), do NOT include the mascot in image_prompt."
   ];
+}
+
+const MASCOT_EXCLUDED_ROLES: ReadonlySet<Slide["role"]> = new Set(["meal_reveal", "benefit"]);
+
+const ACTION_BY_ROLE: Readonly<Record<Slide["role"], string>> = {
+  hook: "introducing the idea with excitement, one arm raised",
+  problem: "looking frustrated or confused, scratching head",
+  escalation: "expressing exaggerated struggle, arms up in defeat",
+  reaction: "wide-eyed shocked expression, mouth open",
+  discovery: "smiling brightly with eyes wide, pointing forward",
+  meal_reveal: "presenting the finished food proudly",
+  benefit: "demonstrating the benefit clearly",
+  cta: "waving and pointing toward camera invitingly"
+};
+
+const EXPRESSION_BY_ROLE: Readonly<Record<Slide["role"], string>> = {
+  hook: "excited smile",
+  problem: "frustrated frown with raised eyebrows",
+  escalation: "exaggerated despair face",
+  reaction: "wide-eyed shock",
+  discovery: "bright optimistic smile",
+  meal_reveal: "proud smile",
+  benefit: "confident smile with thumbs up",
+  cta: "friendly inviting wave"
+};
+
+function shouldIncludeMascot(
+  role: Slide["role"],
+  visualMode: NonNullable<GenerationRequest["visualMode"]>
+): boolean {
+  if (visualMode === "food-led") {
+    return false;
+  }
+
+  if (visualMode === "mixed" && MASCOT_EXCLUDED_ROLES.has(role)) {
+    return false;
+  }
+
+  return true;
 }
 
 function applyMascotToPrompt(
@@ -65,30 +109,21 @@ function applyMascotToPrompt(
     return prompt;
   }
 
-  if (visualMode === "food-led" && (role === "meal_reveal" || role === "benefit" || role === "cta")) {
+  if (!shouldIncludeMascot(role, visualMode)) {
     return prompt;
   }
 
-  if (visualMode === "food-led" && role === "discovery") {
-    return prompt;
-  }
+  const mascot = brand.mascot;
+  const action = ACTION_BY_ROLE[role];
+  const expression = EXPRESSION_BY_ROLE[role];
 
-  if (visualMode === "mixed" && (role === "meal_reveal" || role === "benefit")) {
-    return prompt;
-  }
-
-  const actionByRole: Record<Slide["role"], string> = {
-    hook: "showing up as the main character introducing the idea",
-    problem: "reacting to the problem as the main character",
-    escalation: "living through the struggle in a playful way",
-    reaction: "making the emotional reaction obvious and expressive",
-    discovery: "discovering the solution with optimism",
-    meal_reveal: "presenting the finished food proudly",
-    benefit: "demonstrating the benefit clearly",
-    cta: "inviting the audience to act"
-  };
-
-  return `${brand.mascot.visualPrompt} ${brand.mascot.description} Show the mascot ${actionByRole[role]}. ${prompt}`;
+  return [
+    mascot.visualPrompt,
+    `Character pose: ${action}.`,
+    `Facial expression: ${expression}.`,
+    `IMPORTANT: Keep the mascot design identical to the reference — same body shape, same red bandana, same face proportions, same art style. Only the pose and expression change.`,
+    `Scene: ${prompt}`
+  ].join(" ");
 }
 
 export function buildPlannerPrompt({ brand, request }: PlannerContext): string {
@@ -110,8 +145,8 @@ export function buildPlannerPrompt({ brand, request }: PlannerContext): string {
     "Canvas cards:",
     cardSummary(request),
     "Slides must contain 8 items using roles hook, problem, escalation, reaction, discovery, meal_reveal, benefit, cta.",
-    "Use generated_image only for problem, reaction, and meal_reveal unless the idea strongly requires otherwise.",
-    "Keep slide copy concise and social-ready."
+    "Use generated_image for problem, reaction, and meal_reveal. Use text_only for the rest unless the idea strongly needs visuals.",
+    "When generating image_prompt for mascot-led slides, ALWAYS prepend the full mascot visualPrompt. Only vary pose and expression."
   ].join("\n");
 }
 
