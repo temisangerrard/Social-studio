@@ -25,7 +25,14 @@ export async function renderSlides(metadata: PostMetadata): Promise<RenderResult
   await fs.mkdir(metadata.slides_dir, { recursive: true });
 
   const { chromium } = await import("playwright");
-  const browser = await chromium.launch({ headless: true });
+  // On Linux (production), use the system Chromium installed via apt
+  const executablePath = process.platform === "linux"
+    ? (process.env.CHROMIUM_PATH ?? "/usr/bin/chromium")
+    : undefined;
+  const browser = await chromium.launch({
+    headless: true,
+    ...(executablePath ? { executablePath } : {})
+  });
   const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
   const page = await context.newPage();
 
