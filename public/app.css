@@ -1275,3 +1275,224 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+/* ─── Mobile ─────────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  :root {
+    --topbar-h: 56px;
+  }
+
+  /* Topbar */
+  .topbar {
+    padding: 0 16px;
+  }
+
+  .topbar__left {
+    gap: 16px;
+  }
+
+  .topnav {
+    gap: 16px;
+  }
+
+  .wordmark {
+    font-size: 1.35rem;
+  }
+
+  .topnav a {
+    font-size: 0.82rem;
+  }
+
+  /* ── Generate view ── */
+  .view--generate {
+    height: auto;
+    overflow: visible;
+    min-height: calc(100vh - var(--topbar-h));
+  }
+
+  .gen-shell {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .gen-sidebar {
+    height: auto;
+    overflow-y: visible;
+    padding: 20px 16px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(175, 179, 170, 0.2);
+  }
+
+  .gen-heading {
+    font-size: 2rem;
+  }
+
+  .gen-copy {
+    font-size: 0.88rem;
+  }
+
+  .gen-main {
+    height: auto;
+    overflow-y: visible;
+  }
+
+  .gen-output {
+    padding: 20px 16px;
+  }
+
+  .gen-empty {
+    position: relative;
+    min-height: 260px;
+  }
+
+  /* ── Assistant view ── */
+  .view--assistant {
+    height: auto;
+    overflow: visible;
+  }
+
+  .assistant-shell {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .assistant-panel {
+    height: auto;
+    overflow-y: visible;
+    padding: 20px 16px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(175, 179, 170, 0.2);
+    grid-template-rows: auto auto auto 1fr auto;
+    min-height: calc(100vh - var(--topbar-h));
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .assistant-panel__header h1 {
+    font-size: 2rem;
+  }
+
+  .assistant-panel__header p {
+    font-size: 0.88rem;
+  }
+
+  .message-thread {
+    flex: 1;
+    min-height: 200px;
+  }
+
+  .assistant-input textarea {
+    min-height: 72px;
+    font-size: 1rem;
+  }
+
+  .assistant-input__footer {
+    flex-wrap: wrap;
+  }
+
+  /* Hide workspace panel (canvas) on mobile — show only chat + package */
+  .workspace-panel {
+    padding: 16px;
+    height: auto;
+    overflow-y: visible;
+  }
+
+  .workspace-stage {
+    display: none;
+  }
+
+  .workspace-panel__header h2 {
+    font-size: 1.6rem;
+  }
+
+  /* ── Checkpoint strip ── */
+  .checkpoint-strip {
+    overflow-x: auto;
+    grid-template-columns: repeat(4, minmax(80px, 1fr));
+    gap: 8px;
+    padding-bottom: 4px;
+  }
+
+  .checkpoint {
+    padding: 10px 10px;
+    font-size: 0.65rem;
+    white-space: nowrap;
+  }
+
+  /* ── Package grid ── */
+  .package-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .package-panel__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  /* ── Asset workbench ── */
+  .asset-workbench {
+    grid-template-columns: 1fr;
+  }
+
+  .refine-panel {
+    display: none;
+  }
+
+  /* ── Slide strip ── */
+  .slide-thumb {
+    width: 90px;
+    height: 160px;
+  }
+
+  /* ── Library ── */
+  .library-container {
+    padding: 24px 16px;
+  }
+
+  .library-item {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  /* ── Buttons ── */
+  .primary-button {
+    padding: 14px 20px;
+    font-size: 0.78rem;
+    width: 100%;
+  }
+
+  .gen-form__footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .ghost-button {
+    padding: 12px 14px;
+    font-size: 0.7rem;
+  }
+
+  /* ── Modals ── */
+  .asset-modal__dialog {
+    width: calc(100vw - 24px);
+    margin: 12px auto;
+    border-radius: 18px;
+  }
+
+  .asset-modal__meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* ── Brand editor hidden on mobile — use generate flow instead ── */
+  .brand-editor {
+    display: none;
+  }
+
+  /* ── Misc ── */
+  .workflow-section--assistant {
+    display: none;
+  }
+}
