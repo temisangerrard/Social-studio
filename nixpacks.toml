@@ -1,0 +1,12 @@
+[phases.setup]
+nixPkgs = ["nodejs_20", "chromium", "nss", "freetype", "harfbuzz", "ca-certificates", "ttf-dejavu"]
+
+[phases.install]
+cmds = ["npm ci", "npx playwright install chromium --with-deps"]
+
+[start]
+cmd = "npm run server"
+
+[variables]
+PLAYWRIGHT_BROWSERS_PATH = "/root/.cache/ms-playwright"
+NODE_ENV = "production"

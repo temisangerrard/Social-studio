@@ -1,0 +1,43 @@
+{
+  "id": "peppera",
+  "name": "Peppera",
+  "description": "A meal-planning assistant that turns rough ingredients into practical dinner ideas.",
+  "tone": "helpful, witty, clean",
+  "audience": "busy home cooks",
+  "cta": "Download Peppera",
+  "logoPath": null,
+  "visual": {
+    "primaryColor": "#f04d23",
+    "secondaryColor": "#ffd9c8",
+    "accentColor": "#7a2413",
+    "surfaceColor": "#fff7f0"
+  },
+  "defaults": {
+    "platformTargets": [
+      "tiktok",
+      "instagram"
+    ],
+    "goal": "installs",
+    "hashtags": [
+      "#mealideas",
+      "#easydinners",
+      "#cooksmarter"
+    ]
+  },
+  "providers": {
+    "plannerModel": "glm-4.5",
+    "imageModel": "fal-ai/flux/schnell"
+  },
+  "mascot": {
+    "name": "Peppera Mascot",
+    "description": "",
+    "role": "",
+    "visualPrompt": "Use the cheerful green pepper mascot as the main character in the frame, keeping the design consistent.",
+    "usageRules": [
+      "Use the mascot as the recognisable face of Peppera social content.",
+      "Prefer mascot-led variants for TikTok and Instagram visual storytelling.",
+      "Keep the mascot consistent across poses, face shape, bandana, and overall style."
+    ],
+    "referenceImages": []
+  }
+}

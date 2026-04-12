@@ -1,0 +1,76 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import type { PostMetadata, RenderResult } from "./types.ts";
+import { renderBaseTemplate } from "./templates/base.ts";
+
+const VIEWPORT = { width: 1080, height: 1920 };
+
+async function exists(filePath: string | null | undefined): Promise<boolean> {
+  if (!filePath) return false;
+  try { await fs.access(filePath); return true; } catch { return false; }
+}
+
+async function imageToDataUrl(filePath: string): Promise<string | null> {
+  try {
+    const data = await fs.readFile(filePath);
+    const ext = path.extname(filePath).toLowerCase();
+    const mime = ext === ".svg" ? "image/svg+xml" : "image/jpeg";
+    return `data:${mime};base64,${data.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
+export async function renderSlides(metadata: PostMetadata): Promise<RenderResult[]> {
+  await fs.mkdir(metadata.slides_dir, { recursive: true });
+
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
+  const page = await context.newPage();
+
+  const results: RenderResult[] = [];
+
+  try {
+    for (const slide of metadata.slides) {
+      let imageDataUrl: string | null = null;
+      if (await exists(slide.asset_path)) {
+        imageDataUrl = await imageToDataUrl(slide.asset_path!);
+      }
+
+      const html = renderBaseTemplate({
+        slide,
+        productName: metadata.product,
+        imageDataUrl
+      });
+
+      const outputPath = path.join(
+        metadata.slides_dir,
+        `slide-${String(slide.slide_number).padStart(2, "0")}.png`
+      );
+
+      await page.setContent(html, { waitUntil: "load" });
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+        const images = Array.from(document.images);
+        await Promise.all(
+          images.map((img) =>
+            new Promise<void>((resolve) => {
+              if (img.complete) { resolve(); return; }
+              img.addEventListener("load", () => resolve(), { once: true });
+              img.addEventListener("error", () => resolve(), { once: true });
+            })
+          )
+        );
+      });
+
+      await page.screenshot({ path: outputPath, type: "png" });
+      results.push({ slideNumber: slide.slide_number, outputPath });
+    }
+  } finally {
+    await context.close();
+    await browser.close();
+  }
+
+  return results;
+}

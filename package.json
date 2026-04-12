@@ -1,0 +1,25 @@
+{
+  "name": "peppera-slideshow-factory",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic slideshow generation pipeline for Peppera vertical social posts — with web frontend.",
+  "scripts": {
+    "generate": "tsx src/index.ts",
+    "server": "tsx src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/**/*.test.ts public/app-helpers.test.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "playwright": "^1.52.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.2",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
