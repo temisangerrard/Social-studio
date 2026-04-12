@@ -29,16 +29,22 @@
     "imageModel": "fal-ai/flux/schnell"
   },
   "mascot": {
-    "name": "Peppera Mascot",
-    "description": "",
-    "role": "",
-    "visualPrompt": "Use the cheerful green pepper mascot as the main character in the frame, keeping the design consistent.",
+    "name": "Peppera",
+    "description": "A cute anthropomorphic green bell pepper character with a round bulbous body narrowing at the top, bright lime-green skin with subtle darker green vertical ridges, large expressive oval eyes with white sclera and small black pupils, thin curved black eyebrows, a small open-mouth smile showing warmth. Wears a red bandana tied around the top of the head with the knot visible on the right side. Has simple thin black-stroke arms and legs with small rounded hands and feet. The overall style is flat 2D cartoon illustration with bold outlines, vibrant saturated colors, and no shading or gradients.",
+    "role": "The recurring face of Peppera's TikTok and Instagram content — the main character in every visual story.",
+    "visualPrompt": "A cute anthropomorphic green bell pepper character named Peppera. Round bulbous body narrowing at the top, bright lime-green skin with subtle darker green vertical ridges. Large expressive oval eyes with white sclera and small black pupils, thin curved black eyebrows, small open-mouth smile. Wears a red bandana tied around the top of the head with the knot visible on the right side. Simple thin black-stroke arms and legs with small rounded hands and feet. Flat 2D cartoon illustration style with bold outlines, vibrant saturated colors, no shading or gradients. Solid color background.",
     "usageRules": [
-      "Use the mascot as the recognisable face of Peppera social content.",
-      "Prefer mascot-led variants for TikTok and Instagram visual storytelling.",
-      "Keep the mascot consistent across poses, face shape, bandana, and overall style."
+      "Always include the mascot in mascot-led slides: hook, problem, escalation, reaction, discovery, cta.",
+      "Never include the mascot in meal_reveal or benefit slides — those are food-only.",
+      "The mascot must always have the red bandana, green pepper body, and same face shape.",
+      "Vary only the pose and expression to match the slide role — never vary the core design.",
+      "Never add accessories not in the spec (no chef hat, no utensils unless the slide prompt explicitly calls for them)."
     ],
-    "referenceImages": []
-
+    "referenceImages": [
+      "https://tmpfiles.org/dl/33230100/peppera-hero.png",
+      "https://tmpfiles.org/dl/33230101/peppera-confused.png",
+      "https://tmpfiles.org/dl/33230104/peppera-chef-happy.png",
+      "https://tmpfiles.org/dl/33230107/peppera-standing.png"
+    ]
   }
 }

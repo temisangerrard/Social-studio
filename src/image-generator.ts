@@ -11,6 +11,7 @@ interface ImageGeneratorOptions {
     primaryColor?: string;
     secondaryColor?: string;
   };
+  mascotReferenceImages?: string[];
 }
 
 function sanitizeFilename(value: string): string {
@@ -91,21 +92,27 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 8000
   }
 }
 
-async function generateWithFal(prompt: string, falKey: string, model: string): Promise<Buffer> {
+async function generateWithFal(prompt: string, falKey: string, model: string, referenceImageUrls?: string[]): Promise<Buffer> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Authorization: `Key ${falKey}`
   };
 
+  const input: Record<string, unknown> = {
+    prompt,
+    image_size: "portrait_16_9",
+    num_inference_steps: 4,
+    seed: Math.floor(Math.random() * 2147483647)
+  };
+
+  if (referenceImageUrls && referenceImageUrls.length > 0) {
+    input.image_urls = referenceImageUrls;
+  }
+
   const submitResponse = await fetchWithTimeout(`https://queue.fal.run/${model}`, {
     method: "POST",
     headers,
-    body: JSON.stringify({
-      prompt,
-      image_size: "portrait_16_9",
-      num_inference_steps: 4,
-      seed: Math.floor(Math.random() * 2147483647)
-    })
+    body: JSON.stringify(input)
   });
 
   if (!submitResponse.ok) {
@@ -167,7 +174,8 @@ export async function generateImagesForSlides(
     falKey,
     falModel = "fal-ai/flux/schnell",
     brandName = "Brand",
-    brandColors = {}
+    brandColors = {},
+    mascotReferenceImages = []
   } = options;
   const colors = {
     primaryColor: brandColors.primaryColor ?? "#f04d23",
@@ -187,7 +195,7 @@ export async function generateImagesForSlides(
 
     try {
       if (falKey) {
-        const imageBuffer = await generateWithFal(slide.image_prompt, falKey, falModel);
+        const imageBuffer = await generateWithFal(slide.image_prompt, falKey, falModel, mascotReferenceImages);
         await fs.writeFile(filePath, imageBuffer);
         slide.asset_path = filePath;
       } else {

@@ -437,7 +437,8 @@ export async function runPipelineFromRequest(
       brandColors: {
         primaryColor: brandProfile.visual.primaryColor,
         secondaryColor: brandProfile.visual.secondaryColor
-      }
+      },
+      mascotReferenceImages: brandProfile.mascot?.referenceImages ?? []
     });
     metadata.slides = slidesWithAssets;
     metadata.artifacts = slidesWithAssets.map((slide) => ({
