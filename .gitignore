@@ -6,3 +6,5 @@ outputs/
 .DS_Store
 .playwright-cli/
 workspace/uploads/
+workspace/sessions/
+workspace/boards/
