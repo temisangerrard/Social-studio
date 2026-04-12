@@ -1,0 +1,30 @@
+{
+  "id": "session_mnst330n_eyo1b9",
+  "productId": "peppera",
+  "status": "interviewing",
+  "currentQuestion": "What is the main goal for this piece of content?",
+  "messages": [
+    {
+      "id": "msg_mnst330n_8mjh13",
+      "role": "assistant",
+      "text": "What is the main goal for this piece of content?",
+      "createdAt": "2026-04-10T11:11:49.510Z"
+    }
+  ],
+  "inferredBrief": {
+    "goal": "",
+    "audience": "",
+    "offer": "",
+    "tone": "",
+    "platform": ""
+  },
+  "checkpoints": {
+    "strategy": "pending",
+    "hooks": "pending",
+    "visuals": "pending",
+    "finalPackage": "pending"
+  },
+  "workspaceCards": [],
+  "createdAt": "2026-04-10T11:11:49.510Z",
+  "updatedAt": "2026-04-10T11:11:49.510Z"
+}

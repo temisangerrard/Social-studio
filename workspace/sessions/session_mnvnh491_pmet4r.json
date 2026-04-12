@@ -1,0 +1,66 @@
+{
+  "id": "session_mnvnh491_pmet4r",
+  "productId": "peppera",
+  "status": "interviewing",
+  "currentQuestion": "What weird ingredients should the mascot play with?",
+  "messages": [
+    {
+      "id": "msg_mnvnh492_u3l14b",
+      "role": "system",
+      "text": "Hidden product context for Peppera: Peppera product context from temisangerrard/systemeats. Latest remote context is not available in-app yet, so this session will use registry-level context and your answers.",
+      "createdAt": "2026-04-12T10:58:05.125Z"
+    },
+    {
+      "id": "msg_mnvnh492_jeqgcd",
+      "role": "assistant",
+      "text": "Tell me the rough idea first. I’ll help shape it and ask only one thing at a time.",
+      "createdAt": "2026-04-12T10:58:05.125Z"
+    },
+    {
+      "id": "msg_mnvnh492_npn9l8",
+      "role": "assistant",
+      "text": "What do you want to make today?",
+      "createdAt": "2026-04-12T10:58:05.125Z"
+    },
+    {
+      "id": "msg_mnvnh4ds_p0tdgo",
+      "role": "user",
+      "text": "I want to make a funny TikTok slideshow of the Peppera mascot getting into shenanigans with a weird ingredient combination",
+      "createdAt": "2026-04-12T10:58:05.296Z"
+    },
+    {
+      "id": "msg_mnvnhfq4_e784yz",
+      "role": "assistant",
+      "text": "What's the main goal for this content?",
+      "createdAt": "2026-04-12T10:58:19.996Z"
+    },
+    {
+      "id": "msg_mnvnhftr_753yem",
+      "role": "user",
+      "text": "The goal is to get more app downloads and make people laugh. Targeting home cooks who are bored of the same meals.",
+      "createdAt": "2026-04-12T10:58:20.127Z"
+    },
+    {
+      "id": "msg_mnvnhwoo_evpsbk",
+      "role": "assistant",
+      "text": "What weird ingredients should the mascot play with?",
+      "createdAt": "2026-04-12T10:58:41.976Z"
+    }
+  ],
+  "inferredBrief": {
+    "goal": "get more app downloads and make people laugh",
+    "audience": "bored home cooks",
+    "offer": "Funny mascot showcase with weird ingredient combo",
+    "platform": "TikTok",
+    "tone": "funny"
+  },
+  "checkpoints": {
+    "strategy": "pending",
+    "hooks": "pending",
+    "visuals": "pending",
+    "finalPackage": "pending"
+  },
+  "workspaceCards": [],
+  "createdAt": "2026-04-12T10:58:05.125Z",
+  "updatedAt": "2026-04-12T10:58:41.977Z"
+}

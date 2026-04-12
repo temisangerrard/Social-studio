@@ -137,6 +137,8 @@ const els = {
   brandMascotVisualPrompt: document.getElementById("brand-mascot-visual-prompt"),
   brandMascotRules: document.getElementById("brand-mascot-rules"),
   brandMascotReferences: document.getElementById("brand-mascot-references"),
+  brandMascotRefFiles: document.getElementById("brand-mascot-ref-files"),
+  brandMascotRefStatus: document.getElementById("brand-mascot-ref-status"),
   brandEditorStatus: document.getElementById("brand-editor-status"),
   brandEditorSave: document.getElementById("brand-editor-save"),
 
@@ -498,20 +500,20 @@ function renderBrandEditor(brandId) {
   els.brandMascotVisualPrompt.value = mascot?.visualPrompt || "";
   els.brandMascotRules.value = (mascot?.usageRules || []).join("\n");
   els.brandMascotReferences.innerHTML = (mascot?.referenceImages || [])
-    .map(
-      (referencePath, index) => `
+    .map((referencePath, index) => {
+      const imgUrl = referencePath.startsWith("/api/") ? referencePath : `/api/brand-assets/${brandId}/${index}`;
+      const label = referencePath.split("/").pop() || `reference ${index + 1}`;
+      const title = escapeHtml(`${mascot?.name || brand?.name || "Mascot"} reference ${index + 1}`);
+      return `
         <div class="brand-ref-card">
-          <button type="button" data-brand-asset-url="/api/brand-assets/${brandId}/${index}" data-brand-asset-title="${escapeHtml(
-            mascot?.name || brand?.name || "Mascot"
-          )} reference ${index + 1}">
-            <img src="/api/brand-assets/${brandId}/${index}" alt="${escapeHtml(
-              mascot?.name || brand?.name || "Mascot"
-            )} reference ${index + 1}" loading="lazy" />
+          <button type="button" data-brand-asset-url="${imgUrl}" data-brand-asset-title="${title}">
+            <img src="${imgUrl}" alt="${title}" loading="lazy" />
           </button>
-          <span>${escapeHtml(referencePath.split("/").pop() || referencePath)}</span>
+          <span>${escapeHtml(label)}</span>
+          <button type="button" class="ghost-button brand-ref-remove" data-brand-id="${escapeHtml(brandId)}" data-ref-index="${index}" style="font-size:0.65rem;padding:4px 8px">Remove</button>
         </div>
-      `
-    )
+      `;
+    })
     .join("");
 }
 
@@ -1495,6 +1497,49 @@ els.brandEditorSave.addEventListener("click", async () => {
       els.brandEditorStatus.classList.add("hidden");
     }
   }, 1500);
+});
+
+els.brandMascotRefFiles.addEventListener("change", async () => {
+  const brandId = els.productSelect.value;
+  const files = Array.from(els.brandMascotRefFiles.files);
+  if (!files.length) return;
+
+  els.brandMascotRefStatus.classList.remove("hidden");
+  els.brandMascotRefStatus.textContent = `Uploading ${files.length} image${files.length > 1 ? "s" : ""}…`;
+
+  try {
+    for (const file of files) {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      await fetch(`/api/brands/${brandId}/mascot-upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filename: file.name, dataUrl })
+      });
+    }
+    asstState.brands = await fetch("/api/brands").then((res) => res.json());
+    renderBrandEditor(brandId);
+    els.brandMascotRefStatus.textContent = "Images uploaded.";
+    setTimeout(() => els.brandMascotRefStatus.classList.add("hidden"), 1500);
+  } catch (err) {
+    els.brandMascotRefStatus.textContent = err instanceof Error ? err.message : "Upload failed.";
+  } finally {
+    els.brandMascotRefFiles.value = "";
+  }
+});
+
+els.brandMascotReferences.addEventListener("click", async (event) => {
+  const removeBtn = event.target.closest(".brand-ref-remove");
+  if (!removeBtn) return;
+  const brandId = removeBtn.dataset.brandId;
+  const index = Number(removeBtn.dataset.refIndex);
+  await fetch(`/api/brands/${brandId}/mascot-refs/${index}`, { method: "DELETE" });
+  asstState.brands = await fetch("/api/brands").then((res) => res.json());
+  renderBrandEditor(brandId);
 });
 
 async function bootstrap() {

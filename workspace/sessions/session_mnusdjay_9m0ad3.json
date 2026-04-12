@@ -1,0 +1,151 @@
+{
+  "id": "session_mnusdjay_9m0ad3",
+  "productId": "peppera",
+  "status": "interviewing",
+  "currentQuestion": "What should it feel like? For example: calm, sharp, funny, premium, simple.",
+  "messages": [
+    {
+      "id": "msg_mnusdjay_5a9dl1",
+      "role": "assistant",
+      "text": "What is the main goal for this piece of content?",
+      "createdAt": "2026-04-11T20:27:29.913Z"
+    },
+    {
+      "id": "msg_ea6f9c4a-5c2e-4477-89c9-85dd1ee5cd84",
+      "role": "user",
+      "text": "Get more Peppera installs from a relatable leftovers post",
+      "createdAt": "2026-04-11T20:28:16.586Z"
+    },
+    {
+      "id": "msg_283b0511-1f74-4bdf-9ffb-c09b1874305d",
+      "role": "assistant",
+      "text": "Who is this for?",
+      "createdAt": "2026-04-11T20:28:16.586Z"
+    },
+    {
+      "id": "msg_bec936e2-a3fa-4297-89ca-0feb091bccba",
+      "role": "user",
+      "text": "Busy home cooks who have random ingredients and want dinner fast",
+      "createdAt": "2026-04-11T20:28:44.676Z"
+    },
+    {
+      "id": "msg_21bd69f7-9f9f-45a8-9bca-8aaf8547b3be",
+      "role": "assistant",
+      "text": "What is the main thing you want to say or sell?",
+      "createdAt": "2026-04-11T20:28:44.676Z"
+    },
+    {
+      "id": "msg_5407254b-b637-4243-b026-8b81049f05ad",
+      "role": "user",
+      "text": "Peppera helps you turn random ingredients into quick dinner ideas",
+      "createdAt": "2026-04-11T20:29:08.503Z"
+    },
+    {
+      "id": "msg_6ac85c4e-f165-4c2e-bde6-7cacd42955fd",
+      "role": "assistant",
+      "text": "Where should I optimise it first? TikTok, Instagram, or somewhere else?",
+      "createdAt": "2026-04-11T20:29:08.503Z"
+    },
+    {
+      "id": "msg_f4bb39dd-75d2-4c4e-bc14-88650a5399db",
+      "role": "user",
+      "text": "TikTok first",
+      "createdAt": "2026-04-11T20:29:31.586Z"
+    },
+    {
+      "id": "msg_5008de19-20c6-4172-be6c-52fb3373b587",
+      "role": "assistant",
+      "text": "What should it feel like? For example: calm, sharp, funny, premium, simple.",
+      "createdAt": "2026-04-11T20:29:31.586Z"
+    },
+    {
+      "id": "msg_d701ba40-1fb3-4d07-b8be-9791ce632742",
+      "role": "user",
+      "text": "Relatable, funny, and useful",
+      "createdAt": "2026-04-11T20:29:57.751Z"
+    },
+    {
+      "id": "msg_c7946a5d-a95e-46fb-b27d-d71baa653a8c",
+      "role": "assistant",
+      "text": "I have enough context. I’m moving into generation checkpoints now.",
+      "createdAt": "2026-04-11T20:29:57.751Z"
+    }
+  ],
+  "inferredBrief": {
+    "goal": "Get more Peppera installs from a relatable leftovers post",
+    "audience": "Busy home cooks who have random ingredients and want dinner fast",
+    "offer": "Peppera helps you turn random ingredients into quick dinner ideas",
+    "tone": "Relatable, funny, and useful",
+    "platform": "TikTok first"
+  },
+  "checkpoints": {
+    "strategy": "active",
+    "hooks": "pending",
+    "visuals": "pending",
+    "finalPackage": "pending"
+  },
+  "workspaceCards": [
+    {
+      "id": "card_b4880ae6-a167-4656-ba6a-cc88a9fc2d33",
+      "type": "goal",
+      "text": "Get more Peppera installs from a relatable leftovers post",
+      "x": 72,
+      "y": 72,
+      "width": 280,
+      "height": 220,
+      "tags": [
+        "goal"
+      ]
+    },
+    {
+      "id": "card_a56545ed-e0b2-45af-b8b4-2417fb15ed3d",
+      "type": "audience",
+      "text": "Busy home cooks who have random ingredients and want dinner fast",
+      "x": 392,
+      "y": 72,
+      "width": 280,
+      "height": 220,
+      "tags": [
+        "audience"
+      ]
+    },
+    {
+      "id": "card_759a2eda-92da-4845-b6be-42e1619ba45e",
+      "type": "proof",
+      "text": "Peppera helps you turn random ingredients into quick dinner ideas",
+      "x": 72,
+      "y": 322,
+      "width": 280,
+      "height": 220,
+      "tags": [
+        "proof"
+      ]
+    },
+    {
+      "id": "card_7cf19b15-7091-4361-9e2a-92445a0523d6",
+      "type": "visual",
+      "text": "Relatable, funny, and useful",
+      "x": 392,
+      "y": 322,
+      "width": 280,
+      "height": 220,
+      "tags": [
+        "visual"
+      ]
+    },
+    {
+      "id": "card_8b354fab-92af-44ea-84f2-8453896c4f5c",
+      "type": "hook",
+      "text": "Optimise for TikTok first",
+      "x": 72,
+      "y": 572,
+      "width": 320,
+      "height": 240,
+      "tags": [
+        "hook"
+      ]
+    }
+  ],
+  "createdAt": "2026-04-11T20:27:29.913Z",
+  "updatedAt": "2026-04-11T20:29:57.808Z"
+}

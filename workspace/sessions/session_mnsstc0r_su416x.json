@@ -1,0 +1,219 @@
+{
+  "id": "session_mnsstc0r_su416x",
+  "productId": "peppera",
+  "status": "done",
+  "currentQuestion": "What tone should it have?",
+  "messages": [
+    {
+      "id": "msg_mnsstc0r_3cbvai",
+      "role": "assistant",
+      "text": "What is the main goal for this piece of content?",
+      "createdAt": "2026-04-10T11:04:14.619Z"
+    },
+    {
+      "id": "msg_cbc0a31f-0c59-480d-9aca-f7483372da29",
+      "role": "user",
+      "text": "to create instagram and tiktok slide \n content for peppera",
+      "createdAt": "2026-04-10T11:06:10.097Z"
+    },
+    {
+      "id": "msg_ffec0e58-04f1-4686-83d2-c68aa410520f",
+      "role": "assistant",
+      "text": "Who is this content for?",
+      "createdAt": "2026-04-10T11:06:10.098Z"
+    },
+    {
+      "id": "msg_6989f52b-15ef-4573-86e2-0a3b51c9e1a9",
+      "role": "user",
+      "text": "casual swipers, people who cook , people who calorie count, people who wanna know how many calories are in their cooked dish",
+      "createdAt": "2026-04-10T11:06:42.019Z"
+    },
+    {
+      "id": "msg_22167eaa-abbb-447f-9809-d7c51b0f8e63",
+      "role": "assistant",
+      "text": "What are you trying to say or offer?",
+      "createdAt": "2026-04-10T11:06:42.019Z"
+    },
+    {
+      "id": "msg_ae2441ae-5e05-434b-82d4-fcfbcceade91",
+      "role": "user",
+      "text": "i want them to know that peppera is their all in one ai solution for managing or imagining recipes from their pantry, an end to the question of 'what will i eat' jst by signup and using the app",
+      "createdAt": "2026-04-10T11:07:37.597Z"
+    },
+    {
+      "id": "msg_0125628a-2f10-46a1-adc8-b61b744f6386",
+      "role": "assistant",
+      "text": "Which platform should I optimize this for first?",
+      "createdAt": "2026-04-10T11:07:37.597Z"
+    },
+    {
+      "id": "msg_58640805-363b-4ddc-a50d-b88eeae855d2",
+      "role": "user",
+      "text": "instagram",
+      "createdAt": "2026-04-10T11:07:47.362Z"
+    },
+    {
+      "id": "msg_558a3dcc-0f2b-4224-b205-f76ebc56d103",
+      "role": "assistant",
+      "text": "What tone should it have?",
+      "createdAt": "2026-04-10T11:07:47.362Z"
+    },
+    {
+      "id": "msg_d71a6a1b-ac75-4843-b24b-f94e45ae9bf8",
+      "role": "user",
+      "text": "fun energetic",
+      "createdAt": "2026-04-10T11:08:01.645Z"
+    },
+    {
+      "id": "msg_c3fc396b-cf9a-4159-8111-cc6e4898827c",
+      "role": "assistant",
+      "text": "I have enough context. I’m moving into generation checkpoints now.",
+      "createdAt": "2026-04-10T11:08:01.645Z"
+    },
+    {
+      "id": "msg_ce70a1dc-8b0d-4c89-8416-b8b094bff247",
+      "role": "assistant",
+      "text": "I’ve generated the first package and placed the leading assets onto the workspace.",
+      "createdAt": "2026-04-10T11:08:34.879Z"
+    },
+    {
+      "id": "msg_41434a7a-3d00-445b-a927-1cb9bb844c69",
+      "role": "user",
+      "text": "is that all ?",
+      "createdAt": "2026-04-10T11:10:42.148Z"
+    },
+    {
+      "id": "msg_6cf75ee2-362a-4d03-a650-ff75972cbd82",
+      "role": "assistant",
+      "text": "I have enough context. I’m moving into generation checkpoints now.",
+      "createdAt": "2026-04-10T11:10:42.148Z"
+    },
+    {
+      "id": "msg_8accadaa-6e8f-4f65-af31-c1cd2099d0b3",
+      "role": "assistant",
+      "text": "I’ve generated the first package and placed the leading assets onto the workspace.",
+      "createdAt": "2026-04-10T11:11:13.853Z"
+    },
+    {
+      "id": "msg_cb3269a7-ec0f-49b6-8719-cbcf48f277c9",
+      "role": "user",
+      "text": "where are the rest assets",
+      "createdAt": "2026-04-10T13:13:00.406Z"
+    },
+    {
+      "id": "msg_edb95c68-4185-4de5-bffb-cf76f5a0cb11",
+      "role": "assistant",
+      "text": "I have enough context. I’m moving into generation checkpoints now.",
+      "createdAt": "2026-04-10T13:13:00.408Z"
+    },
+    {
+      "id": "msg_9b2c864d-c2fc-4888-bd68-43ab7417528d",
+      "role": "assistant",
+      "text": "I’ve generated the first package and placed the leading assets onto the workspace.",
+      "createdAt": "2026-04-10T13:13:33.851Z"
+    }
+  ],
+  "inferredBrief": {
+    "goal": "to create instagram and tiktok slide \n content for peppera",
+    "audience": "casual swipers, people who cook , people who calorie count, people who wanna know how many calories are in their cooked dish",
+    "offer": "i want them to know that peppera is their all in one ai solution for managing or imagining recipes from their pantry, an end to the question of 'what will i eat' jst by signup and using the app",
+    "tone": "fun energetic",
+    "platform": "instagram"
+  },
+  "checkpoints": {
+    "strategy": "done",
+    "hooks": "done",
+    "visuals": "done",
+    "finalPackage": "done"
+  },
+  "workspaceCards": [
+    {
+      "id": "card_35d7ca86-a3a9-4554-90be-d4361c688a10",
+      "type": "goal",
+      "text": "to create instagram and tiktok slide \n content for peppera",
+      "x": 72,
+      "y": 72,
+      "width": 280,
+      "height": 220,
+      "tags": [
+        "goal"
+      ]
+    },
+    {
+      "id": "card_346c5b00-3a02-49ef-b2bd-d791bc389b19",
+      "type": "audience",
+      "text": "casual swipers, people who cook , people who calorie count, people who wanna know how many calories are in their cooked dish",
+      "x": 392,
+      "y": 72,
+      "width": 280,
+      "height": 220,
+      "tags": [
+        "audience"
+      ]
+    },
+    {
+      "id": "card_6cc2958b-49a5-4f4e-9b9f-33060d1123ff",
+      "type": "proof",
+      "text": "i want them to know that peppera is their all in one ai solution for managing or imagining recipes from their pantry, an end to the question of 'what will i eat' jst by signup and using the app",
+      "x": 72,
+      "y": 322,
+      "width": 280,
+      "height": 220,
+      "tags": [
+        "proof"
+      ]
+    },
+    {
+      "id": "card_14f2e6a4-b170-4c6d-9d0a-f7713de4d8ce",
+      "type": "visual",
+      "text": "fun energetic",
+      "x": 392,
+      "y": 322,
+      "width": 280,
+      "height": 220,
+      "tags": [
+        "visual"
+      ]
+    },
+    {
+      "id": "card_f3657ad9-38af-4828-9f48-94391bd8b1b4",
+      "type": "hook",
+      "text": "Optimise for instagram",
+      "x": 72,
+      "y": 572,
+      "width": 320,
+      "height": 240,
+      "tags": [
+        "hook"
+      ]
+    },
+    {
+      "id": "asset_17362128-4536-44fd-bbb5-f75d941d1ed6",
+      "type": "asset",
+      "text": "got random bits from the fridge and no plan",
+      "assetUrl": "/api/slides/peppera_ig_0004/slide-01.png",
+      "x": 720,
+      "y": 120,
+      "width": 220,
+      "height": 390,
+      "tags": [
+        "hook"
+      ]
+    },
+    {
+      "id": "asset_e5f6d071-9cc1-4d52-909e-bb68b9a9ae05",
+      "type": "asset",
+      "text": "Dinner indecision is hitting again",
+      "assetUrl": "/api/slides/peppera_ig_0004/slide-02.png",
+      "x": 970,
+      "y": 120,
+      "width": 220,
+      "height": 390,
+      "tags": [
+        "problem"
+      ]
+    }
+  ],
+  "createdAt": "2026-04-10T11:04:14.619Z",
+  "updatedAt": "2026-04-10T13:13:33.893Z"
+}

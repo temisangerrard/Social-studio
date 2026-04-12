@@ -1,0 +1,54 @@
+{
+  "id": "session_mnvnjgc0_3tit9q",
+  "productId": "peppera",
+  "status": "interviewing",
+  "currentQuestion": "What's the main goal for this content?",
+  "messages": [
+    {
+      "id": "msg_mnvnjgc0_saf0e8",
+      "role": "system",
+      "text": "Hidden product context for Peppera: Peppera product context from temisangerrard/systemeats. Latest remote context is not available in-app yet, so this session will use registry-level context and your answers.",
+      "createdAt": "2026-04-12T10:59:54.096Z"
+    },
+    {
+      "id": "msg_mnvnjgc0_f10253",
+      "role": "assistant",
+      "text": "Tell me the rough idea first. I’ll help shape it and ask only one thing at a time.",
+      "createdAt": "2026-04-12T10:59:54.096Z"
+    },
+    {
+      "id": "msg_mnvnjgc0_2l4voe",
+      "role": "assistant",
+      "text": "What do you want to make today?",
+      "createdAt": "2026-04-12T10:59:54.096Z"
+    },
+    {
+      "id": "msg_mnvnjwqg_8vbnmc",
+      "role": "user",
+      "text": "easy sunday",
+      "createdAt": "2026-04-12T11:00:15.349Z"
+    },
+    {
+      "id": "msg_mnvnkf29_8kpinu",
+      "role": "assistant",
+      "text": "What's the main goal for this content?",
+      "createdAt": "2026-04-12T11:00:39.105Z"
+    }
+  ],
+  "inferredBrief": {
+    "goal": "",
+    "audience": "busy home cooks",
+    "offer": "Easy Sunday recipes",
+    "platform": "",
+    "tone": "helpful, witty, clean"
+  },
+  "checkpoints": {
+    "strategy": "pending",
+    "hooks": "pending",
+    "visuals": "pending",
+    "finalPackage": "pending"
+  },
+  "workspaceCards": [],
+  "createdAt": "2026-04-12T10:59:54.096Z",
+  "updatedAt": "2026-04-12T11:00:39.106Z"
+}

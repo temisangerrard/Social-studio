@@ -1,0 +1,151 @@
+{
+  "id": "session_mnuq5a3x_64n9c7",
+  "productId": "peppera",
+  "status": "interviewing",
+  "currentQuestion": "What tone should it have?",
+  "messages": [
+    {
+      "id": "msg_mnuq5a3x_84bi6t",
+      "role": "assistant",
+      "text": "What is the main goal for this piece of content?",
+      "createdAt": "2026-04-11T19:25:05.516Z"
+    },
+    {
+      "id": "msg_8778c61a-f559-457e-a9f3-4355a9bb5fdc",
+      "role": "user",
+      "text": "to get new follwoers",
+      "createdAt": "2026-04-11T19:25:30.753Z"
+    },
+    {
+      "id": "msg_debc7db5-665c-4d0f-8ee0-9d0be9f23098",
+      "role": "assistant",
+      "text": "Who is this content for?",
+      "createdAt": "2026-04-11T19:25:30.754Z"
+    },
+    {
+      "id": "msg_d11f28e5-172d-48ba-8a22-fb4ad3fde317",
+      "role": "user",
+      "text": "25-40 year old women",
+      "createdAt": "2026-04-11T19:25:42.205Z"
+    },
+    {
+      "id": "msg_02ef5560-2c59-4912-9f9d-1eddd76f5025",
+      "role": "assistant",
+      "text": "What are you trying to say or offer?",
+      "createdAt": "2026-04-11T19:25:42.205Z"
+    },
+    {
+      "id": "msg_f8cc0850-0250-4a5b-bcc7-6cbb87978eec",
+      "role": "user",
+      "text": "use peppera to get recipes and estimate your calories",
+      "createdAt": "2026-04-11T19:25:58.438Z"
+    },
+    {
+      "id": "msg_8cfcad6f-2d3e-4c86-9a93-0f7a519c0e38",
+      "role": "assistant",
+      "text": "Which platform should I optimize this for first?",
+      "createdAt": "2026-04-11T19:25:58.438Z"
+    },
+    {
+      "id": "msg_bb10bdcd-6ffc-4888-b6d7-b6f67b12ce7d",
+      "role": "user",
+      "text": "tiktok",
+      "createdAt": "2026-04-11T19:26:02.538Z"
+    },
+    {
+      "id": "msg_af0dfb81-4f54-46ce-8abc-3e25b28a5427",
+      "role": "assistant",
+      "text": "What tone should it have?",
+      "createdAt": "2026-04-11T19:26:02.538Z"
+    },
+    {
+      "id": "msg_5e499b8d-96eb-4a92-8e02-5e2fafe6f9ba",
+      "role": "user",
+      "text": "fun ,upbeat",
+      "createdAt": "2026-04-11T19:26:09.903Z"
+    },
+    {
+      "id": "msg_5f5fd380-f1d9-47ba-bfed-3b78f141112b",
+      "role": "assistant",
+      "text": "I have enough context. I’m moving into generation checkpoints now.",
+      "createdAt": "2026-04-11T19:26:09.904Z"
+    }
+  ],
+  "inferredBrief": {
+    "goal": "to get new follwoers",
+    "audience": "25-40 year old women",
+    "offer": "use peppera to get recipes and estimate your calories",
+    "tone": "fun ,upbeat",
+    "platform": "tiktok"
+  },
+  "checkpoints": {
+    "strategy": "active",
+    "hooks": "pending",
+    "visuals": "pending",
+    "finalPackage": "pending"
+  },
+  "workspaceCards": [
+    {
+      "id": "card_364c3d9c-9e06-4960-a4ca-afafb305915c",
+      "type": "goal",
+      "text": "to get new follwoers",
+      "x": 72,
+      "y": 72,
+      "width": 280,
+      "height": 220,
+      "tags": [
+        "goal"
+      ]
+    },
+    {
+      "id": "card_9089a2fa-bc79-49dc-ae9b-c97b61c24cdd",
+      "type": "audience",
+      "text": "25-40 year old women",
+      "x": 392,
+      "y": 72,
+      "width": 280,
+      "height": 220,
+      "tags": [
+        "audience"
+      ]
+    },
+    {
+      "id": "card_8ea7d069-9a5e-46a2-abc6-65e32ee2030a",
+      "type": "proof",
+      "text": "use peppera to get recipes and estimate your calories",
+      "x": 72,
+      "y": 322,
+      "width": 280,
+      "height": 220,
+      "tags": [
+        "proof"
+      ]
+    },
+    {
+      "id": "card_d5757999-edec-4941-9103-549c5fcb3c7b",
+      "type": "visual",
+      "text": "fun ,upbeat",
+      "x": 392,
+      "y": 322,
+      "width": 280,
+      "height": 220,
+      "tags": [
+        "visual"
+      ]
+    },
+    {
+      "id": "card_28a20655-0707-41b7-bd95-a2a2ca7be7b0",
+      "type": "hook",
+      "text": "Optimise for tiktok",
+      "x": 72,
+      "y": 572,
+      "width": 320,
+      "height": 240,
+      "tags": [
+        "hook"
+      ]
+    }
+  ],
+  "createdAt": "2026-04-11T19:25:05.516Z",
+  "updatedAt": "2026-04-11T19:26:09.912Z"
+}

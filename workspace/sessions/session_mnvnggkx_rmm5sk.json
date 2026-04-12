@@ -1,0 +1,54 @@
+{
+  "id": "session_mnvnggkx_rmm5sk",
+  "productId": "peppera",
+  "status": "interviewing",
+  "currentQuestion": "What's the main goal for this content?",
+  "messages": [
+    {
+      "id": "msg_mnvnggkx_8ax21c",
+      "role": "system",
+      "text": "Hidden product context for Peppera: Peppera product context from temisangerrard/systemeats. Latest remote context is not available in-app yet, so this session will use registry-level context and your answers.",
+      "createdAt": "2026-04-12T10:57:34.448Z"
+    },
+    {
+      "id": "msg_mnvnggkx_2wohlj",
+      "role": "assistant",
+      "text": "Tell me the rough idea first. I’ll help shape it and ask only one thing at a time.",
+      "createdAt": "2026-04-12T10:57:34.448Z"
+    },
+    {
+      "id": "msg_mnvnggkx_5d4nb5",
+      "role": "assistant",
+      "text": "What do you want to make today?",
+      "createdAt": "2026-04-12T10:57:34.448Z"
+    },
+    {
+      "id": "msg_mnvnggo5_ti83nu",
+      "role": "user",
+      "text": "I want to make a funny TikTok slideshow of the Peppera mascot getting into shenanigans with a weird ingredient combination",
+      "createdAt": "2026-04-12T10:57:34.565Z"
+    },
+    {
+      "id": "msg_mnvngvb6_g1qjed",
+      "role": "assistant",
+      "text": "What's the main goal for this content?",
+      "createdAt": "2026-04-12T10:57:53.538Z"
+    }
+  ],
+  "inferredBrief": {
+    "goal": "",
+    "audience": "busy home cooks",
+    "offer": "",
+    "platform": "TikTok",
+    "tone": "funny, witty"
+  },
+  "checkpoints": {
+    "strategy": "pending",
+    "hooks": "pending",
+    "visuals": "pending",
+    "finalPackage": "pending"
+  },
+  "workspaceCards": [],
+  "createdAt": "2026-04-12T10:57:34.448Z",
+  "updatedAt": "2026-04-12T10:57:53.538Z"
+}

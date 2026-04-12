@@ -1,0 +1,42 @@
+{
+  "id": "session_mnvnth8i_oqy1gd",
+  "productId": "peppera",
+  "status": "interviewing",
+  "currentQuestion": "What do you want to make today?",
+  "messages": [
+    {
+      "id": "msg_mnvnth8i_ubvwht",
+      "role": "system",
+      "text": "Hidden product context for Peppera: Peppera product context from temisangerrard/systemeats. Latest remote context is not available in-app yet, so this session will use registry-level context and your answers.",
+      "createdAt": "2026-04-12T11:07:41.826Z"
+    },
+    {
+      "id": "msg_mnvnth8i_ci6j9o",
+      "role": "assistant",
+      "text": "Tell me the rough idea first. I’ll help shape it and ask only one thing at a time.",
+      "createdAt": "2026-04-12T11:07:41.826Z"
+    },
+    {
+      "id": "msg_mnvnth8i_yfrkp4",
+      "role": "assistant",
+      "text": "What do you want to make today?",
+      "createdAt": "2026-04-12T11:07:41.826Z"
+    }
+  ],
+  "inferredBrief": {
+    "goal": "",
+    "audience": "",
+    "offer": "",
+    "tone": "",
+    "platform": ""
+  },
+  "checkpoints": {
+    "strategy": "pending",
+    "hooks": "pending",
+    "visuals": "pending",
+    "finalPackage": "pending"
+  },
+  "workspaceCards": [],
+  "createdAt": "2026-04-12T11:07:41.826Z",
+  "updatedAt": "2026-04-12T11:07:41.826Z"
+}

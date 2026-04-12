@@ -485,7 +485,52 @@ async function handleRequest(req: Request): Promise<Response> {
     const index = Number(parts[1]);
     const brand = await readBrandProfile(brandId);
     const assetPath = brand?.mascot?.referenceImages?.[index];
-    return assetPath ? serveFile(assetPath) : json({ error: "Brand asset not found" }, { status: 404 });
+    if (!assetPath) return json({ error: "Brand asset not found" }, { status: 404 });
+    // Uploaded assets are stored as /api/uploads/<filename> — serve from uploads dir
+    if (assetPath.startsWith("/api/uploads/")) {
+      const filename = path.basename(assetPath);
+      return serveFile(path.join(UPLOADS_ROOT, filename));
+    }
+    return serveFile(assetPath);
+  }
+
+  if (url.pathname.startsWith("/api/brands/") && url.pathname.endsWith("/mascot-upload") && req.method === "POST") {
+    const brandId = url.pathname.replace("/api/brands/", "").replace("/mascot-upload", "");
+    const brand = await readBrandProfile(brandId);
+    if (!brand) return json({ error: "Brand not found" }, { status: 404 });
+
+    const body = await parseJsonBody(req);
+    const filename = typeof body.filename === "string" ? body.filename : "mascot-ref";
+    const dataUrl = typeof body.dataUrl === "string" ? body.dataUrl : "";
+    const { mimeType, buffer } = decodeDataUrl(dataUrl);
+    if (!ALLOWED_UPLOAD_MIME_TYPES.has(mimeType)) {
+      return json({ error: "Unsupported upload type" }, { status: 400 });
+    }
+
+    const desiredName = sanitizeStoredFilename(filename);
+    const extension = path.extname(desiredName) || uploadExtensionForMimeType(mimeType);
+    const stem = path.basename(desiredName, path.extname(desiredName)) || "mascot-ref";
+    const storedName = `${stem}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}${extension}`;
+    await fs.mkdir(UPLOADS_ROOT, { recursive: true });
+    await fs.writeFile(path.join(UPLOADS_ROOT, storedName), buffer);
+
+    const uploadedUrl = `/api/uploads/${storedName}`;
+    const mascot = brand.mascot ?? { name: `${brand.name} Mascot`, description: "", role: "", visualPrompt: "", usageRules: [], referenceImages: [] };
+    mascot.referenceImages = [...mascot.referenceImages, uploadedUrl];
+    await storage.saveBrandProfile({ ...brand, mascot });
+
+    return json({ url: uploadedUrl, referenceImages: mascot.referenceImages });
+  }
+
+  if (url.pathname.startsWith("/api/brands/") && url.pathname.includes("/mascot-refs/") && req.method === "DELETE") {
+    const withoutPrefix = url.pathname.replace("/api/brands/", "");
+    const [brandId, , indexStr] = withoutPrefix.split("/");
+    const index = Number(indexStr);
+    const brand = await readBrandProfile(brandId);
+    if (!brand || !brand.mascot) return json({ error: "Brand not found" }, { status: 404 });
+    brand.mascot.referenceImages = brand.mascot.referenceImages.filter((_, i) => i !== index);
+    await storage.saveBrandProfile(brand);
+    return json({ referenceImages: brand.mascot.referenceImages });
   }
 
   if (url.pathname === "/" || url.pathname === "/index.html") {
