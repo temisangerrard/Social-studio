@@ -104,6 +104,7 @@ const els = {
   messageThread: document.getElementById("message-thread"),
   assistantForm: document.getElementById("assistant-form"),
   assistantInput: document.getElementById("assistant-input"),
+  assistantSubmit: document.getElementById("assistant-submit"),
   assistantStatus: document.getElementById("assistant-status"),
   workspaceTitle: document.getElementById("workspace-title"),
   workspaceSubtitle: document.getElementById("workspace-subtitle"),
