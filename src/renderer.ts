@@ -31,6 +31,7 @@ export async function renderSlides(metadata: PostMetadata): Promise<RenderResult
     : undefined;
   const browser = await chromium.launch({
     headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
     ...(executablePath ? { executablePath } : {})
   });
   const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
