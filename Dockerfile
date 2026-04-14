@@ -31,9 +31,15 @@ ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 WORKDIR /app
 
 COPY package*.json ./
+
+# Install dependencies in Docker Linux environment (not from macOS node_modules)
+# This ensures esbuild binaries are built for linux-x64, not darwin-arm64
 RUN npm ci --omit=dev
 
+# Copy source code after dependencies are installed
 COPY . .
+# Remove any leftover node_modules from the source (just in case)
+RUN rm -rf node_modules && npm ci --omit=dev
 
 # Create persistent data directories
 RUN mkdir -p workspace/uploads workspace/sessions workspace/boards outputs
