@@ -154,8 +154,9 @@ async function generateWithFal(prompt: string, falKey: string, model: string, re
 
     const resultPayload = (await resultResponse.json()) as {
       images?: Array<{ url: string }>;
+      image?: { url: string };
     };
-    const imageUrl = resultPayload.images?.[0]?.url;
+    const imageUrl = resultPayload.images?.[0]?.url ?? resultPayload.image?.url;
     if (!imageUrl) {
       throw new Error("fal.ai returned no images");
     }
