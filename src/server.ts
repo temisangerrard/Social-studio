@@ -547,6 +547,10 @@ async function handleRequest(req: Request): Promise<Response> {
     const brand = await readBrandProfile(brandId);
     const assetPath = brand?.mascot?.referenceImages?.[index];
     if (!assetPath) return json({ error: "Brand asset not found" }, { status: 404 });
+    // Remote URLs (GitHub raw, tmpfiles, etc) — redirect directly
+    if (assetPath.startsWith("http://") || assetPath.startsWith("https://")) {
+      return new Response(null, { status: 302, headers: { Location: assetPath } });
+    }
     // Uploaded assets are stored as /api/uploads/<filename> — serve from uploads dir
     if (assetPath.startsWith("/api/uploads/")) {
       const filename = path.basename(assetPath);

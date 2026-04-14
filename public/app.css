@@ -290,19 +290,20 @@ textarea {
 .canvas-stage {
   position: relative;
   border-radius: 24px;
-  overflow: hidden;
+  overflow: auto;
   background:
     radial-gradient(rgba(175, 179, 170, 0.55) 0.8px, transparent 0.8px),
     linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.08));
   background-size: 24px 24px, auto;
-  min-height: 0;
+  min-height: 520px;
+  flex: 1;
 }
 
 .canvas {
   position: relative;
-  min-width: 1680px;
-  min-height: 860px;
-  height: 100%;
+  min-width: 2400px;
+  min-height: 1200px;
+  padding: 48px;
 }
 
 .package-panel {
@@ -468,13 +469,37 @@ textarea {
   cursor: pointer;
 }
 
-.canvas-card[data-type="hook"] {
-  transform: rotate(-2deg);
+.canvas-card[data-type="visual"] {
+  background: rgba(254, 228, 198, 0.74);
 }
 
-.canvas-card[data-type="visual"],
 .canvas-card[data-type="asset"] {
-  background: rgba(254, 228, 198, 0.74);
+  background: #fff;
+  padding: 10px;
+}
+
+.canvas-card[data-type="asset"] .asset-thumb img,
+.canvas-card[data-type="asset"] .asset-thumb video {
+  border-radius: 12px;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  object-fit: cover;
+  display: block;
+}
+
+.canvas-card[data-type="asset"] .canvas-card__text {
+  font-size: 0.72rem;
+  font-family: "Manrope", sans-serif;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 6px;
+}
+
+.canvas-card[data-type="hook"] {
+  background: rgba(111, 92, 69, 0.06);
+  border-left: 3px solid var(--highlight);
 }
 
 .canvas-card__badge {
@@ -1122,11 +1147,18 @@ textarea {
   margin-top: 12px;
 }
 
-.asset-workbench,
-.workspace-stage {
+.asset-workbench {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 18px;
+}
+
+.workspace-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
 }
 
 .asset-collection {

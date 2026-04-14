@@ -534,18 +534,20 @@ function outputAssets(output) {
       order: index
     }));
   }
-  return (output.slides || []).map((slide, index) => ({
-    itemId: `slide-${String(slide.slide_number).padStart(2, "0")}`,
-    assetKind: "image",
-    role: slide.role,
-    text: slide.text,
-    prompt: slide.image_prompt || slide.text,
-    assetUrl: getWorkspaceAssetUrl(output, slide),
-    sourceAssetId: null,
-    variantGroup: null,
-    slideNumber: slide.slide_number,
-    order: index
-  }));
+  return (output.slides || [])
+    .filter((slide) => typeof slide.slide_number === "number" && !Number.isNaN(slide.slide_number))
+    .map((slide, index) => ({
+      itemId: `slide-${String(slide.slide_number).padStart(2, "0")}`,
+      assetKind: "image",
+      role: slide.role,
+      text: slide.text,
+      prompt: slide.image_prompt || slide.text,
+      assetUrl: getWorkspaceAssetUrl(output, slide),
+      sourceAssetId: null,
+      variantGroup: null,
+      slideNumber: slide.slide_number,
+      order: index
+    }));
 }
 
 function renderAssetThumb(item, scope) {
@@ -846,7 +848,11 @@ function renderCanvas() {
     article.style.left = `${card.x}px`;
     article.style.top = `${card.y}px`;
     article.style.width = `${card.width}px`;
-    article.style.height = `${card.height}px`;
+    if (card.type === "asset") {
+      article.style.minHeight = `${card.height}px`;
+    } else {
+      article.style.height = `${card.height}px`;
+    }
     if (card.type === "asset") {
       article.classList.add("is-clickable");
       article.dataset.kind = card.assetKind || "image";
