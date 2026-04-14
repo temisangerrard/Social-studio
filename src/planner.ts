@@ -153,11 +153,11 @@ export function buildPlannerPrompt({ brand, request }: PlannerContext): string {
 export function parsePlannerResponse(text: string): PlannedPackage {
   const parsed = JSON.parse(cleanJsonString(text)) as PlannedPackage;
   return {
-    hooks: (parsed.hooks ?? []).map((item) => String(item)),
+    hooks: (Array.isArray(parsed.hooks) ? parsed.hooks : []).map((item) => String(item)),
     caption: String(parsed.caption ?? ""),
-    hashtags: (parsed.hashtags ?? []).map((item) => normalizeHashtag(String(item))).filter(Boolean),
+    hashtags: (Array.isArray(parsed.hashtags) ? parsed.hashtags : []).map((item) => normalizeHashtag(String(item))).filter(Boolean),
     platformNotes: parsed.platformNotes ?? {},
-    slides: (parsed.slides ?? []).map((slide) => ({
+    slides: (Array.isArray(parsed.slides) ? parsed.slides : []).map((slide) => ({
       ...slide,
       asset_path: slide.asset_path ?? null
     })) as Slide[]
