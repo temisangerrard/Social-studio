@@ -369,7 +369,7 @@ export async function runPipelineFromRequest(
   dependencies?: Partial<PipelineDependencies>
 ): Promise<PostMetadata> {
   await loadEnvironment();
-  const root = outputRoot ?? path.resolve("outputs");
+  const root = outputRoot ?? path.resolve("workspace", "outputs");
   const request = normalizeRequest(requestInput);
   const postId = await nextPostId(root, brandProfile.name, request.platformTargets[0] ?? "tiktok");
   const postDir = path.join(root, postId);
@@ -539,5 +539,5 @@ export async function runPipelineFromBrief(
 
 export async function runPipeline(options: PipelineOptions): Promise<PostMetadata> {
   const brief = await readBrief(path.resolve(options.briefPath));
-  return runPipelineFromBrief(brief, options.outputRoot ?? path.resolve("outputs"));
+  return runPipelineFromBrief(brief, options.outputRoot ?? path.resolve("workspace", "outputs"));
 }

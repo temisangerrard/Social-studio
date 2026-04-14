@@ -14,7 +14,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 loadEnv({ path: path.join(PROJECT_ROOT, ".env") });
 const PUBLIC_ROOT = path.join(PROJECT_ROOT, "public");
-const OUTPUTS_ROOT = path.join(PROJECT_ROOT, "outputs");
+const OUTPUTS_ROOT = path.join(PROJECT_ROOT, "workspace", "outputs");
 const UPLOADS_ROOT = path.join(PROJECT_ROOT, "workspace", "uploads");
 const JOBS_ROOT = path.join(PROJECT_ROOT, "workspace", "jobs");
 const PORT = Number(process.env.PORT ?? 3000);

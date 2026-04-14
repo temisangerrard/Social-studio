@@ -36,7 +36,7 @@ RUN npm ci --omit=dev
 COPY . .
 
 # Create persistent data directories
-RUN mkdir -p workspace/uploads workspace/sessions workspace/boards outputs
+RUN mkdir -p workspace/uploads workspace/sessions workspace/boards workspace/outputs workspace/jobs
 
 EXPOSE 3000
 
