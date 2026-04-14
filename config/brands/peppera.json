@@ -26,7 +26,7 @@
   },
   "providers": {
     "plannerModel": "glm-4.5",
-    "imageModel": "fal-ai/flux/schnell"
+    "imageModel": "fal-ai/nano-banana-2"
   },
   "mascot": {
     "name": "Peppera",

@@ -16,6 +16,7 @@ loadEnv({ path: path.join(PROJECT_ROOT, ".env") });
 const PUBLIC_ROOT = path.join(PROJECT_ROOT, "public");
 const OUTPUTS_ROOT = path.join(PROJECT_ROOT, "outputs");
 const UPLOADS_ROOT = path.join(PROJECT_ROOT, "workspace", "uploads");
+const JOBS_ROOT = path.join(PROJECT_ROOT, "workspace", "jobs");
 const PORT = Number(process.env.PORT ?? 3000);
 const storage = createStorage(PROJECT_ROOT);
 
@@ -97,6 +98,39 @@ interface Job {
 }
 
 const jobs = new Map<string, Job>();
+
+async function saveJob(job: Job): Promise<void> {
+  await fs.mkdir(JOBS_ROOT, { recursive: true });
+  await fs.writeFile(path.join(JOBS_ROOT, `${job.id}.json`), JSON.stringify(job, null, 2));
+}
+
+async function loadPersistedJobs(): Promise<void> {
+  try {
+    const entries = await fs.readdir(JOBS_ROOT);
+    await Promise.all(
+      entries
+        .filter((e) => e.endsWith(".json"))
+        .map(async (entry) => {
+          try {
+            const raw = await fs.readFile(path.join(JOBS_ROOT, entry), "utf8");
+            const job = JSON.parse(raw) as Job;
+            // Mark interrupted in-progress jobs as failed
+            if (job.status === "running" || job.status === "pending") {
+              job.status = "failed";
+              job.stage = "failed";
+              job.error = "Server restarted while job was in progress";
+              await saveJob(job);
+            }
+            jobs.set(job.id, job);
+          } catch {
+            // skip corrupt files
+          }
+        })
+    );
+  } catch {
+    // jobs directory doesn't exist yet
+  }
+}
 
 function json(data: unknown, init?: ResponseInit): Response {
   return Response.json(data, init);
@@ -262,6 +296,7 @@ async function startGeneration(body: Record<string, unknown>): Promise<{ jobId: 
     createdAt: new Date().toISOString()
   };
   jobs.set(jobId, job);
+  await saveJob(job);
 
   const isLegacyBrief = typeof body.product === "string" && typeof body.idea === "string";
   if (isLegacyBrief) {
@@ -273,6 +308,7 @@ async function startGeneration(body: Record<string, unknown>): Promise<{ jobId: 
   void (async () => {
     job.status = "running";
     job.stage = "planning";
+    await saveJob(job);
 
     try {
       if (job.brief) {
@@ -280,6 +316,7 @@ async function startGeneration(body: Record<string, unknown>): Promise<{ jobId: 
         job.result = result;
         job.status = "done";
         job.stage = "done";
+        await saveJob(job);
         return;
       }
 
@@ -290,14 +327,17 @@ async function startGeneration(body: Record<string, unknown>): Promise<{ jobId: 
       }
 
       job.stage = "rendering";
+      await saveJob(job);
       const result = await runPipelineFromRequest(request, brand, OUTPUTS_ROOT);
       job.result = result;
       job.status = "done";
       job.stage = "done";
+      await saveJob(job);
     } catch (error) {
       job.status = "failed";
       job.stage = "failed";
       job.error = error instanceof Error ? error.message : String(error);
+      await saveJob(job);
     }
   })();
 
@@ -533,6 +573,68 @@ async function handleRequest(req: Request): Promise<Response> {
     return json({ referenceImages: brand.mascot.referenceImages });
   }
 
+  // --- OpenClaw / agent-friendly endpoints ---
+
+  if (url.pathname === "/api/health" && req.method === "GET") {
+    return json({
+      status: "ok",
+      version: "1.0.0",
+      brands: (await storage.listBrandProfiles()).map((b) => b.id),
+      capabilities: ["generate", "mascot-variants", "reference-edit", "video-clip", "reel-package"]
+    });
+  }
+
+  if (url.pathname === "/api/jobs" && req.method === "GET") {
+    const all = [...jobs.values()].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    const status = url.searchParams.get("status");
+    return json(status ? all.filter((j) => j.status === status) : all);
+  }
+
+  if (url.pathname === "/api/generate/quick" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const brandId = typeof body.brand === "string" ? body.brand : "peppera";
+    const idea = typeof body.idea === "string" ? body.idea.trim() : "";
+    if (!idea) {
+      return json({ error: "idea is required" }, { status: 400 });
+    }
+    const brand = await storage.getBrandProfile(brandId);
+    if (!brand) {
+      return json({ error: `Brand not found: ${brandId}` }, { status: 404 });
+    }
+    const platform = typeof body.platform === "string" ? body.platform : "tiktok";
+    const visualMode = typeof body.visualMode === "string" ? body.visualMode : "mascot-led";
+    const request: GenerationRequest = {
+      brandProfileId: brandId,
+      rawIdea: idea,
+      cards: [],
+      references: [],
+      platformTargets: [platform as "tiktok" | "instagram"],
+      goal: "installs",
+      workflowType: "slideshow",
+      visualMode: visualMode as GenerationRequest["visualMode"],
+      deliveryTargets: platform as GenerationRequest["deliveryTargets"]
+    };
+    return json(await startGeneration(request as unknown as Record<string, unknown>));
+  }
+
+  if (url.pathname.startsWith("/api/outputs/") && url.pathname.endsWith("/text") && req.method === "GET") {
+    const postId = url.pathname.replace("/api/outputs/", "").replace("/text", "");
+    const output = await readOutput(postId);
+    if (!output) return json({ error: "Output not found" }, { status: 404 });
+    return json({
+      caption: output.caption,
+      hooks: output.hooks,
+      hashtags: output.hashtags,
+      platformNotes: output.platform_notes
+    });
+  }
+
+  if (url.pathname === "/api/openapi.json" && req.method === "GET") {
+    return serveFile(path.join(PUBLIC_ROOT, "openapi.json"));
+  }
+
   if (url.pathname === "/" || url.pathname === "/index.html") {
     return serveFile(path.join(PUBLIC_ROOT, "index.html"));
   }
@@ -577,6 +679,7 @@ const server = createServer(async (req, res) => {
 });
 
 if (import.meta.url === `file://${process.argv[1]}`) {
+  await loadPersistedJobs();
   server.listen(PORT, () => {
     console.log(`Social Studio running at http://localhost:${PORT}`);
   });
