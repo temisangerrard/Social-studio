@@ -79,6 +79,12 @@ function summarizeText(text: string, maxLength = 320): string {
   return compact.length > maxLength ? `${compact.slice(0, maxLength - 1)}…` : compact;
 }
 
+const bundledDescriptions: Record<string, string> = {};
+
+export function registerBrandDescription(productId: string, description: string): void {
+  if (description) bundledDescriptions[productId] = description;
+}
+
 export async function resolveProductContext(productId: string): Promise<ResolvedProductContext> {
   const product = defaultProductRegistry.find((entry) => entry.id === productId) ?? defaultProductRegistry[0];
   const primarySource = product.sources[0];
@@ -118,10 +124,22 @@ export async function resolveProductContext(productId: string): Promise<Resolved
     }
   }
 
+  // Use brand profile description registered at startup
+  const bundled = bundledDescriptions[productId];
+  if (bundled) {
+    return {
+      productId: product.id,
+      productName: product.name,
+      summary: bundled,
+      source: "registry",
+      repo: primarySource.repo
+    };
+  }
+
   return {
     productId: product.id,
     productName: product.name,
-    summary: `${product.name} product context from ${primarySource.repo}. Latest remote context is not available in-app yet, so this session will use registry-level context and your answers.`,
+    summary: `${product.name} — no additional context available.`,
     source: "registry",
     repo: primarySource.repo
   };

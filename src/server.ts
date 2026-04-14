@@ -6,7 +6,7 @@ import { config as loadEnv } from "dotenv";
 import { createInitialAssistantSession, generateAssistantReply } from "./assistant.ts";
 import type { AssistantMessage } from "./types.ts";
 import { runPipelineFromBrief, runPipelineFromRequest } from "./pipeline.ts";
-import { defaultProductRegistry, resolveProductContext } from "./product-context.ts";
+import { defaultProductRegistry, registerBrandDescription, resolveProductContext } from "./product-context.ts";
 import { createStorage } from "./storage.ts";
 import type { AssistantSession, BoardDocument, BrandProfile, GenerationRequest, PostMetadata } from "./types.ts";
 
@@ -144,14 +144,35 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
 
-async function ensureDefaultBrandProfile(): Promise<void> {
-  const existing = await storage.getBrandProfile("peppera");
-  if (existing) {
+async function seedBrandProfiles(): Promise<void> {
+  const configBrandsDir = path.join(PROJECT_ROOT, "config", "brands");
+  let entries: string[];
+  try {
+    entries = await fs.readdir(configBrandsDir);
+  } catch {
     return;
   }
 
-  const raw = await fs.readFile(path.join(PROJECT_ROOT, "config", "brands", "default-peppera.json"), "utf8");
-  await storage.saveBrandProfile(JSON.parse(raw) as BrandProfile);
+  await Promise.all(
+    entries
+      .filter((f) => f.endsWith(".json") && !f.startsWith("default-"))
+      .map(async (file) => {
+        const id = file.replace(".json", "");
+        const existing = await storage.getBrandProfile(id);
+        if (existing) return;
+        try {
+          const raw = await fs.readFile(path.join(configBrandsDir, file), "utf8");
+          await storage.saveBrandProfile(JSON.parse(raw) as BrandProfile);
+          console.log(`[startup] Seeded brand profile: ${id}`);
+        } catch {
+          // skip malformed files
+        }
+      })
+  );
+}
+
+async function ensureDefaultBrandProfile(): Promise<void> {
+  // no-op: brands are now seeded at startup via seedBrandProfiles()
 }
 
 async function readBrandProfile(brandId: string): Promise<BrandProfile | null> {
@@ -679,6 +700,11 @@ const server = createServer(async (req, res) => {
 });
 
 if (import.meta.url === `file://${process.argv[1]}`) {
+  await seedBrandProfiles();
+  // Register brand descriptions for product context resolution on deployed instances
+  for (const brand of await storage.listBrandProfiles()) {
+    if (brand.description) registerBrandDescription(brand.id, brand.description);
+  }
   await loadPersistedJobs();
   server.listen(PORT, () => {
     console.log(`Social Studio running at http://localhost:${PORT}`);

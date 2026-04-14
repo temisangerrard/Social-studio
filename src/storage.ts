@@ -52,7 +52,7 @@ async function listJsonDirectory<T>(dirPath: string): Promise<T[]> {
 }
 
 export function createStorage(rootDir: string): Storage {
-  const brandsDir = path.join(rootDir, "config", "brands");
+  const brandsDir = path.join(rootDir, "workspace", "brands");
   const boardsDir = path.join(rootDir, "workspace", "boards");
   const sessionsDir = path.join(rootDir, "workspace", "sessions");
 

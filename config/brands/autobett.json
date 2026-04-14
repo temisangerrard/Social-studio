@@ -1,0 +1,24 @@
+{
+  "id": "autobett",
+  "name": "AutoBett",
+  "description": "Autobett is an onchain autonomous betting platform where AI agents place bets on your behalf using smart contracts. Users deposit crypto, set risk parameters, and the AI manages positions across sports, prediction markets, and onchain games. Built for crypto-native audiences who want passive exposure to prediction markets without manual trading.",
+  "tone": "bold, hype, crypto-native, confident",
+  "audience": "crypto degens, DeFi users, sports bettors exploring onchain, web3 early adopters",
+  "cta": "Connect Wallet",
+  "logoPath": null,
+  "visual": {
+    "primaryColor": "#f0a500",
+    "secondaryColor": "#1a1a2e",
+    "accentColor": "#e94560",
+    "surfaceColor": "#16213e"
+  },
+  "defaults": {
+    "platformTargets": ["tiktok", "instagram"],
+    "goal": "awareness",
+    "hashtags": ["#autobett", "#onchainbetting", "#defi", "#cryptobetting", "#web3", "#aiagents"]
+  },
+  "providers": {
+    "plannerModel": "glm-4.5",
+    "imageModel": "fal-ai/flux/schnell"
+  }
+}
