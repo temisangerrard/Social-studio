@@ -1,5 +1,5 @@
 import { findProductByText } from "./product-context.ts";
-import type { AssistantSession, BrandProfile, InferredBrief, ResolvedProductContext } from "./types.ts";
+import type { AssistantReplyResult, AssistantSession, BrandProfile, InferredBrief, ResolvedProductContext } from "./types.ts";
 
 function now(): string {
   return new Date().toISOString();
@@ -63,12 +63,6 @@ function fallbackAssistantReply(
     : getNextInterviewQuestion(brief);
 
   return { reply, updatedBrief: brief, shouldGenerate };
-}
-
-export interface AssistantReplyResult {
-  reply: string;
-  updatedBrief: InferredBrief;
-  shouldGenerate: boolean;
 }
 
 export async function generateAssistantReply(
