@@ -286,19 +286,13 @@ export interface PipelineOptions {
   outputRoot?: string;
 }
 
-export interface ImageGenerationResult {
-  slideNumber: number;
-  assetPath: string | null;
-  prompt: string;
-  provider: "mock" | "fal";
+export interface AssistantReplyResult {
+  reply: string;
+  updatedBrief: InferredBrief;
+  shouldGenerate: boolean;
 }
 
 export interface RenderResult {
   slideNumber: number;
   outputPath: string;
-}
-
-export interface FalImageConfig {
-  apiKey?: string;
-  model?: string;
 }
