@@ -9,9 +9,12 @@ WORKDIR /app
 
 # Dependencies layer — only re-runs when package.json changes
 COPY package*.json ./
+
+# Install dependencies in Docker Linux environment (not from macOS node_modules)
+# This ensures esbuild binaries are built for linux-x64, not darwin-arm64
 RUN npm ci --omit=dev
 
-# Source layer — re-runs on every code change (fast, no system packages)
+# Copy source code — .dockerignore excludes node_modules so no local binaries bleed in
 COPY . .
 
 # Create persistent data directories (volume mounted over workspace/ at runtime)
