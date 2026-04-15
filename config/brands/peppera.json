@@ -26,7 +26,7 @@
   },
   "providers": {
     "plannerModel": "glm-4.5",
-    "imageModel": "fal-ai/flux/schnell"
+    "imageModel": "fal-ai/nano-banana-2"
   },
   "mascot": {
     "name": "Peppera",
@@ -41,10 +41,10 @@
       "Never add accessories not in the spec (no chef hat, no utensils unless the slide prompt explicitly calls for them)."
     ],
     "referenceImages": [
-      "https://tmpfiles.org/dl/33230100/peppera-hero.png",
-      "https://tmpfiles.org/dl/33230101/peppera-confused.png",
-      "https://tmpfiles.org/dl/33230104/peppera-chef-happy.png",
-      "https://tmpfiles.org/dl/33230107/peppera-standing.png"
+      "https://raw.githubusercontent.com/temisangerrard/Social-studio/main/assets/mascot/peppera-hero.png",
+      "https://raw.githubusercontent.com/temisangerrard/Social-studio/main/assets/mascot/peppera-confused.png",
+      "https://raw.githubusercontent.com/temisangerrard/Social-studio/main/assets/mascot/peppera-chef-happy.png",
+      "https://raw.githubusercontent.com/temisangerrard/Social-studio/main/assets/mascot/peppera-standing.png"
     ]
   }
 }

@@ -1,0 +1,320 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Social Studio API",
+    "description": "AI content generation studio for Peppera, Autobett, and Settley. Generates TikTok/Instagram slideshows, mascot variants, video clips, and reel packages.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "http://localhost:3000", "description": "Local" }
+  ],
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "System health and capabilities",
+        "operationId": "getHealth",
+        "responses": {
+          "200": {
+            "description": "System is running",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" },
+                    "version": { "type": "string" },
+                    "brands": { "type": "array", "items": { "type": "string" } },
+                    "capabilities": { "type": "array", "items": { "type": "string" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/generate/quick": {
+      "post": {
+        "summary": "Quick generate — simplest way to create content",
+        "description": "Provide a brand, idea, and platform. Returns a job ID to poll for results.",
+        "operationId": "quickGenerate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["idea"],
+                "properties": {
+                  "brand": {
+                    "type": "string",
+                    "default": "peppera",
+                    "enum": ["peppera", "autobett", "settley"],
+                    "description": "Brand to generate for"
+                  },
+                  "idea": {
+                    "type": "string",
+                    "description": "The content idea in plain language",
+                    "example": "3 ingredients stressed cooks always forget"
+                  },
+                  "platform": {
+                    "type": "string",
+                    "default": "tiktok",
+                    "enum": ["tiktok", "instagram", "both"]
+                  },
+                  "visualMode": {
+                    "type": "string",
+                    "default": "mascot-led",
+                    "enum": ["mascot-led", "food-led", "mixed"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Job started",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/JobStarted" }
+              }
+            }
+          },
+          "400": { "description": "idea is required" },
+          "404": { "description": "Brand not found" }
+        }
+      }
+    },
+    "/api/generate": {
+      "post": {
+        "summary": "Full generate — all workflow types",
+        "description": "Full control over workflow type, visual mode, references, and delivery targets.",
+        "operationId": "generate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/GenerationRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/JobStarted" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs": {
+      "get": {
+        "summary": "List all jobs",
+        "operationId": "listJobs",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": { "type": "string", "enum": ["pending", "running", "done", "failed"] },
+            "description": "Filter by status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Job" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{jobId}": {
+      "get": {
+        "summary": "Poll job status",
+        "operationId": "getJob",
+        "parameters": [
+          { "name": "jobId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Job" }
+              }
+            }
+          },
+          "404": { "description": "Job not found" }
+        }
+      }
+    },
+    "/api/outputs": {
+      "get": {
+        "summary": "List all generated outputs",
+        "operationId": "listOutputs",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "postId": { "type": "string" },
+                      "createdAt": { "type": "string" },
+                      "product": { "type": "string" },
+                      "platform": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/outputs/{postId}": {
+      "get": {
+        "summary": "Get full output metadata",
+        "operationId": "getOutput",
+        "parameters": [
+          { "name": "postId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Full PostMetadata object" },
+          "404": { "description": "Output not found" }
+        }
+      }
+    },
+    "/api/outputs/{postId}/text": {
+      "get": {
+        "summary": "Get caption, hooks, hashtags for a post",
+        "description": "Lightweight endpoint — returns only the text assets, no slide data.",
+        "operationId": "getOutputText",
+        "parameters": [
+          { "name": "postId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "caption": { "type": "string" },
+                    "hooks": { "type": "array", "items": { "type": "string" } },
+                    "hashtags": { "type": "array", "items": { "type": "string" } },
+                    "platformNotes": { "type": "object" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Output not found" }
+        }
+      }
+    },
+    "/api/brands": {
+      "get": {
+        "summary": "List all brand profiles",
+        "operationId": "listBrands",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/BrandProfile" } }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/brands/{brandId}": {
+      "get": {
+        "summary": "Get a brand profile",
+        "operationId": "getBrand",
+        "parameters": [
+          { "name": "brandId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BrandProfile" } } } },
+          "404": { "description": "Brand not found" }
+        }
+      }
+    },
+    "/api/slides/{postId}/{filename}": {
+      "get": {
+        "summary": "Serve a rendered slide PNG",
+        "operationId": "getSlide",
+        "parameters": [
+          { "name": "postId", "in": "path", "required": true, "schema": { "type": "string" } },
+          { "name": "filename", "in": "path", "required": true, "schema": { "type": "string" }, "example": "slide-01.png" }
+        ],
+        "responses": {
+          "200": { "content": { "image/png": {} } },
+          "404": { "description": "Slide not found" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "JobStarted": {
+        "type": "object",
+        "properties": {
+          "jobId": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "running"] }
+        }
+      },
+      "Job": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "running", "done", "failed"] },
+          "stage": { "type": "string", "enum": ["queued", "planning", "rendering", "done", "failed"] },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "error": { "type": "string" },
+          "result": { "type": "object", "description": "PostMetadata when status=done" }
+        }
+      },
+      "GenerationRequest": {
+        "type": "object",
+        "required": ["brandProfileId", "idea"],
+        "properties": {
+          "brandProfileId": { "type": "string", "example": "peppera" },
+          "idea": { "type": "string" },
+          "workflowType": {
+            "type": "string",
+            "enum": ["slideshow", "mascot-variants", "reference-edit", "video-clip", "reel-package"],
+            "default": "slideshow"
+          },
+          "visualMode": {
+            "type": "string",
+            "enum": ["mascot-led", "food-led", "mixed"],
+            "default": "mascot-led"
+          },
+          "deliveryTargets": {
+            "type": "string",
+            "enum": ["tiktok", "instagram", "both"],
+            "default": "tiktok"
+          }
+        }
+      },
+      "BrandProfile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "tone": { "type": "string" },
+          "audience": { "type": "string" }
+        }
+      }
+    }
+  }
+}

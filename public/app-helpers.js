@@ -30,7 +30,7 @@ export function getWorkspaceAssetUrl(output, slide) {
   }
 
   const slideNumber = slide.slide_number;
-  if (typeof slideNumber === "number" && output.render_status !== "skipped") {
+  if (typeof slideNumber === "number" && !Number.isNaN(slideNumber) && output.render_status !== "skipped") {
     return `/api/slides/${output.post_id}/slide-${String(slideNumber).padStart(2, "0")}.png`;
   }
 
@@ -68,10 +68,10 @@ function buildAssetCardFromItem(output, item, index, makeId) {
     assetKind: item.kind === "video" ? "video" : "image",
     text: item.title || item.text || `Asset ${index + 1}`,
     assetUrl,
-    x: 720 + (index % 4) * 220,
-    y: 96 + Math.floor(index / 4) * 360,
-    width: 196,
-    height: 336,
+    x: 760 + (index % 4) * 240,
+    y: 72 + Math.floor(index / 4) * 520,
+    width: 210,
+    height: 460,
     tags: [item.role || "asset", item.kind || "image", "asset"],
     sourceAssetId: item.source_asset_id || null,
     variantGroup: item.variant_group || null,
@@ -81,30 +81,92 @@ function buildAssetCardFromItem(output, item, index, makeId) {
 
 export function buildCanvasCards(brief, generatedOutput, makeId) {
   const nextCards = [];
-  const baseX = 72;
-  const baseY = 72;
-  const entries = [
+
+  // ── Column 1: Strategy cards (x: 72) ──────────────────────────────────
+  const strategyEntries = [
     ["goal", brief.goal],
     ["audience", brief.audience],
     ["proof", brief.offer],
     ["visual", brief.tone],
-    ["hook", brief.platform ? `Optimise for ${brief.platform}` : ""]
   ];
-
-  entries.forEach(([type, value], index) => {
+  let stratY = 72;
+  strategyEntries.forEach(([type, value]) => {
     if (!value) return;
     nextCards.push({
       id: makeId("card"),
       type,
       text: value,
-      x: baseX + (index % 2) * 320,
-      y: baseY + Math.floor(index / 2) * 250,
-      width: type === "hook" ? 320 : 280,
-      height: type === "hook" ? 240 : 220,
+      x: 72,
+      y: stratY,
+      width: 280,
+      height: 200,
       tags: [type]
     });
+    stratY += 220;
   });
 
+  // ── Column 2: Growth logic cards (x: 400) from generated output ────────
+  if (generatedOutput) {
+    let growthY = 72;
+
+    // Caption card
+    if (generatedOutput.caption) {
+      nextCards.push({
+        id: makeId("card"),
+        type: "hook",
+        text: generatedOutput.caption,
+        x: 400,
+        y: growthY,
+        width: 300,
+        height: 220,
+        tags: ["caption"]
+      });
+      growthY += 240;
+    }
+
+    // Hook cards (one per hook)
+    (generatedOutput.hooks || []).slice(0, 3).forEach((hook, i) => {
+      nextCards.push({
+        id: makeId("card"),
+        type: "hook",
+        text: hook,
+        x: 400,
+        y: growthY,
+        width: 300,
+        height: 180,
+        tags: ["hook"]
+      });
+      growthY += 200;
+    });
+
+    // Hashtags card
+    const tags = (generatedOutput.hashtags || []).join(" ");
+    if (tags) {
+      nextCards.push({
+        id: makeId("card"),
+        type: "visual",
+        text: tags,
+        x: 400,
+        y: growthY,
+        width: 300,
+        height: 160,
+        tags: ["hashtags"]
+      });
+    }
+  } else if (brief.platform) {
+    nextCards.push({
+      id: makeId("card"),
+      type: "hook",
+      text: `Optimise for ${brief.platform}`,
+      x: 400,
+      y: 72,
+      width: 300,
+      height: 180,
+      tags: ["platform"]
+    });
+  }
+
+  // ── Column 3+: Generated asset cards (slides / artifacts) ─────────────
   const workflowAssets =
     generatedOutput?.artifacts?.length
       ? generatedOutput.artifacts

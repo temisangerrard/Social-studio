@@ -1,0 +1,24 @@
+{
+  "id": "settley",
+  "name": "Settley",
+  "description": "Settley is a tokenised real estate platform that lets anyone invest in fractional property ownership through blockchain. Users can buy, sell, and earn yield from real-world property assets tokenised on-chain. Designed for people who want exposure to real estate without the capital barrier of buying a whole property. Authority and trust are the core brand values.",
+  "tone": "authoritative, clear, trustworthy, premium",
+  "audience": "retail investors, property-curious millennials, DeFi users seeking real-world assets, high-income renters priced out of property ownership",
+  "cta": "Invest in Property",
+  "logoPath": null,
+  "visual": {
+    "primaryColor": "#1b4f72",
+    "secondaryColor": "#d5e8f7",
+    "accentColor": "#2e86c1",
+    "surfaceColor": "#f4f9fd"
+  },
+  "defaults": {
+    "platformTargets": ["tiktok", "instagram"],
+    "goal": "awareness",
+    "hashtags": ["#settley", "#tokenisedrealestate", "#rwa", "#realestateinvesting", "#fractionalownership", "#web3realestate"]
+  },
+  "providers": {
+    "plannerModel": "glm-4.5",
+    "imageModel": "fal-ai/flux/schnell"
+  }
+}

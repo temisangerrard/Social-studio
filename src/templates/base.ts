@@ -17,7 +17,7 @@ function escapeHtml(value: string): string {
 
 export function renderBaseTemplate(input: SlideTemplateInput): string {
   const { slide, productName, imageDataUrl } = input;
-  const text = escapeHtml(slide.text);
+  const text = escapeHtml(slide.text ?? "");
   const handle = `@${productName.toLowerCase()}`;
 
   const isHook = slide.role === "hook";

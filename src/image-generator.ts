@@ -98,16 +98,22 @@ async function generateWithFal(prompt: string, falKey: string, model: string, re
     Authorization: `Key ${falKey}`
   };
 
-  const input: Record<string, unknown> = {
-    prompt,
-    image_size: "portrait_16_9",
-    num_inference_steps: 4,
-    seed: Math.floor(Math.random() * 2147483647)
-  };
-
-  if (referenceImageUrls && referenceImageUrls.length > 0) {
-    input.image_urls = referenceImageUrls;
-  }
+  const isNanoBanana = model.includes("nano-banana");
+  const input: Record<string, unknown> = isNanoBanana
+    ? {
+        prompt,
+        aspect_ratio: "9:16",
+        num_images: 1,
+        ...(referenceImageUrls && referenceImageUrls.length > 0 ? { image_urls: referenceImageUrls } : {})
+      }
+    : {
+        prompt,
+        negative_prompt: "text, watermark, blurry, low quality, deformed, ugly, extra limbs, bad anatomy, cropped, out of frame",
+        image_size: "portrait_16_9",
+        num_inference_steps: 28,
+        seed: Math.floor(Math.random() * 2147483647),
+        ...(referenceImageUrls && referenceImageUrls.length > 0 ? { image_urls: referenceImageUrls } : {})
+      };
 
   const submitResponse = await fetchWithTimeout(`https://queue.fal.run/${model}`, {
     method: "POST",
@@ -148,8 +154,9 @@ async function generateWithFal(prompt: string, falKey: string, model: string, re
 
     const resultPayload = (await resultResponse.json()) as {
       images?: Array<{ url: string }>;
+      image?: { url: string };
     };
-    const imageUrl = resultPayload.images?.[0]?.url;
+    const imageUrl = resultPayload.images?.[0]?.url ?? resultPayload.image?.url;
     if (!imageUrl) {
       throw new Error("fal.ai returned no images");
     }
