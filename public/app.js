@@ -10,14 +10,8 @@ import {
 
 const WORKFLOW_PRESETS = getWorkflowPresets();
 
-const genState = {
-  output: null,
-  workflowType: "slideshow",
-  selectedAsset: null,
-  downloading: false
-};
-
-const asstState = {
+// ── Single studio state ────────────────────────────────────────────────────────
+const studioState = {
   products: [],
   brands: [],
   session: null,
@@ -25,115 +19,81 @@ const asstState = {
   generatedOutput: null,
   selectedAsset: null,
   workflowType: "slideshow",
-  canvasLoadingStage: null
+  canvasLoadingStage: null,
+  downloading: false
 };
 
+// ── Element references ────────────────────────────────────────────────────────
 const els = {
   navLinks: Array.from(document.querySelectorAll(".topnav a[data-view]")),
   views: {
-    generate: document.getElementById("view-generate"),
-    assistant: document.getElementById("view-assistant"),
+    studio: document.getElementById("view-studio"),
     library: document.getElementById("view-library")
   },
 
-  productSelect: document.getElementById("product-select"),
-  generateForm: document.getElementById("generate-form"),
-  ideaInput: document.getElementById("idea-input"),
-  ingredientsInput: document.getElementById("ingredients-input"),
-  genPlatformSelect: document.getElementById("gen-platform-select"),
-  genVisualMode: document.getElementById("gen-visual-mode"),
-  genDeliveryTarget: document.getElementById("gen-delivery-target"),
-  genReferenceGroup: document.getElementById("gen-reference-group"),
-  genReferenceInput: document.getElementById("gen-reference-input"),
-  genReferenceFiles: document.getElementById("gen-reference-files"),
-  genReferenceChipset: document.getElementById("gen-reference-chipset"),
-  genWorkflowPresets: document.getElementById("gen-workflow-presets"),
-  genWorkflowSummary: document.getElementById("gen-workflow-summary"),
-  genVariantGroup: document.getElementById("gen-variant-group"),
-  genVariantCount: document.getElementById("gen-variant-count"),
-  genTargetGroup: document.getElementById("gen-target-group"),
-  genTargetAsset: document.getElementById("gen-target-asset"),
-  genVideoGroup: document.getElementById("gen-video-group"),
-  genVideoDuration: document.getElementById("gen-video-duration"),
-  genVideoAspect: document.getElementById("gen-video-aspect"),
-  genVideoConsistency: document.getElementById("gen-video-consistency"),
-  genVideoAudio: document.getElementById("gen-video-audio"),
-  genModelHint: document.getElementById("gen-model-hint"),
-  genSubmit: document.getElementById("gen-submit"),
-  genStatus: document.getElementById("gen-status"),
-  genEmpty: document.getElementById("gen-empty"),
-  genOutput: document.getElementById("gen-output"),
-  genCheckpoints: Array.from(document.querySelectorAll("#gen-checkpoint-strip .checkpoint")),
-  genAssetsHeading: document.getElementById("gen-assets-heading"),
-  slideStrip: document.getElementById("slide-strip"),
-  downloadAllBtn: document.getElementById("download-all-btn"),
-  genPackageStatus: document.getElementById("gen-package-status"),
-  genPublishLinks: document.getElementById("gen-publish-links"),
-  genCopyCaption: document.getElementById("gen-copy-caption"),
-  genCopyHashtags: document.getElementById("gen-copy-hashtags"),
-  genCaptionText: document.getElementById("gen-caption-text"),
-  genHashtagsText: document.getElementById("gen-hashtags-text"),
-  genHooksList: document.getElementById("gen-hooks-list"),
-  genPlatformNotes: document.getElementById("gen-platform-notes"),
-  genReelCard: document.getElementById("gen-reel-card"),
-  genVoiceoverText: document.getElementById("gen-voiceover-text"),
-  genSubtitlesCard: document.getElementById("gen-subtitles-card"),
-  genSubtitlesText: document.getElementById("gen-subtitles-text"),
-  genClipBriefsCard: document.getElementById("gen-clip-briefs-card"),
-  genClipBriefs: document.getElementById("gen-clip-briefs"),
-  refineTitle: document.getElementById("refine-title"),
-  refineHint: document.getElementById("refine-hint"),
-  refinePreview: document.getElementById("refine-preview"),
-  refineForm: document.getElementById("refine-form"),
-  refinePrompt: document.getElementById("refine-prompt"),
-  refineReferenceInput: document.getElementById("refine-reference-input"),
-  refineReferenceFiles: document.getElementById("refine-reference-files"),
-  refineReferenceChipset: document.getElementById("refine-reference-chipset"),
-  refineVisualMode: document.getElementById("refine-visual-mode"),
-  refineBranchMode: document.getElementById("refine-branch-mode"),
-  refineStatus: document.getElementById("refine-status"),
-  refineSubmit: document.getElementById("refine-submit"),
+  // Sidebar selects
+  studioProductSelect: document.getElementById("studio-product-select"),
+  studioPlatformSelect: document.getElementById("studio-platform-select"),
+  studioVisualMode: document.getElementById("studio-visual-mode"),
+  studioDeliveryTarget: document.getElementById("studio-delivery-target"),
 
-  asstProductSelect: document.getElementById("asst-product-select"),
-  asstVisualMode: document.getElementById("asst-visual-mode"),
-  asstDeliveryTarget: document.getElementById("asst-delivery-target"),
-  asstReferenceInput: document.getElementById("asst-reference-input"),
-  asstReferenceFiles: document.getElementById("asst-reference-files"),
-  asstReferenceChipset: document.getElementById("asst-reference-chipset"),
-  asstWorkflowPresets: document.getElementById("asst-workflow-presets"),
-  asstWorkflowSummary: document.getElementById("asst-workflow-summary"),
-  messageThread: document.getElementById("message-thread"),
-  assistantForm: document.getElementById("assistant-form"),
-  assistantInput: document.getElementById("assistant-input"),
-  assistantSubmit: document.getElementById("assistant-submit"),
-  assistantStatus: document.getElementById("assistant-status"),
-  workspaceTitle: document.getElementById("workspace-title"),
-  workspaceSubtitle: document.getElementById("workspace-subtitle"),
+  // Workflow
+  studioWorkflowPresets: document.getElementById("studio-workflow-presets"),
+  studioWorkflowSummary: document.getElementById("studio-workflow-summary"),
+
+  // Quick generate form
+  studioQuickForm: document.getElementById("studio-quick-form"),
+  studioIdeaInput: document.getElementById("studio-idea-input"),
+  studioNotesInput: document.getElementById("studio-notes-input"),
+  studioReferenceInput: document.getElementById("studio-reference-input"),
+  studioReferenceFiles: document.getElementById("studio-reference-files"),
+  studioReferenceChipset: document.getElementById("studio-reference-chipset"),
+  studioStatus: document.getElementById("studio-status"),
+  studioSubmit: document.getElementById("studio-submit"),
+
+  // Chat toggle + panel
+  chatToggle: document.getElementById("chat-toggle"),
+  chatPanel: document.getElementById("chat-panel"),
+  studioMessageThread: document.getElementById("studio-message-thread"),
+  studioChatForm: document.getElementById("studio-chat-form"),
+  studioChatInput: document.getElementById("studio-chat-input"),
+  studioChatStatus: document.getElementById("studio-chat-status"),
+  studioChatSubmit: document.getElementById("studio-chat-submit"),
+
+  // Canvas
   canvas: document.getElementById("canvas"),
   canvasEmpty: document.getElementById("canvas-empty"),
-  asstCheckpoints: Array.from(document.querySelectorAll("#asst-checkpoint-strip .checkpoint")),
-  packagePanel: document.getElementById("package-panel"),
-  packageStatus: document.getElementById("package-status"),
-  captionText: document.getElementById("caption-text"),
-  hashtagsText: document.getElementById("hashtags-text"),
-  hooksList: document.getElementById("hooks-list"),
-  platformNotes: document.getElementById("platform-notes"),
-  publishLinks: document.getElementById("publish-links"),
-  copyCaption: document.getElementById("copy-caption"),
-  copyHashtags: document.getElementById("copy-hashtags"),
-  asstVoiceoverCard: document.getElementById("asst-voiceover-card"),
-  voiceoverText: document.getElementById("voiceover-text"),
-  asstSubtitlesCard: document.getElementById("asst-subtitles-card"),
-  subtitlesText: document.getElementById("subtitles-text"),
-  asstClipBriefsCard: document.getElementById("asst-clip-briefs-card"),
-  clipBriefs: document.getElementById("clip-briefs"),
-  workspaceRefineTitle: document.getElementById("workspace-refine-title"),
-  workspaceRefineHint: document.getElementById("workspace-refine-hint"),
-  workspaceRefinePreview: document.getElementById("workspace-refine-preview"),
-  workspaceReferenceChipset: document.getElementById("workspace-reference-chipset"),
+  canvasProgressPill: document.getElementById("canvas-progress-pill"),
+  canvasProgressText: document.getElementById("canvas-progress-text"),
+  studioCheckpoints: Array.from(document.querySelectorAll("#studio-checkpoint-strip .checkpoint")),
 
+  // Inspector — package
+  inspectorPackage: document.getElementById("inspector-package"),
+  inspectorPackageStatus: document.getElementById("inspector-package-status"),
+  inspectorCopyCaption: document.getElementById("inspector-copy-caption"),
+  inspectorCopyHashtags: document.getElementById("inspector-copy-hashtags"),
+  inspectorCaptionText: document.getElementById("inspector-caption-text"),
+  inspectorHashtagsText: document.getElementById("inspector-hashtags-text"),
+  inspectorHooksList: document.getElementById("inspector-hooks-list"),
+  inspectorPublishLinks: document.getElementById("inspector-publish-links"),
+  studioDownloadAllBtn: document.getElementById("studio-download-all-btn"),
+
+  // Inspector — asset
+  inspectorAsset: document.getElementById("inspector-asset"),
+  inspectorAssetTitle: document.getElementById("inspector-asset-title"),
+  inspectorAssetHint: document.getElementById("inspector-asset-hint"),
+  inspectorAssetPreview: document.getElementById("inspector-asset-preview"),
+  studioRefineForm: document.getElementById("studio-refine-form"),
+  studioRefinePrompt: document.getElementById("studio-refine-prompt"),
+  studioRefineVisualMode: document.getElementById("studio-refine-visual-mode"),
+  studioRefineMode: document.getElementById("studio-refine-mode"),
+  studioRefineStatus: document.getElementById("studio-refine-status"),
+  studioRefineSubmit: document.getElementById("studio-refine-submit"),
+
+  // Library
   libraryList: document.getElementById("library-list"),
 
+  // Brand editor (same IDs)
   brandMascotName: document.getElementById("brand-mascot-name"),
   brandMascotRole: document.getElementById("brand-mascot-role"),
   brandMascotVisualPrompt: document.getElementById("brand-mascot-visual-prompt"),
@@ -144,9 +104,7 @@ const els = {
   brandEditorStatus: document.getElementById("brand-editor-status"),
   brandEditorSave: document.getElementById("brand-editor-save"),
 
-  canvasProgressPill: document.getElementById("canvas-progress-pill"),
-  canvasProgressText: document.getElementById("canvas-progress-text"),
-
+  // Asset modal (same IDs)
   assetModal: document.getElementById("asset-modal"),
   assetModalImage: document.getElementById("asset-modal-image"),
   assetModalVideo: document.getElementById("asset-modal-video"),
@@ -156,6 +114,7 @@ const els = {
   assetModalClose: document.getElementById("asset-modal-close")
 };
 
+// ── Utilities ──────────────────────────────────────────────────────────────────
 function makeId(prefix) {
   return `${prefix}_${crypto.randomUUID()}`;
 }
@@ -179,6 +138,262 @@ els.navLinks.forEach((link) => {
   });
 });
 
+// ── Status helpers ─────────────────────────────────────────────────────────────
+function showStatus(text) {
+  els.studioStatus.classList.remove("hidden");
+  els.studioStatus.textContent = text;
+}
+
+function hideStatus() {
+  els.studioStatus.classList.add("hidden");
+}
+
+function showRefineStatus(text) {
+  els.studioRefineStatus.classList.remove("hidden");
+  els.studioRefineStatus.textContent = text;
+}
+
+function hideRefineStatus() {
+  els.studioRefineStatus.classList.add("hidden");
+}
+
+function showChatStatus(text) {
+  els.studioChatStatus.classList.remove("hidden");
+  els.studioChatStatus.textContent = text;
+}
+
+function hideChatStatus() {
+  els.studioChatStatus.classList.add("hidden");
+}
+
+// ── Checkpoint helpers ─────────────────────────────────────────────────────────
+function setCheckpoint(step, status) {
+  els.studioCheckpoints.forEach((node) => {
+    if (node.dataset.step !== step) return;
+    node.classList.remove("is-active", "is-done");
+    if (status === "active") node.classList.add("is-active");
+    if (status === "done") node.classList.add("is-done");
+  });
+}
+
+function resetCheckpoints() {
+  els.studioCheckpoints.forEach((node) => node.classList.remove("is-active", "is-done"));
+}
+
+function renderCheckpoints() {
+  if (!studioState.session) return;
+  els.studioCheckpoints.forEach((node) => {
+    const status = studioState.session.checkpoints?.[node.dataset.step] || "pending";
+    node.classList.remove("is-active", "is-done");
+    if (status === "active") node.classList.add("is-active");
+    if (status === "done") node.classList.add("is-done");
+  });
+}
+
+// ── Brand helpers ──────────────────────────────────────────────────────────────
+function getBrandById(brandId) {
+  return studioState.brands.find((entry) => entry.id === brandId) || null;
+}
+
+// ── Reference helpers ──────────────────────────────────────────────────────────
+function parseReferenceLines(rawValue) {
+  return String(rawValue || "")
+    .split("\n")
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .map((value, index) => ({
+      id: `run-ref-${index + 1}`,
+      label: value.split("/").pop() || value,
+      url: value,
+      source: "run",
+      kind: "image"
+    }));
+}
+
+async function uploadReferenceFile(file) {
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error("Failed to read file."));
+    reader.readAsDataURL(file);
+  });
+
+  const response = await fetch("/api/uploads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ filename: file.name, dataUrl })
+  });
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({ error: "Upload failed." }));
+    throw new Error(payload.error || "Upload failed.");
+  }
+
+  return response.json();
+}
+
+async function uploadReferencesIntoTextarea(fileList, textarea, onAfter) {
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+  const uploaded = [];
+  for (const file of files) {
+    const result = await uploadReferenceFile(file);
+    uploaded.push(result.url);
+  }
+  const current = textarea.value.trim();
+  textarea.value = [current, ...uploaded].filter(Boolean).join("\n");
+  onAfter?.();
+}
+
+function buildBrandReferenceAssets(brandId, visualMode) {
+  const brand = getBrandById(brandId);
+  const mascotRefs = brand?.mascot?.referenceImages || [];
+  if (!mascotRefs.length || visualMode === "food-led") {
+    return [];
+  }
+  return mascotRefs.map((url, index) => ({
+    id: `brand-ref-${index + 1}`,
+    label: `${brand.mascot?.name || brand.name} ref ${index + 1}`,
+    url: `/api/brand-assets/${brandId}/${index}`,
+    source: "brand",
+    kind: "image"
+  }));
+}
+
+function buildReferenceAssets({ brandId, visualMode, inputValue, selectedAsset }) {
+  const brandRefs = buildBrandReferenceAssets(brandId, visualMode);
+  const runRefs = parseReferenceLines(inputValue);
+  const assetRefs =
+    selectedAsset?.assetUrl && selectedAsset.assetKind === "image"
+      ? [
+          {
+            id: `asset-ref-${selectedAsset.itemId || "selected"}`,
+            label: selectedAsset.text || "Selected asset",
+            url: selectedAsset.assetUrl,
+            source: "asset",
+            kind: "image"
+          }
+        ]
+      : [];
+  return [...brandRefs, ...assetRefs, ...runRefs];
+}
+
+function renderReferenceChips(target, references) {
+  target.innerHTML = references
+    .map(
+      (reference) =>
+        `<span class="reference-chip reference-chip--${escapeHtml(reference.source)}">${escapeHtml(reference.label)}</span>`
+    )
+    .join("");
+}
+
+// ── Workflow helpers ───────────────────────────────────────────────────────────
+function getWorkflowPreset(id) {
+  return WORKFLOW_PRESETS.find((preset) => preset.id === id) || WORKFLOW_PRESETS[0];
+}
+
+function renderWorkflowPresets(target, activeId, onSelect) {
+  target.innerHTML = WORKFLOW_PRESETS.map((preset) => {
+    const activeClass = preset.id === activeId ? " is-active" : "";
+    return `
+      <button type="button" class="workflow-preset${activeClass}" data-workflow-id="${preset.id}">
+        <p class="workflow-preset__title">${escapeHtml(preset.label)}</p>
+        <p class="workflow-preset__summary">${escapeHtml(preset.summary)}</p>
+      </button>
+    `;
+  }).join("");
+
+  target.querySelectorAll("[data-workflow-id]").forEach((button) => {
+    button.addEventListener("click", () => onSelect(button.dataset.workflowId));
+  });
+}
+
+function updateWorkflowUI() {
+  const preset = getWorkflowPreset(studioState.workflowType);
+  els.studioWorkflowSummary.textContent = preset.summary;
+  renderWorkflowPresets(els.studioWorkflowPresets, studioState.workflowType, (workflowId) => {
+    studioState.workflowType = workflowId;
+    updateWorkflowUI();
+  });
+  renderReferenceChips(
+    els.studioReferenceChipset,
+    buildReferenceAssets({
+      brandId: els.studioProductSelect.value,
+      visualMode: els.studioVisualMode.value,
+      inputValue: els.studioReferenceInput.value
+    })
+  );
+}
+
+function inferWorkflowFromText(text) {
+  const value = String(text || "").toLowerCase();
+  if (/\breel\b|\bvoiceover\b|\bsubtitle\b/.test(value)) return "reel-package";
+  if (/\bvideo\b|\bclip\b|\banimation\b/.test(value)) return "video-clip";
+  if (/\bvariant\b|\boptions\b|\bpack\b/.test(value)) return "mascot-variants";
+  if (/\bedit\b|\brefine\b|\bmake this\b/.test(value)) return "reference-edit";
+  return "slideshow";
+}
+
+// ── Brand editor ───────────────────────────────────────────────────────────────
+function renderBrandEditor(brandId) {
+  const brand = getBrandById(brandId);
+  const mascot = brand?.mascot;
+  els.brandMascotName.textContent = mascot?.name || "No mascot configured";
+  els.brandMascotRole.textContent = mascot?.role || "This brand does not yet have a mascot system.";
+  els.brandMascotVisualPrompt.value = mascot?.visualPrompt || "";
+  els.brandMascotRules.value = (mascot?.usageRules || []).join("\n");
+  els.brandMascotReferences.innerHTML = (mascot?.referenceImages || [])
+    .map((referencePath, index) => {
+      const imgUrl = referencePath.startsWith("/api/") ? referencePath : `/api/brand-assets/${brandId}/${index}`;
+      const label = referencePath.split("/").pop() || `reference ${index + 1}`;
+      const title = escapeHtml(`${mascot?.name || brand?.name || "Mascot"} reference ${index + 1}`);
+      return `
+        <div class="brand-ref-card">
+          <button type="button" data-brand-asset-url="${imgUrl}" data-brand-asset-title="${title}">
+            <img src="${imgUrl}" alt="${title}" loading="lazy" />
+          </button>
+          <span>${escapeHtml(label)}</span>
+          <button type="button" class="ghost-button brand-ref-remove" data-brand-id="${escapeHtml(brandId)}" data-ref-index="${index}" style="font-size:0.65rem;padding:4px 8px">Remove</button>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+// ── outputAssets ───────────────────────────────────────────────────────────────
+function outputAssets(output) {
+  if (!output) return [];
+  if (output.artifacts?.length) {
+    return output.artifacts.map((artifact, index) => ({
+      itemId: artifact.id,
+      assetKind: artifact.kind,
+      role: artifact.role,
+      text: artifact.title,
+      prompt: artifact.prompt,
+      assetUrl: getArtifactPreviewUrl(output, artifact),
+      sourceAssetId: artifact.source_asset_id || null,
+      variantGroup: artifact.variant_group || null,
+      slideNumber: null,
+      order: index
+    }));
+  }
+  return (output.slides || [])
+    .filter((slide) => typeof slide.slide_number === "number" && !Number.isNaN(slide.slide_number))
+    .map((slide, index) => ({
+      itemId: `slide-${String(slide.slide_number).padStart(2, "0")}`,
+      assetKind: "image",
+      role: slide.role,
+      text: slide.text,
+      prompt: slide.image_prompt || slide.text,
+      assetUrl: getWorkspaceAssetUrl(output, slide),
+      sourceAssetId: null,
+      variantGroup: null,
+      slideNumber: slide.slide_number,
+      order: index
+    }));
+}
+
+// ── Asset preview helpers ──────────────────────────────────────────────────────
 function showAssetNode(container, asset) {
   container.innerHTML = "";
   if (!asset?.assetUrl) {
@@ -186,7 +401,6 @@ function showAssetNode(container, asset) {
     container.innerHTML = "<span>Preview</span>";
     return;
   }
-
   container.classList.remove("refine-preview--empty");
   if (asset.assetKind === "video") {
     const video = document.createElement("video");
@@ -196,7 +410,6 @@ function showAssetNode(container, asset) {
     container.appendChild(video);
     return;
   }
-
   const img = document.createElement("img");
   img.src = asset.assetUrl;
   img.alt = asset.text || "Generated asset";
@@ -249,10 +462,9 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+// ── copyText ───────────────────────────────────────────────────────────────────
 async function copyText(value, label, statusEl) {
-  if (!value) {
-    return;
-  }
+  if (!value) return;
   await navigator.clipboard.writeText(value);
   statusEl.classList.remove("hidden");
   statusEl.textContent = `${label} copied.`;
@@ -263,584 +475,32 @@ async function copyText(value, label, statusEl) {
   }, 1400);
 }
 
-function showGenStatus(text) {
-  els.genStatus.classList.remove("hidden");
-  els.genStatus.textContent = text;
+// ── Canvas progress pill ───────────────────────────────────────────────────────
+function showCanvasProgress(text) {
+  els.canvasProgressText.textContent = text;
+  els.canvasProgressPill.classList.remove("hidden");
 }
 
-function hideGenStatus() {
-  els.genStatus.classList.add("hidden");
+function hideCanvasProgress() {
+  els.canvasProgressPill.classList.add("hidden");
 }
 
-function showAsstStatus(text) {
-  els.assistantStatus.classList.remove("hidden");
-  els.assistantStatus.textContent = text;
+// ── Button loading helpers ─────────────────────────────────────────────────────
+function setButtonLoading(btn, text) {
+  btn.disabled = true;
+  btn.dataset.origText = btn.textContent.trim();
+  btn.textContent = text;
+  btn.classList.add("is-loading");
 }
 
-function hideAsstStatus() {
-  els.assistantStatus.classList.add("hidden");
+function clearButtonLoading(btn) {
+  btn.disabled = false;
+  if (btn.dataset.origText) btn.textContent = btn.dataset.origText;
+  btn.classList.remove("is-loading");
+  delete btn.dataset.origText;
 }
 
-function showRefineStatus(text) {
-  els.refineStatus.classList.remove("hidden");
-  els.refineStatus.textContent = text;
-}
-
-function hideRefineStatus() {
-  els.refineStatus.classList.add("hidden");
-}
-
-function setCheckpoint(nodes, step, status) {
-  nodes.forEach((node) => {
-    if (node.dataset.step !== step) return;
-    node.classList.remove("is-active", "is-done");
-    if (status === "active") node.classList.add("is-active");
-    if (status === "done") node.classList.add("is-done");
-  });
-}
-
-function resetCheckpoints(nodes) {
-  nodes.forEach((node) => node.classList.remove("is-active", "is-done"));
-}
-
-function getBrandById(brandId) {
-  return asstState.brands.find((entry) => entry.id === brandId) || null;
-}
-
-function parseReferenceLines(rawValue) {
-  return String(rawValue || "")
-    .split("\n")
-    .map((value) => value.trim())
-    .filter(Boolean)
-    .map((value, index) => ({
-      id: `run-ref-${index + 1}`,
-      label: value.split("/").pop() || value,
-      url: value,
-      source: "run",
-      kind: "image"
-    }));
-}
-
-async function uploadReferenceFile(file) {
-  const dataUrl = await new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error || new Error("Failed to read file."));
-    reader.readAsDataURL(file);
-  });
-
-  const response = await fetch("/api/uploads", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      filename: file.name,
-      dataUrl
-    })
-  });
-
-  if (!response.ok) {
-    const payload = await response.json().catch(() => ({ error: "Upload failed." }));
-    throw new Error(payload.error || "Upload failed.");
-  }
-
-  return response.json();
-}
-
-async function uploadReferencesIntoTextarea(fileList, textarea, onAfter) {
-  const files = Array.from(fileList || []);
-  if (!files.length) return;
-  const uploaded = [];
-  for (const file of files) {
-    const result = await uploadReferenceFile(file);
-    uploaded.push(result.url);
-  }
-
-  const current = textarea.value.trim();
-  textarea.value = [current, ...uploaded].filter(Boolean).join("\n");
-  onAfter?.();
-}
-
-function buildBrandReferenceAssets(brandId, visualMode) {
-  const brand = getBrandById(brandId);
-  const mascotRefs = brand?.mascot?.referenceImages || [];
-  if (!mascotRefs.length || visualMode === "food-led") {
-    return [];
-  }
-  return mascotRefs.map((url, index) => ({
-    id: `brand-ref-${index + 1}`,
-    label: `${brand.mascot?.name || brand.name} ref ${index + 1}`,
-    url: `/api/brand-assets/${brandId}/${index}`,
-    source: "brand",
-    kind: "image"
-  }));
-}
-
-function buildReferenceAssets({ brandId, visualMode, inputValue, selectedAsset }) {
-  const brandRefs = buildBrandReferenceAssets(brandId, visualMode);
-  const runRefs = parseReferenceLines(inputValue);
-  const assetRefs =
-    selectedAsset?.assetUrl && selectedAsset.assetKind === "image"
-      ? [
-          {
-            id: `asset-ref-${selectedAsset.itemId || "selected"}`,
-            label: selectedAsset.text || "Selected asset",
-            url: selectedAsset.assetUrl,
-            source: "asset",
-            kind: "image"
-          }
-        ]
-      : [];
-  return [...brandRefs, ...assetRefs, ...runRefs];
-}
-
-function renderReferenceChips(target, references) {
-  target.innerHTML = references
-    .map(
-      (reference) => `<span class="reference-chip reference-chip--${escapeHtml(reference.source)}">${escapeHtml(
-        reference.label
-      )}</span>`
-    )
-    .join("");
-}
-
-function getWorkflowPreset(id) {
-  return WORKFLOW_PRESETS.find((preset) => preset.id === id) || WORKFLOW_PRESETS[0];
-}
-
-function renderWorkflowPresets(target, activeId, onSelect) {
-  target.innerHTML = WORKFLOW_PRESETS.map((preset) => {
-    const activeClass = preset.id === activeId ? " is-active" : "";
-    return `
-      <button type="button" class="workflow-preset${activeClass}" data-workflow-id="${preset.id}">
-        <p class="workflow-preset__title">${escapeHtml(preset.label)}</p>
-        <p class="workflow-preset__summary">${escapeHtml(preset.summary)}</p>
-      </button>
-    `;
-  }).join("");
-
-  target.querySelectorAll("[data-workflow-id]").forEach((button) => {
-    button.addEventListener("click", () => onSelect(button.dataset.workflowId));
-  });
-}
-
-function updateGenWorkflowUI() {
-  const preset = getWorkflowPreset(genState.workflowType);
-  els.genWorkflowSummary.textContent = preset.summary;
-  els.genModelHint.textContent = modelHintForWorkflow(genState.workflowType);
-  els.genVariantGroup.classList.toggle("hidden", genState.workflowType !== "mascot-variants");
-  els.genTargetGroup.classList.toggle("hidden", genState.workflowType !== "reference-edit");
-  els.genVideoGroup.classList.toggle(
-    "hidden",
-    genState.workflowType !== "video-clip" && genState.workflowType !== "reel-package"
-  );
-  els.genReferenceGroup.classList.toggle("hidden", false);
-  renderWorkflowPresets(els.genWorkflowPresets, genState.workflowType, (workflowId) => {
-    genState.workflowType = workflowId;
-    updateGenWorkflowUI();
-  });
-  populateTargetAssetSelect(genState.output);
-  renderReferenceChips(
-    els.genReferenceChipset,
-    buildReferenceAssets({
-      brandId: els.productSelect.value,
-      visualMode: els.genVisualMode.value,
-      inputValue: els.genReferenceInput.value
-    })
-  );
-}
-
-function updateAsstWorkflowUI() {
-  const preset = getWorkflowPreset(asstState.workflowType);
-  els.asstWorkflowSummary.textContent = preset.summary;
-  renderReferenceChips(
-    els.asstReferenceChipset,
-    buildReferenceAssets({
-      brandId: els.asstProductSelect.value,
-      visualMode: els.asstVisualMode.value,
-      inputValue: els.asstReferenceInput.value
-    })
-  );
-  renderWorkflowPresets(els.asstWorkflowPresets, asstState.workflowType, (workflowId) => {
-    asstState.workflowType = workflowId;
-    updateAsstWorkflowUI();
-  });
-}
-
-function modelHintForWorkflow(workflowType) {
-  switch (workflowType) {
-    case "mascot-variants":
-      return "Uses Nano Banana 2 image generation with mascot references and repeatable variant prompts.";
-    case "reference-edit":
-      return "Uses Nano Banana 2 edit mode with the selected asset and any brand or run references.";
-    case "video-clip":
-      return "Uses Kling for prompt-led clips and PixVerse when mascot consistency is selected.";
-    case "reel-package":
-      return "Plans multiple clip briefs first, then generates clip assets with the active video settings.";
-    default:
-      return "Uses Nano Banana 2 for the visual assets behind the slideshow package.";
-  }
-}
-
-function syncProductSelects(sourceId) {
-  els.productSelect.value = sourceId;
-  els.asstProductSelect.value = sourceId;
-}
-
-function syncVisualModeSelects(sourceValue) {
-  els.genVisualMode.value = sourceValue;
-  els.asstVisualMode.value = sourceValue;
-  els.refineVisualMode.value = sourceValue;
-}
-
-function syncDeliveryTargets(sourceValue) {
-  els.genDeliveryTarget.value = sourceValue;
-  els.asstDeliveryTarget.value = sourceValue;
-}
-
-function renderBrandEditor(brandId) {
-  const brand = getBrandById(brandId);
-  const mascot = brand?.mascot;
-  els.brandMascotName.textContent = mascot?.name || "No mascot configured";
-  els.brandMascotRole.textContent = mascot?.role || "This brand does not yet have a mascot system.";
-  els.brandMascotVisualPrompt.value = mascot?.visualPrompt || "";
-  els.brandMascotRules.value = (mascot?.usageRules || []).join("\n");
-  els.brandMascotReferences.innerHTML = (mascot?.referenceImages || [])
-    .map((referencePath, index) => {
-      const imgUrl = referencePath.startsWith("/api/") ? referencePath : `/api/brand-assets/${brandId}/${index}`;
-      const label = referencePath.split("/").pop() || `reference ${index + 1}`;
-      const title = escapeHtml(`${mascot?.name || brand?.name || "Mascot"} reference ${index + 1}`);
-      return `
-        <div class="brand-ref-card">
-          <button type="button" data-brand-asset-url="${imgUrl}" data-brand-asset-title="${title}">
-            <img src="${imgUrl}" alt="${title}" loading="lazy" />
-          </button>
-          <span>${escapeHtml(label)}</span>
-          <button type="button" class="ghost-button brand-ref-remove" data-brand-id="${escapeHtml(brandId)}" data-ref-index="${index}" style="font-size:0.65rem;padding:4px 8px">Remove</button>
-        </div>
-      `;
-    })
-    .join("");
-}
-
-function outputAssets(output) {
-  if (!output) return [];
-  if (output.artifacts?.length) {
-    return output.artifacts.map((artifact, index) => ({
-      itemId: artifact.id,
-      assetKind: artifact.kind,
-      role: artifact.role,
-      text: artifact.title,
-      prompt: artifact.prompt,
-      assetUrl: getArtifactPreviewUrl(output, artifact),
-      sourceAssetId: artifact.source_asset_id || null,
-      variantGroup: artifact.variant_group || null,
-      slideNumber: null,
-      order: index
-    }));
-  }
-  return (output.slides || [])
-    .filter((slide) => typeof slide.slide_number === "number" && !Number.isNaN(slide.slide_number))
-    .map((slide, index) => ({
-      itemId: `slide-${String(slide.slide_number).padStart(2, "0")}`,
-      assetKind: "image",
-      role: slide.role,
-      text: slide.text,
-      prompt: slide.image_prompt || slide.text,
-      assetUrl: getWorkspaceAssetUrl(output, slide),
-      sourceAssetId: null,
-      variantGroup: null,
-      slideNumber: slide.slide_number,
-      order: index
-    }));
-}
-
-function renderAssetThumb(item, scope) {
-  const url = item.assetUrl;
-  if (!url) {
-    return "";
-  }
-  const roleLabel = titleCase(item.role || "asset");
-  const kindLabel = item.assetKind === "video" ? "Clip" : "Asset";
-  const visual =
-    item.assetKind === "video"
-      ? `<video src="${url}" muted playsinline preload="metadata"></video>`
-      : `<img src="${url}" alt="${escapeHtml(item.text || "Generated asset")}" loading="lazy" />`;
-
-  return `
-    <button
-      class="slide-thumb${scope.selectedAsset?.itemId === item.itemId ? " is-selected" : ""}"
-      type="button"
-      data-scope="${scope.name}"
-      data-asset-id="${escapeHtml(item.itemId || "")}"
-      data-asset-kind="${escapeHtml(item.assetKind || "image")}"
-      data-asset-url="${escapeHtml(url)}"
-      data-asset-title="${escapeHtml(item.text || "Generated asset")}"
-    >
-      ${visual}
-      <span class="slide-thumb__num">${escapeHtml(kindLabel)}</span>
-      <span class="asset-thumb__meta"><span>${escapeHtml(roleLabel)}</span><span>${escapeHtml(item.assetKind)}</span></span>
-    </button>
-  `;
-}
-
-function renderAssetStrip(output, scopeName) {
-  const assets = outputAssets(output);
-  const scope = scopeName === "generate" ? genState : asstState;
-  els.slideStrip.innerHTML = assets.map((item) => renderAssetThumb(item, { selectedAsset: scope.selectedAsset, name: scopeName })).join("");
-  els.genAssetsHeading.textContent = getWorkflowPreset(output?.workflow_type || genState.workflowType).label;
-}
-
-function renderClipBriefs(target, clipBriefs) {
-  target.innerHTML = (clipBriefs || [])
-    .map(
-      (clip) => `<div class="package-list__item"><strong>${escapeHtml(clip.title)}</strong><span>${escapeHtml(
-        clip.prompt
-      )}</span></div>`
-    )
-    .join("");
-}
-
-function renderPackage(output, targets, productId) {
-  const product = asstState.products.find((entry) => entry.id === productId);
-  const publishLinks = getPlatformPublishLinks(product?.name || "this product");
-  targets.status.textContent =
-    output.render_status === "skipped"
-      ? "Using generated visuals or clips directly because slide rendering is unavailable for this workflow."
-      : "Rendered package ready.";
-  targets.caption.textContent = output.caption || "";
-  targets.hashtags.textContent = (output.hashtags || []).join(" ");
-  targets.hooks.innerHTML = (output.hooks || [])
-    .map((hook) => `<div class="package-list__item"><strong>Hook</strong><span>${escapeHtml(hook)}</span></div>`)
-    .join("");
-  targets.platformNotes.innerHTML = Object.entries(output.platform_notes || {})
-    .map(
-      ([platform, note]) =>
-        `<div class="package-list__item"><strong>${escapeHtml(titleCase(platform))}</strong><span>${escapeHtml(note)}</span></div>`
-    )
-    .join("");
-  targets.publishLinks.innerHTML = publishLinks
-    .map(
-      (link) => `
-        <div class="publish-link">
-          <a href="${link.href}" target="_blank" rel="noreferrer">${escapeHtml(link.label)}</a>
-          <span>${escapeHtml(link.helper)}</span>
-        </div>
-      `
-    )
-    .join("");
-
-  const reel = output.reel_package;
-  targets.voiceoverCard.classList.toggle("hidden", !reel);
-  targets.subtitlesCard.classList.toggle("hidden", !reel);
-  targets.clipBriefsCard.classList.toggle("hidden", !reel);
-  if (reel) {
-    targets.voiceover.textContent = reel.voiceoverScript || "";
-    targets.subtitles.textContent = reel.subtitleDraft || "";
-    renderClipBriefs(targets.clipBriefs, reel.clipBriefs);
-  }
-}
-
-function selectAsset(scopeName, assetId) {
-  const scope = scopeName === "generate" ? genState : asstState;
-  const output = scopeName === "generate" ? genState.output : asstState.generatedOutput;
-  const selected = outputAssets(output).find((item) => item.itemId === assetId) || null;
-  scope.selectedAsset = selected;
-  renderRefinePanels();
-  if (scopeName === "generate") {
-    renderAssetStrip(genState.output, "generate");
-  } else {
-    renderCanvas();
-  }
-}
-
-function renderRefinePanels() {
-  const selected = genState.selectedAsset;
-  if (selected) {
-    els.refineTitle.textContent = selected.text || "Selected asset";
-    els.refineHint.textContent = `${titleCase(selected.assetKind)} selected. Branch a new version or replace this one.`;
-    els.refinePrompt.value ||= selected.prompt || "";
-  } else {
-    els.refineTitle.textContent = "No asset selected";
-    els.refineHint.textContent = "Select an image or clip to branch a new version or replace it.";
-    els.refinePrompt.value = "";
-  }
-  showAssetNode(els.refinePreview, selected);
-  renderReferenceChips(
-    els.refineReferenceChipset,
-    buildReferenceAssets({
-      brandId: els.productSelect.value,
-      visualMode: els.refineVisualMode.value,
-      inputValue: els.refineReferenceInput.value,
-      selectedAsset: selected
-    })
-  );
-
-  const workspaceSelected = asstState.selectedAsset;
-  if (workspaceSelected) {
-    els.workspaceRefineTitle.textContent = workspaceSelected.text || "Selected asset";
-    els.workspaceRefineHint.textContent = `${titleCase(workspaceSelected.assetKind)} selected on the canvas.`;
-  } else {
-    els.workspaceRefineTitle.textContent = "No asset selected";
-    els.workspaceRefineHint.textContent = "Click any generated asset on the canvas to preview it and branch a refinement.";
-  }
-  showAssetNode(els.workspaceRefinePreview, workspaceSelected);
-  renderReferenceChips(
-    els.workspaceReferenceChipset,
-    buildReferenceAssets({
-      brandId: els.asstProductSelect.value,
-      visualMode: els.asstVisualMode.value,
-      inputValue: "",
-      selectedAsset: workspaceSelected
-    })
-  );
-}
-
-function populateTargetAssetSelect(output) {
-  const assets = outputAssets(output);
-  els.genTargetAsset.innerHTML = `<option value="">Select an asset from the latest output</option>${assets
-    .map((item) => `<option value="${escapeHtml(item.itemId)}">${escapeHtml(item.text || item.itemId)}</option>`)
-    .join("")}`;
-  if (genState.selectedAsset?.itemId) {
-    els.genTargetAsset.value = genState.selectedAsset.itemId;
-  }
-}
-
-async function downloadAllAssets(output) {
-  if (genState.downloading || !output) return;
-  genState.downloading = true;
-  els.downloadAllBtn.disabled = true;
-  els.downloadAllBtn.textContent = "Downloading…";
-  try {
-    const zip = new window.JSZip();
-    await Promise.all(
-      outputAssets(output).map(async (item, index) => {
-        if (!item.assetUrl) return;
-        const response = await fetch(item.assetUrl);
-        if (!response.ok) return;
-        const blob = await response.blob();
-        const ext = item.assetUrl.split(".").pop() || (item.assetKind === "video" ? "mp4" : "png");
-        zip.file(`${item.itemId || `asset-${index + 1}`}.${ext}`, blob);
-      })
-    );
-    const content = await zip.generateAsync({ type: "blob" });
-    const anchor = document.createElement("a");
-    anchor.href = URL.createObjectURL(content);
-    anchor.download = `${output.post_id}-assets.zip`;
-    anchor.click();
-    URL.revokeObjectURL(anchor.href);
-  } finally {
-    genState.downloading = false;
-    els.downloadAllBtn.disabled = false;
-    els.downloadAllBtn.textContent = "Download All";
-  }
-}
-
-async function pollJob(jobId, onUpdate) {
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    const response = await fetch(`/api/jobs/${jobId}`);
-    const job = await response.json();
-    onUpdate?.(job);
-    if (job.status === "failed") {
-      throw new Error(job.error || "Generation failed.");
-    }
-    if (job.status === "done") {
-      return job.result;
-    }
-  }
-  throw new Error("Generation timed out.");
-}
-
-function buildGenerateRequest({ workflowType, rawIdea, notes, cards, brandProfileId, visualMode, selectedAsset }) {
-  const platform = els.genPlatformSelect.value;
-  const deliveryTargets = els.genDeliveryTarget.value;
-  const referenceAssets = buildReferenceAssets({
-    brandId: brandProfileId,
-    visualMode,
-    inputValue: workflowType === "reference-edit" ? els.refineReferenceInput.value : els.genReferenceInput.value,
-    selectedAsset
-  });
-
-  return {
-    brandProfileId,
-    rawIdea,
-    notes,
-    cards,
-    references: [],
-    referenceAssets,
-    platformTargets: [platform],
-    goal: getBrandById(brandProfileId)?.defaults?.goal || "awareness",
-    workflowType,
-    visualMode,
-    targetAssetId:
-      workflowType === "reference-edit" ? selectedAsset?.itemId || els.genTargetAsset.value || undefined : undefined,
-    videoOptions:
-      workflowType === "video-clip" || workflowType === "reel-package"
-        ? {
-            duration: Number(els.genVideoDuration.value),
-            aspectRatio: els.genVideoAspect.value,
-            withAudio: els.genVideoAudio.checked,
-            consistencyMode: els.genVideoConsistency.value
-          }
-        : undefined,
-    variantCount: workflowType === "mascot-variants" ? Number(els.genVariantCount.value) : undefined,
-    deliveryTargets
-  };
-}
-
-function inferWorkflowFromText(text) {
-  const value = String(text || "").toLowerCase();
-  if (/\breel\b|\bvoiceover\b|\bsubtitle\b/.test(value)) return "reel-package";
-  if (/\bvideo\b|\bclip\b|\banimation\b/.test(value)) return "video-clip";
-  if (/\bvariant\b|\boptions\b|\bpack\b/.test(value)) return "mascot-variants";
-  if (/\bedit\b|\brefine\b|\bmake this\b/.test(value)) return "reference-edit";
-  return "slideshow";
-}
-
-async function loadProducts() {
-  const [productsRes, brandsRes] = await Promise.all([fetch("/api/products"), fetch("/api/brands")]);
-  asstState.products = await productsRes.json();
-  asstState.brands = await brandsRes.json();
-  const options = asstState.products.map((entry) => `<option value="${entry.id}">${entry.name}</option>`).join("");
-  els.productSelect.innerHTML = options;
-  els.asstProductSelect.innerHTML = options;
-  syncProductSelects("peppera");
-}
-
-function updateWorkspaceHeader() {
-  const lastUserMessage = [...(asstState.session?.messages || [])].reverse().find((entry) => entry.role === "user");
-  els.workspaceTitle.textContent = `${getWorkflowPreset(asstState.workflowType).label}`;
-  els.workspaceSubtitle.textContent = lastUserMessage
-    ? lastUserMessage.text
-    : "The assistant will place your goals, hooks, proof, and generated assets here as it learns.";
-}
-
-function renderMessages() {
-  els.messageThread.innerHTML = "";
-  const messages = (asstState.session?.messages || []).filter((entry) => entry.role !== "system");
-  messages.forEach((message) => {
-    const article = document.createElement("article");
-    article.className = `message-bubble message-bubble--${message.role === "user" ? "user" : "assistant"}`;
-    article.innerHTML = `
-      <strong>${message.role === "user" ? "You" : "Social Studio"}</strong>
-      <p>${escapeHtml(message.text)}</p>
-    `;
-    els.messageThread.appendChild(article);
-  });
-  els.messageThread.scrollTop = els.messageThread.scrollHeight;
-}
-
-function renderAsstCheckpoints() {
-  if (!asstState.session) return;
-  els.asstCheckpoints.forEach((node) => {
-    const status = asstState.session.checkpoints?.[node.dataset.step] || "pending";
-    node.classList.remove("is-active", "is-done");
-    if (status === "active") node.classList.add("is-active");
-    if (status === "done") node.classList.add("is-done");
-  });
-}
-
-// ── Canvas drag ───────────────────────────────────────────────────────────────
+// ── Canvas drag ────────────────────────────────────────────────────────────────
 let canvasDrag = null;
 
 function initCanvasDrag() {
@@ -849,7 +509,7 @@ function initCanvasDrag() {
     if (!card || card.dataset.type === "skeleton" || card.dataset.type === "asset") return;
     if (e.target.closest("button, input, textarea") || e.target.contentEditable === "true") return;
     const cardId = card.dataset.cardId;
-    const cardData = asstState.canvasCards.find((c) => c.id === cardId);
+    const cardData = studioState.canvasCards.find((c) => c.id === cardId);
     if (!cardData) return;
     canvasDrag = { cardEl: card, cardData, startX: e.clientX, startY: e.clientY, origX: cardData.x, origY: cardData.y };
     card.classList.add("is-dragging");
@@ -878,7 +538,7 @@ function initCanvasDrag() {
     if (!card || card.dataset.type === "skeleton" || card.dataset.type === "asset") return;
     if (e.target.closest("button")) return;
     const cardId = card.dataset.cardId;
-    const cardData = asstState.canvasCards.find((c) => c.id === cardId);
+    const cardData = studioState.canvasCards.find((c) => c.id === cardId);
     if (!cardData) return;
     const touch = e.touches[0];
     canvasDrag = { cardEl: card, cardData, startX: touch.clientX, startY: touch.clientY, origX: cardData.x, origY: cardData.y };
@@ -919,10 +579,9 @@ function drawConnectors() {
   svg.style.width = "3000px";
   svg.style.height = "2000px";
 
-  // Remove old paths
   svg.querySelectorAll(".connector-path").forEach((el) => el.remove());
 
-  const cards = asstState.canvasCards || [];
+  const cards = studioState.canvasCards || [];
   const stratCards = cards.filter((c) => ["goal", "audience", "proof", "visual"].includes(c.type));
   const growthCards = cards.filter((c) => c.type === "hook");
   const assetCards = cards.filter((c) => c.type === "asset");
@@ -955,39 +614,13 @@ function drawConnectors() {
   }
 }
 
-// ── Canvas progress pill ───────────────────────────────────────────────────────
-function showCanvasProgress(text) {
-  els.canvasProgressText.textContent = text;
-  els.canvasProgressPill.classList.remove("hidden");
-}
-
-function hideCanvasProgress() {
-  els.canvasProgressPill.classList.add("hidden");
-}
-
-// ── Button loading helpers ─────────────────────────────────────────────────────
-function setButtonLoading(btn, text) {
-  btn.disabled = true;
-  btn.dataset.origText = btn.textContent.trim();
-  btn.textContent = text;
-  btn.classList.add("is-loading");
-}
-
-function clearButtonLoading(btn) {
-  btn.disabled = false;
-  if (btn.dataset.origText) btn.textContent = btn.dataset.origText;
-  btn.classList.remove("is-loading");
-  delete btn.dataset.origText;
-}
-
 // ── Canvas render ──────────────────────────────────────────────────────────────
 function renderCanvas() {
   els.canvas.innerHTML = "";
-  const cards = asstState.canvasCards || [];
-  const isLoading = !!asstState.canvasLoadingStage;
+  const cards = studioState.canvasCards || [];
+  const isLoading = !!studioState.canvasLoadingStage;
   els.canvasEmpty.classList.toggle("hidden", cards.length > 0 || isLoading);
 
-  // Lane labels
   [
     { x: 72, label: "Strategy" },
     { x: 400, label: "Growth Logic" },
@@ -1001,7 +634,6 @@ function renderCanvas() {
     els.canvas.appendChild(lbl);
   });
 
-  // Skeleton placeholder cards while generating
   if (isLoading) {
     Array.from({ length: 8 }, (_, i) => ({
       x: 760 + (i % 4) * 240,
@@ -1034,7 +666,7 @@ function renderCanvas() {
     if (card.type === "asset") {
       article.classList.add("is-clickable");
       article.dataset.kind = card.assetKind || "image";
-      if (asstState.selectedAsset?.itemId === card.itemId) {
+      if (studioState.selectedAsset?.itemId === card.itemId) {
         article.classList.add("is-selected");
       }
     }
@@ -1049,7 +681,7 @@ function renderCanvas() {
         ? `<span class="canvas-card__branch">From ${escapeHtml(card.sourceAssetId)}</span>`
         : "";
       body = `
-        <button class="asset-thumb-button" type="button" data-scope="assistant"
+        <button class="asset-thumb-button" type="button"
           data-asset-id="${escapeHtml(card.itemId || "")}"
           data-asset-kind="${escapeHtml(card.assetKind || "image")}"
           data-asset-url="${escapeHtml(card.assetUrl)}"
@@ -1068,7 +700,6 @@ function renderCanvas() {
       ${body}
       <div class="canvas-card__tags">${escapeHtml((card.tags || []).join(", "))}</div>`;
 
-    // Inline text edit on double-click
     if (card.type !== "asset") {
       const textEl = article.querySelector("[data-editable]");
       if (textEl) {
@@ -1099,125 +730,138 @@ function renderCanvas() {
   drawConnectors();
 }
 
-function renderAsstOutputPackage() {
-  const output = asstState.generatedOutput;
-  els.packagePanel.classList.toggle("hidden", !output);
-  if (!output) return;
-  renderPackage(
-    output,
-    {
-      status: els.packageStatus,
-      caption: els.captionText,
-      hashtags: els.hashtagsText,
-      hooks: els.hooksList,
-      platformNotes: els.platformNotes,
-      publishLinks: els.publishLinks,
-      voiceoverCard: els.asstVoiceoverCard,
-      voiceover: els.voiceoverText,
-      subtitlesCard: els.asstSubtitlesCard,
-      subtitles: els.subtitlesText,
-      clipBriefsCard: els.asstClipBriefsCard,
-      clipBriefs: els.clipBriefs
-    },
-    els.asstProductSelect.value
-  );
+// ── Inspector: package ─────────────────────────────────────────────────────────
+function renderInspectorPackage() {
+  const output = studioState.generatedOutput;
+  if (!output) {
+    els.inspectorPackage.classList.add("hidden");
+    return;
+  }
+  els.inspectorPackage.classList.remove("hidden");
+
+  const product = studioState.products.find((p) => p.id === els.studioProductSelect.value);
+  const publishLinks = getPlatformPublishLinks(product?.name || "this product");
+
+  els.inspectorPackageStatus.textContent =
+    output.render_status === "skipped"
+      ? "Using generated visuals directly."
+      : "Package ready.";
+
+  els.inspectorCaptionText.textContent = output.caption || "";
+  els.inspectorHashtagsText.textContent = (output.hashtags || []).join(" ");
+
+  els.inspectorHooksList.innerHTML = (output.hooks || [])
+    .map((hook) => `<div class="package-list__item"><strong>Hook</strong><span>${escapeHtml(hook)}</span></div>`)
+    .join("");
+
+  els.inspectorPublishLinks.innerHTML = publishLinks
+    .map(
+      (link) => `
+        <div class="publish-link">
+          <a href="${link.href}" target="_blank" rel="noreferrer">${escapeHtml(link.label)}</a>
+          <span>${escapeHtml(link.helper)}</span>
+        </div>
+      `
+    )
+    .join("");
 }
 
-async function persistAsstSession() {
-  if (!asstState.session) return;
-  await fetch(`/api/assistant/sessions/${asstState.session.id}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...asstState.session, workspaceCards: asstState.canvasCards })
-  });
+// ── Inspector: asset ───────────────────────────────────────────────────────────
+function renderInspectorAsset() {
+  const asset = studioState.selectedAsset;
+  if (!asset) {
+    els.inspectorAsset.classList.add("hidden");
+    return;
+  }
+  els.inspectorAsset.classList.remove("hidden");
+  els.inspectorAssetTitle.textContent = asset.text || "Selected asset";
+  els.inspectorAssetHint.textContent = `${titleCase(asset.assetKind)} selected. Branch a new version or replace.`;
+  showAssetNode(els.inspectorAssetPreview, asset);
+  els.studioRefinePrompt.value ||= asset.prompt || "";
 }
 
-async function createAsstSession(productId) {
-  showAsstStatus("Loading product context…");
-  const response = await fetch("/api/assistant/sessions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ productId })
-  });
-  asstState.session = await response.json();
-  asstState.generatedOutput = null;
-  asstState.canvasCards = asstState.session.workspaceCards || [];
-  asstState.selectedAsset = null;
-  asstState.workflowType = "slideshow";
-  renderMessages();
+// ── Select asset ───────────────────────────────────────────────────────────────
+function selectAsset(assetId) {
+  const selected = outputAssets(studioState.generatedOutput).find((item) => item.itemId === assetId) || null;
+  studioState.selectedAsset = selected;
   renderCanvas();
-  renderAsstOutputPackage();
-  renderAsstCheckpoints();
-  updateAsstWorkflowUI();
-  updateWorkspaceHeader();
-  renderRefinePanels();
-  hideAsstStatus();
+  renderInspectorAsset();
 }
 
-function nextQuestionFromBrief(brief) {
-  if (!brief.goal) return "What do you want this content to do for you?";
-  if (!brief.audience) return "Who is this for?";
-  if (!brief.offer) return "What is the main thing you want people to understand or act on?";
-  if (!brief.platform) return "Where should I optimise it first? TikTok, Instagram, or both?";
-  if (!brief.tone) return "What should it feel like? Funny, sharp, calm, premium, simple?";
-  return "I have enough to start making this. Is there one detail or constraint I should not miss?";
-}
-
-function updateBriefFromAnswer(text) {
-  const brief = asstState.session.inferredBrief;
-  if (!brief.goal) brief.goal = text;
-  else if (!brief.audience) brief.audience = text;
-  else if (!brief.offer) brief.offer = text;
-  else if (!brief.platform) brief.platform = text;
-  else if (!brief.tone) brief.tone = text;
-}
-
+// ── syncCardsFromBrief ─────────────────────────────────────────────────────────
 function syncCardsFromBrief() {
-  asstState.canvasCards = buildCanvasCards(asstState.session.inferredBrief, asstState.generatedOutput, makeId);
-  if (asstState.generatedOutput) {
-    asstState.selectedAsset = outputAssets(asstState.generatedOutput)[0] || null;
+  studioState.canvasCards = buildCanvasCards(studioState.session.inferredBrief, studioState.generatedOutput, makeId);
+  if (studioState.generatedOutput) {
+    studioState.selectedAsset = outputAssets(studioState.generatedOutput)[0] || null;
   }
 }
 
-async function runAsstCheckpointGeneration() {
-  asstState.session.status = "generating";
-  asstState.session.checkpoints.strategy = "done";
-  asstState.session.checkpoints.hooks = "active";
-  asstState.canvasLoadingStage = "planning";
-  renderAsstCheckpoints();
+// ── Messages ───────────────────────────────────────────────────────────────────
+function renderMessages() {
+  els.studioMessageThread.innerHTML = "";
+  const messages = (studioState.session?.messages || []).filter((entry) => entry.role !== "system");
+  messages.forEach((message) => {
+    const article = document.createElement("article");
+    article.className = `message-bubble message-bubble--${message.role === "user" ? "user" : "assistant"}`;
+    article.innerHTML = `
+      <strong>${message.role === "user" ? "You" : "Social Studio"}</strong>
+      <p>${escapeHtml(message.text)}</p>
+    `;
+    els.studioMessageThread.appendChild(article);
+  });
+  els.studioMessageThread.scrollTop = els.studioMessageThread.scrollHeight;
+}
+
+// ── pollJob ────────────────────────────────────────────────────────────────────
+async function pollJob(jobId, onUpdate) {
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    const response = await fetch(`/api/jobs/${jobId}`);
+    const job = await response.json();
+    onUpdate?.(job);
+    if (job.status === "failed") {
+      throw new Error(job.error || "Generation failed.");
+    }
+    if (job.status === "done") {
+      return job.result;
+    }
+  }
+  throw new Error("Generation timed out.");
+}
+
+// ── Quick generate form submit ─────────────────────────────────────────────────
+els.studioQuickForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const idea = els.studioIdeaInput.value.trim();
+  if (!idea) return;
+
+  const notes = els.studioNotesInput.value.trim();
+  const brandId = els.studioProductSelect.value;
+
+  setButtonLoading(els.studioSubmit, "Planning…");
+  showStatus("Planning content strategy…");
+  resetCheckpoints();
+  setCheckpoint("strategy", "active");
+  studioState.canvasLoadingStage = "planning";
   renderCanvas();
   showCanvasProgress("Planning content strategy…");
-  setButtonLoading(els.assistantSubmit, "Working…");
-  showAsstStatus("Planning content strategy…");
 
-  const platform = asstState.session.inferredBrief.platform?.toLowerCase().includes("instagram") ? "instagram" : "tiktok";
   const request = {
-    brandProfileId: els.asstProductSelect.value,
-    rawIdea: asstState.session.messages.find((entry) => entry.role === "user")?.text || "",
-    notes: `Audience: ${asstState.session.inferredBrief.audience}. Offer: ${asstState.session.inferredBrief.offer}. Tone: ${asstState.session.inferredBrief.tone}.`,
-    cards: asstState.canvasCards,
+    brandProfileId: brandId,
+    rawIdea: idea,
+    notes,
+    cards: [],
     references: [],
     referenceAssets: buildReferenceAssets({
-      brandId: els.asstProductSelect.value,
-      visualMode: els.asstVisualMode.value,
-      inputValue: els.asstReferenceInput.value,
-      selectedAsset: asstState.selectedAsset
+      brandId,
+      visualMode: els.studioVisualMode.value,
+      inputValue: els.studioReferenceInput.value
     }),
-    platformTargets: [platform],
-    goal: asstState.session.inferredBrief.goal || "awareness",
-    workflowType: asstState.workflowType,
-    visualMode: els.asstVisualMode.value,
-    videoOptions:
-      asstState.workflowType === "video-clip" || asstState.workflowType === "reel-package"
-        ? {
-            duration: 5,
-            aspectRatio: "9:16",
-            withAudio: true,
-            consistencyMode: els.asstVisualMode.value === "mascot-led" ? "mascot-consistent" : "prompt-led"
-          }
-        : undefined,
-    variantCount: asstState.workflowType === "mascot-variants" ? 4 : undefined,
-    deliveryTargets: els.asstDeliveryTarget.value
+    platformTargets: [els.studioPlatformSelect.value],
+    goal: getBrandById(brandId)?.defaults?.goal || "awareness",
+    workflowType: studioState.workflowType,
+    visualMode: els.studioVisualMode.value,
+    deliveryTargets: els.studioDeliveryTarget.value
   };
 
   try {
@@ -1229,47 +873,138 @@ async function runAsstCheckpointGeneration() {
     const { jobId } = await response.json();
     const output = await pollJob(jobId, (job) => {
       if (job.stage === "rendering" || job.status === "running") {
-        asstState.session.checkpoints.hooks = "done";
-        asstState.session.checkpoints.visuals = "active";
-        asstState.canvasLoadingStage = "generating";
-        renderAsstCheckpoints();
+        setCheckpoint("strategy", "done");
+        setCheckpoint("hooks", "done");
+        setCheckpoint("visuals", "active");
+        studioState.canvasLoadingStage = "generating";
         renderCanvas();
         showCanvasProgress("Generating visuals…");
-        showAsstStatus("Generating visuals and clips…");
+        setButtonLoading(els.studioSubmit, "Generating…");
+        showStatus("Generating visuals…");
       }
     });
 
-    asstState.canvasLoadingStage = null;
+    studioState.canvasLoadingStage = null;
+    studioState.generatedOutput = output;
+    studioState.workflowType = output.workflow_type || studioState.workflowType;
+    studioState.selectedAsset = outputAssets(output)[0] || null;
+
+    setCheckpoint("visuals", "done");
+    setCheckpoint("finalPackage", "done");
+
+    const brief = {
+      goal: idea,
+      audience: null,
+      offer: null,
+      tone: els.studioVisualMode.value,
+      platform: els.studioPlatformSelect.value
+    };
+    studioState.canvasCards = buildCanvasCards(brief, output, makeId);
+
     hideCanvasProgress();
-    clearButtonLoading(els.assistantSubmit);
-    asstState.generatedOutput = output;
-    asstState.session.checkpoints.visuals = "done";
-    asstState.session.checkpoints.finalPackage = "done";
-    asstState.session.status = "done";
-    asstState.session.messages.push({
+    clearButtonLoading(els.studioSubmit);
+    hideStatus();
+    updateWorkflowUI();
+    renderCanvas();
+    renderInspectorPackage();
+    renderInspectorAsset();
+  } catch (err) {
+    studioState.canvasLoadingStage = null;
+    hideCanvasProgress();
+    clearButtonLoading(els.studioSubmit);
+    showStatus(err instanceof Error ? err.message : String(err));
+    resetCheckpoints();
+    renderCanvas();
+  }
+});
+
+// ── Chat toggle ────────────────────────────────────────────────────────────────
+els.chatToggle.addEventListener("click", () => {
+  const isOpen = !els.chatPanel.classList.contains("hidden");
+  els.chatPanel.classList.toggle("hidden", isOpen);
+  els.chatToggle.classList.toggle("is-active", !isOpen);
+});
+
+// ── Chat submit ────────────────────────────────────────────────────────────────
+async function runChatGeneration() {
+  studioState.session.checkpoints = studioState.session.checkpoints || {};
+  studioState.session.checkpoints.strategy = "done";
+  studioState.session.checkpoints.hooks = "active";
+  studioState.canvasLoadingStage = "planning";
+  renderCheckpoints();
+  renderCanvas();
+  showCanvasProgress("Planning content strategy…");
+  setButtonLoading(els.studioChatSubmit, "Working…");
+  showChatStatus("Planning content strategy…");
+
+  const brief = studioState.session.inferredBrief || {};
+  const platform = brief.platform?.toLowerCase().includes("instagram") ? "instagram" : "tiktok";
+
+  const request = {
+    brandProfileId: els.studioProductSelect.value,
+    rawIdea: studioState.session.messages.find((entry) => entry.role === "user")?.text || "",
+    notes: `Audience: ${brief.audience || ""}. Offer: ${brief.offer || ""}. Tone: ${brief.tone || ""}.`,
+    cards: studioState.canvasCards,
+    references: [],
+    referenceAssets: buildReferenceAssets({
+      brandId: els.studioProductSelect.value,
+      visualMode: els.studioVisualMode.value,
+      inputValue: "",
+      selectedAsset: studioState.selectedAsset
+    }),
+    platformTargets: [platform],
+    goal: brief.goal || "awareness",
+    workflowType: studioState.workflowType,
+    visualMode: els.studioVisualMode.value,
+    deliveryTargets: els.studioDeliveryTarget.value
+  };
+
+  try {
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request)
+    });
+    const { jobId } = await response.json();
+    const output = await pollJob(jobId, (job) => {
+      if (job.stage === "rendering" || job.status === "running") {
+        studioState.session.checkpoints.hooks = "done";
+        studioState.session.checkpoints.visuals = "active";
+        studioState.canvasLoadingStage = "generating";
+        renderCheckpoints();
+        renderCanvas();
+        showCanvasProgress("Generating visuals…");
+        showChatStatus("Generating visuals and clips…");
+      }
+    });
+
+    studioState.canvasLoadingStage = null;
+    hideCanvasProgress();
+    clearButtonLoading(els.studioChatSubmit);
+    studioState.generatedOutput = output;
+    studioState.session.checkpoints.visuals = "done";
+    studioState.session.checkpoints.finalPackage = "done";
+    studioState.session.messages.push({
       id: makeId("msg"),
       role: "assistant",
-      text: `I finished the ${getWorkflowPreset(asstState.workflowType).label.toLowerCase()} and placed the output back into the workspace.`,
+      text: `I finished the ${getWorkflowPreset(studioState.workflowType).label.toLowerCase()} and placed the output back into the workspace.`,
       createdAt: new Date().toISOString()
     });
     syncCardsFromBrief();
     renderMessages();
     renderCanvas();
-    renderAsstOutputPackage();
-    renderAsstCheckpoints();
-    renderRefinePanels();
-    updateWorkspaceHeader();
-    hideAsstStatus();
-    await persistAsstSession();
+    renderCheckpoints();
+    renderInspectorPackage();
+    renderInspectorAsset();
+    hideChatStatus();
   } catch (error) {
-    asstState.canvasLoadingStage = null;
+    studioState.canvasLoadingStage = null;
     hideCanvasProgress();
-    clearButtonLoading(els.assistantSubmit);
-    asstState.session.status = "interviewing";
-    asstState.session.checkpoints.hooks = "pending";
-    asstState.session.checkpoints.visuals = "pending";
-    asstState.session.checkpoints.finalPackage = "pending";
-    asstState.session.messages.push({
+    clearButtonLoading(els.studioChatSubmit);
+    studioState.session.checkpoints.hooks = "pending";
+    studioState.session.checkpoints.visuals = "pending";
+    studioState.session.checkpoints.finalPackage = "pending";
+    studioState.session.messages.push({
       id: makeId("msg"),
       role: "assistant",
       text: `I hit a problem while generating. ${error instanceof Error ? error.message : String(error)}`,
@@ -1277,16 +1012,15 @@ async function runAsstCheckpointGeneration() {
     });
     renderMessages();
     renderCanvas();
-    renderAsstCheckpoints();
-    showAsstStatus("Generation stopped.");
-    await persistAsstSession();
+    renderCheckpoints();
+    showChatStatus("Generation stopped.");
   }
 }
 
-async function submitAsstAnswer(text) {
-  const isFirstUserMessage = asstState.session.messages.filter((m) => m.role === "user").length === 0;
+async function submitChatAnswer(text) {
+  const isFirstUserMessage = studioState.session.messages.filter((m) => m.role === "user").length === 0;
 
-  const response = await fetch(`/api/assistant/sessions/${asstState.session.id}/reply`, {
+  const response = await fetch(`/api/assistant/sessions/${studioState.session.id}/reply`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text })
@@ -1297,27 +1031,42 @@ async function submitAsstAnswer(text) {
   }
 
   const { session, shouldGenerate } = await response.json();
-  asstState.session = session;
+  studioState.session = session;
 
   if (isFirstUserMessage) {
-    asstState.workflowType = inferWorkflowFromText(text);
-    updateAsstWorkflowUI();
+    studioState.workflowType = inferWorkflowFromText(text);
+    updateWorkflowUI();
   }
 
   syncCardsFromBrief();
   renderMessages();
   renderCanvas();
-  renderAsstCheckpoints();
-  renderRefinePanels();
-  updateWorkspaceHeader();
+  renderCheckpoints();
 
   if (shouldGenerate) {
-    asstState.session.checkpoints.strategy = "active";
-    renderAsstCheckpoints();
-    await runAsstCheckpointGeneration();
+    studioState.session.checkpoints = studioState.session.checkpoints || {};
+    studioState.session.checkpoints.strategy = "active";
+    renderCheckpoints();
+    await runChatGeneration();
   }
 }
 
+els.studioChatForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const text = els.studioChatInput.value.trim();
+  if (!text || !studioState.session) return;
+  els.studioChatInput.value = "";
+  showChatStatus("Thinking…");
+  try {
+    await submitChatAnswer(text);
+  } catch (err) {
+    showChatStatus(err instanceof Error ? err.message : String(err));
+  } finally {
+    hideChatStatus();
+  }
+});
+
+// ── Refinement ─────────────────────────────────────────────────────────────────
 function mergeRefinedOutput(currentOutput, refinementOutput, mode, selectedAsset) {
   if (!currentOutput || !refinementOutput?.artifacts?.length) {
     return refinementOutput;
@@ -1348,23 +1097,36 @@ function mergeRefinedOutput(currentOutput, refinementOutput, mode, selectedAsset
 
 async function runRefinement(event) {
   event.preventDefault();
-  if (!genState.selectedAsset) {
+  if (!studioState.selectedAsset) {
     showRefineStatus("Select an asset first.");
     return;
   }
   showRefineStatus("Generating refined variant…");
-  els.refineSubmit.disabled = true;
+  els.studioRefineSubmit.disabled = true;
 
-  const prompt = els.refinePrompt.value.trim() || genState.selectedAsset.prompt || genState.selectedAsset.text;
-  const request = buildGenerateRequest({
-    workflowType: "reference-edit",
+  const asset = studioState.selectedAsset;
+  const brandId = els.studioProductSelect.value;
+  const prompt = els.studioRefinePrompt.value.trim() || asset.prompt || asset.text;
+
+  const request = {
+    brandProfileId: brandId,
     rawIdea: prompt,
     notes: "Refinement request from selected asset.",
     cards: [],
-    brandProfileId: els.productSelect.value,
-    visualMode: els.refineVisualMode.value,
-    selectedAsset: genState.selectedAsset
-  });
+    references: [],
+    referenceAssets: buildReferenceAssets({
+      brandId,
+      visualMode: els.studioRefineVisualMode.value,
+      inputValue: "",
+      selectedAsset: asset
+    }),
+    platformTargets: [els.studioPlatformSelect.value],
+    goal: getBrandById(brandId)?.defaults?.goal || "awareness",
+    workflowType: "reference-edit",
+    visualMode: els.studioRefineVisualMode.value,
+    targetAssetId: asset.itemId || undefined,
+    deliveryTargets: els.studioDeliveryTarget.value
+  };
 
   try {
     const response = await fetch("/api/generate", {
@@ -1374,317 +1136,106 @@ async function runRefinement(event) {
     });
     const { jobId } = await response.json();
     const output = await pollJob(jobId);
-    genState.output = mergeRefinedOutput(genState.output, output, els.refineBranchMode.value, genState.selectedAsset);
-    genState.selectedAsset = outputAssets(genState.output).at(-1) || null;
-    renderAssetStrip(genState.output, "generate");
-    renderPackage(
-      genState.output,
-      {
-        status: els.genPackageStatus,
-        caption: els.genCaptionText,
-        hashtags: els.genHashtagsText,
-        hooks: els.genHooksList,
-        platformNotes: els.genPlatformNotes,
-        publishLinks: els.genPublishLinks,
-        voiceoverCard: els.genReelCard,
-        voiceover: els.genVoiceoverText,
-        subtitlesCard: els.genSubtitlesCard,
-        subtitles: els.genSubtitlesText,
-        clipBriefsCard: els.genClipBriefsCard,
-        clipBriefs: els.genClipBriefs
-      },
-      els.productSelect.value
+    studioState.generatedOutput = mergeRefinedOutput(
+      studioState.generatedOutput,
+      output,
+      els.studioRefineMode.value,
+      studioState.selectedAsset
     );
-    populateTargetAssetSelect(genState.output);
-    renderRefinePanels();
+    studioState.selectedAsset = outputAssets(studioState.generatedOutput).at(-1) || null;
+    const brief = {
+      goal: studioState.session?.inferredBrief?.goal || "",
+      audience: studioState.session?.inferredBrief?.audience || null,
+      offer: studioState.session?.inferredBrief?.offer || null,
+      tone: els.studioRefineVisualMode.value,
+      platform: els.studioPlatformSelect.value
+    };
+    studioState.canvasCards = buildCanvasCards(brief, studioState.generatedOutput, makeId);
+    renderCanvas();
+    renderInspectorPackage();
+    renderInspectorAsset();
     showRefineStatus("Refined asset ready.");
   } catch (error) {
     showRefineStatus(error instanceof Error ? error.message : String(error));
   } finally {
-    els.refineSubmit.disabled = false;
+    els.studioRefineSubmit.disabled = false;
   }
 }
 
-async function loadLibrary() {
-  const response = await fetch("/api/outputs");
-  const outputs = await response.json();
-  if (!outputs.length) {
-    els.libraryList.innerHTML = `<p class="library-empty">No past generations yet. Go to Generate to make your first post.</p>`;
-    return;
-  }
+els.studioRefineForm.addEventListener("submit", runRefinement);
 
-  els.libraryList.innerHTML = outputs
-    .map((item) => {
-      const date = item.createdAt
-        ? new Date(item.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
-        : "—";
-      return `
-        <div class="library-item">
-          <div class="library-item__meta">
-            <span class="library-item__id">${escapeHtml(item.postId)}</span>
-            <span class="library-item__detail">${escapeHtml(titleCase(item.product))} · ${escapeHtml(
-              titleCase(item.platform)
-            )} · ${date}</span>
-          </div>
-          <button class="ghost-button" type="button" data-post-id="${escapeHtml(item.postId)}">View</button>
-        </div>
-      `;
-    })
-    .join("");
-}
-
-async function loadOutputIntoGenerate(postId) {
-  const response = await fetch(`/api/outputs/${postId}`);
-  if (!response.ok) return;
-  const output = await response.json();
-  genState.output = output;
-  genState.workflowType = output.workflow_type || "slideshow";
-  genState.selectedAsset = outputAssets(output)[0] || null;
-  resetCheckpoints(els.genCheckpoints);
-  setCheckpoint(els.genCheckpoints, "strategy", "done");
-  setCheckpoint(els.genCheckpoints, "hooks", "done");
-  setCheckpoint(els.genCheckpoints, "visuals", "done");
-  setCheckpoint(els.genCheckpoints, "finalPackage", "done");
-  els.genEmpty.classList.add("hidden");
-  els.genOutput.classList.remove("hidden");
-  renderAssetStrip(output, "generate");
-  renderPackage(
-    output,
-    {
-      status: els.genPackageStatus,
-      caption: els.genCaptionText,
-      hashtags: els.genHashtagsText,
-      hooks: els.genHooksList,
-      platformNotes: els.genPlatformNotes,
-      publishLinks: els.genPublishLinks,
-      voiceoverCard: els.genReelCard,
-      voiceover: els.genVoiceoverText,
-      subtitlesCard: els.genSubtitlesCard,
-      subtitles: els.genSubtitlesText,
-      clipBriefsCard: els.genClipBriefsCard,
-      clipBriefs: els.genClipBriefs
-    },
-    els.productSelect.value
-  );
-  updateGenWorkflowUI();
-  renderRefinePanels();
-  switchView("generate");
-}
-
-els.generateForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const idea = els.ideaInput.value.trim();
-  if (!idea) return;
-
-  const ingredients = els.ingredientsInput.value
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-
-  const cards = [
-    { id: makeId("card"), type: "idea", text: idea, x: 80, y: 80, width: 280, height: 180, tags: ["idea"] },
-    ...(ingredients.length
-      ? [
-          {
-            id: makeId("card"),
-            type: "asset",
-            text: ingredients.join(", "),
-            x: 420,
-            y: 80,
-            width: 240,
-            height: 160,
-            tags: ["ingredients"]
-          }
-        ]
-      : [])
-  ];
-
-  resetCheckpoints(els.genCheckpoints);
-  els.genEmpty.classList.add("hidden");
-  els.genOutput.classList.remove("hidden");
-  setCheckpoint(els.genCheckpoints, "strategy", "active");
-  showGenStatus("Planning content strategy…");
-  setButtonLoading(els.genSubmit, "Planning…");
-
+// ── Download all ───────────────────────────────────────────────────────────────
+async function downloadAllAssets(output) {
+  if (studioState.downloading || !output) return;
+  studioState.downloading = true;
+  els.studioDownloadAllBtn.disabled = true;
+  els.studioDownloadAllBtn.textContent = "Downloading…";
   try {
-    const request = buildGenerateRequest({
-      workflowType: genState.workflowType,
-      rawIdea: idea,
-      notes: ingredients.length ? `Ingredients: ${ingredients.join(", ")}.` : "",
-      cards,
-      brandProfileId: els.productSelect.value,
-      visualMode: els.genVisualMode.value,
-      selectedAsset: genState.selectedAsset
-    });
-
-    const response = await fetch("/api/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(request)
-    });
-    const { jobId } = await response.json();
-    const output = await pollJob(jobId, (job) => {
-      if (job.stage === "rendering" || job.status === "running") {
-        setCheckpoint(els.genCheckpoints, "strategy", "done");
-        setCheckpoint(els.genCheckpoints, "hooks", "done");
-        setCheckpoint(els.genCheckpoints, "visuals", "active");
-        showGenStatus("Generating assets…");
-        setButtonLoading(els.genSubmit, "Generating…");
-      }
-    });
-
-    genState.output = output;
-    genState.workflowType = output.workflow_type || genState.workflowType;
-    genState.selectedAsset = outputAssets(output)[0] || null;
-    setCheckpoint(els.genCheckpoints, "visuals", "done");
-    setCheckpoint(els.genCheckpoints, "finalPackage", "done");
-    clearButtonLoading(els.genSubmit);
-    hideGenStatus();
-    renderAssetStrip(output, "generate");
-    renderPackage(
-      output,
-      {
-        status: els.genPackageStatus,
-        caption: els.genCaptionText,
-        hashtags: els.genHashtagsText,
-        hooks: els.genHooksList,
-        platformNotes: els.genPlatformNotes,
-        publishLinks: els.genPublishLinks,
-        voiceoverCard: els.genReelCard,
-        voiceover: els.genVoiceoverText,
-        subtitlesCard: els.genSubtitlesCard,
-        subtitles: els.genSubtitlesText,
-        clipBriefsCard: els.genClipBriefsCard,
-        clipBriefs: els.genClipBriefs
-      },
-      els.productSelect.value
+    const zip = new window.JSZip();
+    await Promise.all(
+      outputAssets(output).map(async (item, index) => {
+        if (!item.assetUrl) return;
+        const response = await fetch(item.assetUrl);
+        if (!response.ok) return;
+        const blob = await response.blob();
+        const ext = item.assetUrl.split(".").pop() || (item.assetKind === "video" ? "mp4" : "png");
+        zip.file(`${item.itemId || `asset-${index + 1}`}.${ext}`, blob);
+      })
     );
-    populateTargetAssetSelect(output);
-    renderRefinePanels();
-    updateGenWorkflowUI();
-  } catch (error) {
-    showGenStatus(error instanceof Error ? error.message : String(error));
-    resetCheckpoints(els.genCheckpoints);
-    clearButtonLoading(els.genSubmit);
+    const content = await zip.generateAsync({ type: "blob" });
+    const anchor = document.createElement("a");
+    anchor.href = URL.createObjectURL(content);
+    anchor.download = `${output.post_id}-assets.zip`;
+    anchor.click();
+    URL.revokeObjectURL(anchor.href);
+  } finally {
+    studioState.downloading = false;
+    els.studioDownloadAllBtn.disabled = false;
+    els.studioDownloadAllBtn.textContent = "Download All";
   }
-});
+}
 
-els.assistantForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const text = els.assistantInput.value.trim();
-  if (!text || !asstState.session) return;
-  els.assistantInput.value = "";
-  showAsstStatus("Thinking…");
-  await submitAsstAnswer(text);
-  hideAsstStatus();
-});
+els.studioDownloadAllBtn.addEventListener("click", () => downloadAllAssets(studioState.generatedOutput));
 
-els.refineForm.addEventListener("submit", runRefinement);
-els.downloadAllBtn.addEventListener("click", () => downloadAllAssets(genState.output));
-els.genCopyCaption.addEventListener("click", () => copyText(genState.output?.caption || "", "Caption", els.genStatus));
-els.genCopyHashtags.addEventListener("click", () =>
-  copyText((genState.output?.hashtags || []).join(" "), "Hashtags", els.genStatus)
+// ── Inspector copy buttons ─────────────────────────────────────────────────────
+els.inspectorCopyCaption.addEventListener("click", () =>
+  copyText(studioState.generatedOutput?.caption || "", "Caption", els.inspectorPackageStatus)
 );
-els.copyCaption.addEventListener("click", () =>
-  copyText(asstState.generatedOutput?.caption || "", "Caption", els.assistantStatus)
-);
-els.copyHashtags.addEventListener("click", () =>
-  copyText((asstState.generatedOutput?.hashtags || []).join(" "), "Hashtags", els.assistantStatus)
+els.inspectorCopyHashtags.addEventListener("click", () =>
+  copyText((studioState.generatedOutput?.hashtags || []).join(" "), "Hashtags", els.inspectorPackageStatus)
 );
 
-els.slideStrip.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-asset-id]");
-  if (!button) return;
-  selectAsset("generate", button.dataset.assetId);
-  openAssetPreview(button.dataset.assetUrl, button.dataset.assetTitle || "Generated asset", button.dataset.assetKind || "image");
-});
-
+// ── Canvas click — select asset ────────────────────────────────────────────────
 els.canvas.addEventListener("click", (event) => {
   const button = event.target.closest("[data-asset-id]");
   if (!button) return;
-  selectAsset("assistant", button.dataset.assetId);
+  selectAsset(button.dataset.assetId);
   openAssetPreview(button.dataset.assetUrl, button.dataset.assetTitle || "Generated asset", button.dataset.assetKind || "image");
 });
 
-els.libraryList.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-post-id]");
-  if (!button) return;
-  loadOutputIntoGenerate(button.dataset.postId);
-});
-
+// ── Brand editor clicks (mascot refs) ─────────────────────────────────────────
 els.brandMascotReferences.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-brand-asset-url]");
-  if (!button) return;
-  openAssetPreview(button.dataset.brandAssetUrl, button.dataset.brandAssetTitle || "Mascot reference");
-});
-
-els.productSelect.addEventListener("change", async () => {
-  syncProductSelects(els.productSelect.value);
-  renderBrandEditor(els.productSelect.value);
-  updateGenWorkflowUI();
-  await createAsstSession(els.productSelect.value);
-});
-
-els.asstProductSelect.addEventListener("change", async () => {
-  syncProductSelects(els.asstProductSelect.value);
-  renderBrandEditor(els.asstProductSelect.value);
-  await createAsstSession(els.asstProductSelect.value);
-});
-
-els.genVisualMode.addEventListener("change", () => {
-  syncVisualModeSelects(els.genVisualMode.value);
-  updateGenWorkflowUI();
-  renderRefinePanels();
-});
-
-els.asstVisualMode.addEventListener("change", () => {
-  syncVisualModeSelects(els.asstVisualMode.value);
-  updateAsstWorkflowUI();
-  renderRefinePanels();
-});
-
-els.genDeliveryTarget.addEventListener("change", () => syncDeliveryTargets(els.genDeliveryTarget.value));
-els.asstDeliveryTarget.addEventListener("change", () => syncDeliveryTargets(els.asstDeliveryTarget.value));
-els.genReferenceInput.addEventListener("input", updateGenWorkflowUI);
-els.asstReferenceInput.addEventListener("input", updateAsstWorkflowUI);
-els.refineReferenceInput.addEventListener("input", renderRefinePanels);
-els.genTargetAsset.addEventListener("change", () => selectAsset("generate", els.genTargetAsset.value));
-els.genReferenceFiles.addEventListener("change", async () => {
-  showGenStatus("Uploading references…");
-  try {
-    await uploadReferencesIntoTextarea(els.genReferenceFiles.files, els.genReferenceInput, updateGenWorkflowUI);
-    hideGenStatus();
-  } catch (error) {
-    showGenStatus(error instanceof Error ? error.message : String(error));
-  } finally {
-    els.genReferenceFiles.value = "";
+  const previewBtn = event.target.closest("[data-brand-asset-url]");
+  if (previewBtn) {
+    openAssetPreview(previewBtn.dataset.brandAssetUrl, previewBtn.dataset.brandAssetTitle || "Mascot reference");
+    return;
   }
-});
-els.refineReferenceFiles.addEventListener("change", async () => {
-  showRefineStatus("Uploading references…");
-  try {
-    await uploadReferencesIntoTextarea(els.refineReferenceFiles.files, els.refineReferenceInput, renderRefinePanels);
-    hideRefineStatus();
-  } catch (error) {
-    showRefineStatus(error instanceof Error ? error.message : String(error));
-  } finally {
-    els.refineReferenceFiles.value = "";
-  }
-});
-els.asstReferenceFiles.addEventListener("change", async () => {
-  showAsstStatus("Uploading references…");
-  try {
-    await uploadReferencesIntoTextarea(els.asstReferenceFiles.files, els.asstReferenceInput, updateAsstWorkflowUI);
-    hideAsstStatus();
-  } catch (error) {
-    showAsstStatus(error instanceof Error ? error.message : String(error));
-  } finally {
-    els.asstReferenceFiles.value = "";
+  const removeBtn = event.target.closest(".brand-ref-remove");
+  if (removeBtn) {
+    const brandId = removeBtn.dataset.brandId;
+    const index = Number(removeBtn.dataset.refIndex);
+    fetch(`/api/brands/${brandId}/mascot-refs/${index}`, { method: "DELETE" })
+      .then(() => fetch("/api/brands").then((res) => res.json()))
+      .then((brands) => {
+        studioState.brands = brands;
+        renderBrandEditor(brandId);
+      });
   }
 });
 
+// ── Brand editor save ──────────────────────────────────────────────────────────
 els.brandEditorSave.addEventListener("click", async () => {
-  const brandId = els.productSelect.value;
+  const brandId = els.studioProductSelect.value;
   const response = await fetch(`/api/brands/${brandId}`);
   const existing = await response.json();
   const mascot = existing.mascot || {
@@ -1713,7 +1264,7 @@ els.brandEditorSave.addEventListener("click", async () => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updatedBrand)
   });
-  asstState.brands = await fetch("/api/brands").then((res) => res.json());
+  studioState.brands = await fetch("/api/brands").then((res) => res.json());
   renderBrandEditor(brandId);
   els.brandEditorStatus.textContent = "Mascot system saved.";
   setTimeout(() => {
@@ -1723,8 +1274,9 @@ els.brandEditorSave.addEventListener("click", async () => {
   }, 1500);
 });
 
+// ── Brand mascot ref upload ────────────────────────────────────────────────────
 els.brandMascotRefFiles.addEventListener("change", async () => {
-  const brandId = els.productSelect.value;
+  const brandId = els.studioProductSelect.value;
   const files = Array.from(els.brandMascotRefFiles.files);
   if (!files.length) return;
 
@@ -1745,7 +1297,7 @@ els.brandMascotRefFiles.addEventListener("change", async () => {
         body: JSON.stringify({ filename: file.name, dataUrl })
       });
     }
-    asstState.brands = await fetch("/api/brands").then((res) => res.json());
+    studioState.brands = await fetch("/api/brands").then((res) => res.json());
     renderBrandEditor(brandId);
     els.brandMascotRefStatus.textContent = "Images uploaded.";
     setTimeout(() => els.brandMascotRefStatus.classList.add("hidden"), 1500);
@@ -1756,28 +1308,117 @@ els.brandMascotRefFiles.addEventListener("change", async () => {
   }
 });
 
-els.brandMascotReferences.addEventListener("click", async (event) => {
-  const removeBtn = event.target.closest(".brand-ref-remove");
-  if (!removeBtn) return;
-  const brandId = removeBtn.dataset.brandId;
-  const index = Number(removeBtn.dataset.refIndex);
-  await fetch(`/api/brands/${brandId}/mascot-refs/${index}`, { method: "DELETE" });
-  asstState.brands = await fetch("/api/brands").then((res) => res.json());
-  renderBrandEditor(brandId);
+// ── Product select change ──────────────────────────────────────────────────────
+els.studioProductSelect.addEventListener("change", async () => {
+  renderBrandEditor(els.studioProductSelect.value);
+  updateWorkflowUI();
+  await createSession(els.studioProductSelect.value);
 });
 
+// ── Visual mode / reference input changes ─────────────────────────────────────
+els.studioVisualMode.addEventListener("change", updateWorkflowUI);
+els.studioReferenceInput.addEventListener("input", updateWorkflowUI);
+
+// ── Reference file upload ──────────────────────────────────────────────────────
+els.studioReferenceFiles.addEventListener("change", async () => {
+  showStatus("Uploading references…");
+  try {
+    await uploadReferencesIntoTextarea(els.studioReferenceFiles.files, els.studioReferenceInput, updateWorkflowUI);
+    hideStatus();
+  } catch (error) {
+    showStatus(error instanceof Error ? error.message : String(error));
+  } finally {
+    els.studioReferenceFiles.value = "";
+  }
+});
+
+// ── Library ────────────────────────────────────────────────────────────────────
+async function loadLibrary() {
+  const response = await fetch("/api/outputs");
+  const outputs = await response.json();
+  if (!outputs.length) {
+    els.libraryList.innerHTML = `<p class="library-empty">No past generations yet. Go to Studio to make your first post.</p>`;
+    return;
+  }
+  els.libraryList.innerHTML = outputs
+    .map((item) => {
+      const date = item.createdAt
+        ? new Date(item.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+        : "—";
+      return `
+        <div class="library-item">
+          <div class="library-item__meta">
+            <span class="library-item__id">${escapeHtml(item.postId)}</span>
+            <span class="library-item__detail">${escapeHtml(titleCase(item.product))} · ${escapeHtml(titleCase(item.platform))} · ${date}</span>
+          </div>
+          <button class="ghost-button" type="button" data-post-id="${escapeHtml(item.postId)}">View</button>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+async function loadOutputIntoCanvas(postId) {
+  const response = await fetch(`/api/outputs/${postId}`);
+  if (!response.ok) return;
+  const output = await response.json();
+  studioState.generatedOutput = output;
+  studioState.workflowType = output.workflow_type || "slideshow";
+  studioState.selectedAsset = outputAssets(output)[0] || null;
+  resetCheckpoints();
+  setCheckpoint("strategy", "done");
+  setCheckpoint("hooks", "done");
+  setCheckpoint("visuals", "done");
+  setCheckpoint("finalPackage", "done");
+  const brief = { goal: output.caption || output.post_id, audience: null, offer: null, tone: null, platform: null };
+  studioState.canvasCards = buildCanvasCards(brief, output, makeId);
+  renderCanvas();
+  renderInspectorPackage();
+  renderInspectorAsset();
+  switchView("studio");
+}
+
+els.libraryList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-post-id]");
+  if (!button) return;
+  loadOutputIntoCanvas(button.dataset.postId);
+});
+
+// ── Session ────────────────────────────────────────────────────────────────────
+async function createSession(productId) {
+  const response = await fetch("/api/assistant/sessions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ productId })
+  });
+  studioState.session = await response.json();
+  studioState.generatedOutput = null;
+  studioState.canvasCards = studioState.session.workspaceCards || [];
+  studioState.selectedAsset = null;
+  renderMessages();
+  renderCheckpoints();
+}
+
+// ── Load products ──────────────────────────────────────────────────────────────
+async function loadProducts() {
+  const [productsRes, brandsRes] = await Promise.all([fetch("/api/products"), fetch("/api/brands")]);
+  studioState.products = await productsRes.json();
+  studioState.brands = await brandsRes.json();
+  const options = studioState.products.map((entry) => `<option value="${entry.id}">${entry.name}</option>`).join("");
+  els.studioProductSelect.innerHTML = options;
+  els.studioProductSelect.value = "peppera";
+}
+
+// ── Bootstrap ──────────────────────────────────────────────────────────────────
 async function bootstrap() {
   await loadProducts();
   renderBrandEditor("peppera");
-  updateGenWorkflowUI();
-  updateAsstWorkflowUI();
-  syncVisualModeSelects("mascot-led");
-  syncDeliveryTargets("both");
-  await createAsstSession("peppera");
+  updateWorkflowUI();
+  await createSession("peppera");
   initCanvasDrag();
-  els.ideaInput.focus();
+  els.studioIdeaInput.focus();
 }
 
 bootstrap().catch((error) => {
-  showGenStatus(error instanceof Error ? error.message : String(error));
+  showStatus(error instanceof Error ? error.message : String(error));
 });

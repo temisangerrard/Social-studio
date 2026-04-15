@@ -18,8 +18,7 @@
       <div class="topbar__left">
         <span class="wordmark">Social Studio</span>
         <nav class="topnav">
-          <a class="is-active" href="#" data-view="generate">Generate</a>
-          <a href="#" data-view="assistant">Assistant</a>
+          <a class="is-active" href="#" data-view="studio">Studio</a>
           <a href="#" data-view="library">Library</a>
         </nav>
       </div>
@@ -28,155 +27,97 @@
       </div>
     </header>
 
-    <div id="view-generate" class="view view--generate">
-      <div class="gen-shell">
-        <aside class="gen-sidebar">
-          <p class="eyebrow">Quick Generate</p>
-          <h1 class="gen-heading">Make content from one idea.</h1>
-          <p class="gen-copy">
-            Choose the output you want, set the visual direction, and let Social Studio produce the assets and posting package.
-          </p>
+    <!-- ═══ STUDIO VIEW ═══════════════════════════════════════════════════════ -->
+    <div id="view-studio" class="view view--studio">
+      <div class="studio-shell">
 
-          <section class="workflow-section">
-            <div class="workflow-section__head">
-              <p class="eyebrow">Workflow</p>
-              <p id="gen-workflow-summary" class="workflow-summary"></p>
+        <!-- LEFT SIDEBAR -->
+        <aside class="studio-sidebar">
+
+          <!-- Brand/platform selects (compact 2x2 grid) -->
+          <div id="studio-product-select-wrap" class="studio-settings-grid">
+            <div class="field-group">
+              <label class="field-label" for="studio-product-select">Product</label>
+              <select id="studio-product-select"></select>
             </div>
-            <div id="gen-workflow-presets" class="workflow-preset-grid"></div>
+            <div class="field-group">
+              <label class="field-label" for="studio-platform-select">Platform</label>
+              <select id="studio-platform-select">
+                <option value="tiktok">TikTok</option>
+                <option value="instagram">Instagram</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="studio-visual-mode">Visual mode</label>
+              <select id="studio-visual-mode">
+                <option value="mascot-led">Mascot-led</option>
+                <option value="mixed">Mixed</option>
+                <option value="food-led">Food-led</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="studio-delivery-target">Delivery</label>
+              <select id="studio-delivery-target">
+                <option value="both">TikTok + Instagram</option>
+                <option value="tiktok">TikTok</option>
+                <option value="instagram">Instagram</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Workflow presets -->
+          <section class="workflow-section">
+            <p class="eyebrow">Workflow</p>
+            <div id="studio-workflow-presets" class="workflow-preset-grid"></div>
+            <p id="studio-workflow-summary" class="workflow-summary"></p>
           </section>
 
-          <form id="generate-form" class="gen-form">
-            <div class="field-row">
-              <div class="field-group">
-                <label class="field-label" for="product-select">Product</label>
-                <select id="product-select"></select>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="gen-platform-select">Platform</label>
-                <select id="gen-platform-select">
-                  <option value="tiktok">TikTok</option>
-                  <option value="instagram">Instagram</option>
-                </select>
-              </div>
-            </div>
-
+          <!-- Quick generate form -->
+          <form id="studio-quick-form" class="studio-quick-form">
             <div class="field-group">
-              <label class="field-label" for="idea-input">Idea or direction</label>
-              <textarea
-                id="idea-input"
-                rows="5"
-                placeholder="e.g. leftover breakfast ingredients, mascot-led TikTok, turn it into a funny install-driving post"
-              ></textarea>
+              <label class="field-label" for="studio-idea-input">Idea or direction</label>
+              <textarea id="studio-idea-input" rows="4" placeholder="e.g. Peppera fridge raid — leftover rescue post for TikTok"></textarea>
             </div>
-
             <div class="field-group">
-              <label class="field-label" for="ingredients-input">Ingredients or notes</label>
-              <input id="ingredients-input" type="text" placeholder="eggs, bread, peppers, cheese" />
+              <label class="field-label" for="studio-notes-input">Ingredients or notes</label>
+              <input id="studio-notes-input" type="text" placeholder="eggs, peppers, leftover rice…" />
             </div>
-
-            <div class="field-row">
-              <div class="field-group">
-                <label class="field-label" for="gen-visual-mode">Visual mode</label>
-                <select id="gen-visual-mode">
-                  <option value="mascot-led">Mascot-led</option>
-                  <option value="mixed">Mixed</option>
-                  <option value="food-led">Food-led</option>
-                </select>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="gen-delivery-target">Delivery target</label>
-                <select id="gen-delivery-target">
-                  <option value="both">TikTok + Instagram</option>
-                  <option value="tiktok">TikTok</option>
-                  <option value="instagram">Instagram</option>
-                </select>
-              </div>
-            </div>
-
-            <div id="gen-reference-group" class="field-group">
-              <label class="field-label" for="gen-reference-input">Reference URLs or file paths</label>
-              <textarea
-                id="gen-reference-input"
-                rows="3"
-                placeholder="One per line. Use this for style references, existing assets, or mascot references you want included."
-              ></textarea>
+            <div class="field-group">
+              <label class="field-label" for="studio-reference-input">Reference URLs</label>
+              <textarea id="studio-reference-input" rows="2" placeholder="One per line. Style references, existing assets, mascot refs."></textarea>
               <div class="inline-actions">
-                <label class="ghost-button file-button" for="gen-reference-files">Upload references</label>
-                <input id="gen-reference-files" type="file" accept="image/*,video/mp4,video/webm" multiple class="hidden" />
+                <label class="ghost-button file-button" for="studio-reference-files">Upload references</label>
+                <input id="studio-reference-files" type="file" multiple class="hidden" accept="image/*,video/mp4,video/webm" />
               </div>
             </div>
-
-            <div id="gen-reference-chipset" class="reference-chipset"></div>
-
-            <div id="gen-workflow-controls" class="workflow-controls">
-              <div id="gen-variant-group" class="field-group hidden">
-                <label class="field-label" for="gen-variant-count">Variant count</label>
-                <select id="gen-variant-count">
-                  <option value="4">4</option>
-                  <option value="6">6</option>
-                  <option value="8">8</option>
-                </select>
-              </div>
-              <div id="gen-target-group" class="field-group hidden">
-                <label class="field-label" for="gen-target-asset">Target asset</label>
-                <select id="gen-target-asset">
-                  <option value="">Select an asset from the latest output</option>
-                </select>
-              </div>
-              <div id="gen-video-group" class="workflow-grid hidden">
-                <div class="field-group">
-                  <label class="field-label" for="gen-video-duration">Clip duration</label>
-                  <select id="gen-video-duration">
-                    <option value="5">5s</option>
-                    <option value="10">10s</option>
-                    <option value="15">15s</option>
-                  </select>
-                </div>
-                <div class="field-group">
-                  <label class="field-label" for="gen-video-aspect">Aspect ratio</label>
-                  <select id="gen-video-aspect">
-                    <option value="9:16">9:16</option>
-                    <option value="1:1">1:1</option>
-                    <option value="16:9">16:9</option>
-                  </select>
-                </div>
-                <div class="field-group">
-                  <label class="field-label" for="gen-video-consistency">Consistency mode</label>
-                  <select id="gen-video-consistency">
-                    <option value="prompt-led">Prompt-led</option>
-                    <option value="mascot-consistent">Mascot-consistent</option>
-                  </select>
-                </div>
-                <label class="checkbox-row" for="gen-video-audio">
-                  <input id="gen-video-audio" type="checkbox" checked />
-                  <span>Generate with audio when supported</span>
-                </label>
-              </div>
-            </div>
-
-            <details class="advanced-panel">
-              <summary>Advanced fal settings</summary>
-              <div class="advanced-panel__body">
-                <p id="gen-model-hint" class="advanced-hint"></p>
-                <p class="advanced-copy">
-                  Workflow presets stay on the main path. Use the right rail to refine individual assets after generation.
-                </p>
-              </div>
-            </details>
-
-            <div class="gen-form__footer">
-              <div id="gen-status" class="assistant-status hidden"></div>
-              <button class="primary-button gen-submit-btn" type="submit" id="gen-submit">Generate</button>
+            <div id="studio-reference-chipset" class="reference-chipset"></div>
+            <div class="studio-quick-form__footer">
+              <div id="studio-status" class="assistant-status hidden"></div>
+              <button id="studio-submit" class="primary-button" type="submit">Generate</button>
             </div>
           </form>
 
-          <section class="brand-editor">
-            <div class="brand-editor__head">
-              <div>
-                <p class="eyebrow">Brand Editor</p>
-                <h2 class="brand-editor__title">Mascot system</h2>
+          <!-- Or divider -->
+          <div class="studio-divider"><span>or</span></div>
+
+          <!-- Chat toggle + panel -->
+          <button id="chat-toggle" class="chat-toggle-btn" type="button">
+            <span>Guide me through it</span><span class="chat-toggle-caret">›</span>
+          </button>
+          <div id="chat-panel" class="chat-panel hidden">
+            <div id="studio-message-thread" class="message-thread studio-thread"></div>
+            <form id="studio-chat-form" class="assistant-input">
+              <textarea id="studio-chat-input" rows="3" placeholder="Start with the rough idea or result you need."></textarea>
+              <div class="assistant-input__footer">
+                <div id="studio-chat-status" class="assistant-status hidden"></div>
+                <button id="studio-chat-submit" class="primary-button" type="submit">Send</button>
               </div>
-            </div>
+            </form>
+          </div>
+
+          <!-- Brand editor (details/summary collapsible) -->
+          <details class="brand-editor">
+            <summary class="brand-editor__summary">Brand editor</summary>
             <div class="brand-editor__body">
               <p id="brand-mascot-name" class="brand-editor__name"></p>
               <p id="brand-mascot-role" class="brand-editor__copy"></p>
@@ -198,302 +139,100 @@
                 <button id="brand-editor-save" class="ghost-button" type="button">Save Mascot</button>
               </div>
             </div>
-          </section>
+          </details>
+
         </aside>
 
-        <main class="gen-main">
-          <div id="gen-empty" class="canvas-empty gen-empty">
-            <div class="canvas-empty__orb">✦</div>
-            <h3>Your assets will show up here.</h3>
-            <p>Use a workflow preset, then generate. Slides, variants, clips, and reel parts all land back in this studio.</p>
-          </div>
-
-          <div id="gen-output" class="gen-output hidden">
-            <div class="checkpoint-strip" id="gen-checkpoint-strip">
-              <div class="checkpoint" data-step="strategy">Strategy</div>
-              <div class="checkpoint" data-step="hooks">Hooks</div>
-              <div class="checkpoint" data-step="visuals">Visuals</div>
-              <div class="checkpoint" data-step="finalPackage">Package</div>
-            </div>
-
-            <div class="asset-workbench">
-              <section class="asset-collection">
-                <div class="slide-strip-header">
-                  <div>
-                    <p class="eyebrow">Generated assets</p>
-                    <h2 id="gen-assets-heading" class="assets-heading">Package assets</h2>
-                  </div>
-                  <button id="download-all-btn" class="ghost-button" type="button">Download All</button>
-                </div>
-                <div id="slide-strip" class="slide-strip"></div>
-              </section>
-
-              <aside class="refine-panel">
-                <div class="refine-panel__head">
-                  <div>
-                    <p class="eyebrow">Refine</p>
-                    <h3 id="refine-title">No asset selected</h3>
-                  </div>
-                  <p id="refine-hint" class="assistant-status">Select an image or clip to branch a new version or replace it.</p>
-                </div>
-                <div id="refine-preview" class="refine-preview refine-preview--empty">
-                  <span>Preview</span>
-                </div>
-                <form id="refine-form" class="refine-form">
-                  <label class="field-label" for="refine-prompt">Refinement prompt</label>
-                  <textarea id="refine-prompt" rows="4" placeholder="Tighter framing, stronger mascot expression, cleaner kitchen background."></textarea>
-                  <label class="field-label" for="refine-reference-input">Extra references</label>
-                  <textarea
-                    id="refine-reference-input"
-                    rows="3"
-                    placeholder="Optional. Add more reference URLs or file paths, one per line."
-                  ></textarea>
-                  <div class="inline-actions">
-                    <label class="ghost-button file-button" for="refine-reference-files">Upload references</label>
-                    <input id="refine-reference-files" type="file" accept="image/*,video/mp4,video/webm" multiple class="hidden" />
-                  </div>
-                  <div id="refine-reference-chipset" class="reference-chipset"></div>
-                  <div class="workflow-grid">
-                    <div class="field-group">
-                      <label class="field-label" for="refine-visual-mode">Visual mode</label>
-                      <select id="refine-visual-mode">
-                        <option value="mascot-led">Mascot-led</option>
-                        <option value="mixed">Mixed</option>
-                        <option value="food-led">Food-led</option>
-                      </select>
-                    </div>
-                    <div class="field-group">
-                      <label class="field-label" for="refine-branch-mode">Result handling</label>
-                      <select id="refine-branch-mode">
-                        <option value="branch">Branch variant</option>
-                        <option value="replace">Replace asset</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="gen-form__footer">
-                    <div id="refine-status" class="assistant-status hidden"></div>
-                    <button id="refine-submit" class="primary-button" type="submit">Regenerate</button>
-                  </div>
-                </form>
-              </aside>
-            </div>
-
-            <div class="gen-package">
-              <div class="gen-package__head">
-                <div>
-                  <p class="eyebrow">Publishing Package</p>
-                  <h2 class="gen-package__title">Ready to move into social</h2>
-                </div>
-                <p id="gen-package-status" class="assistant-status"></p>
-              </div>
-              <div class="package-grid">
-                <article class="package-card package-card--actions">
-                  <p class="package-card__label">Post to</p>
-                  <div id="gen-publish-links" class="publish-links"></div>
-                </article>
-                <article class="package-card">
-                  <div class="package-card__head">
-                    <p class="package-card__label">Caption</p>
-                    <button id="gen-copy-caption" class="ghost-button" type="button">Copy</button>
-                  </div>
-                  <p id="gen-caption-text" class="package-card__body"></p>
-                </article>
-                <article class="package-card">
-                  <div class="package-card__head">
-                    <p class="package-card__label">Hashtags</p>
-                    <button id="gen-copy-hashtags" class="ghost-button" type="button">Copy</button>
-                  </div>
-                  <p id="gen-hashtags-text" class="package-card__body"></p>
-                </article>
-                <article class="package-card">
-                  <p class="package-card__label">Hooks</p>
-                  <div id="gen-hooks-list" class="package-list"></div>
-                </article>
-                <article class="package-card">
-                  <p class="package-card__label">Platform Notes</p>
-                  <div id="gen-platform-notes" class="package-list"></div>
-                </article>
-                <article id="gen-reel-card" class="package-card hidden">
-                  <p class="package-card__label">Voiceover</p>
-                  <p id="gen-voiceover-text" class="package-card__body"></p>
-                </article>
-                <article id="gen-subtitles-card" class="package-card hidden">
-                  <p class="package-card__label">Subtitles</p>
-                  <p id="gen-subtitles-text" class="package-card__body"></p>
-                </article>
-                <article id="gen-clip-briefs-card" class="package-card hidden">
-                  <p class="package-card__label">Clip Briefs</p>
-                  <div id="gen-clip-briefs" class="package-list"></div>
-                </article>
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
-
-    <div id="view-assistant" class="view view--assistant hidden">
-      <div class="app-shell assistant-shell">
-        <section class="assistant-panel">
-          <div class="assistant-panel__header">
-            <p class="eyebrow">Content Assistant</p>
-            <h1>Tell me what you want to make.</h1>
-            <p>
-              I’ll ask one question at a time, choose the best workflow quietly in the background, and move through checkpoints unless you interrupt me.
-            </p>
-          </div>
-
-          <div class="assistant-panel__controls">
-            <label class="field-label" for="asst-product-select">Product</label>
-            <select id="asst-product-select"></select>
-            <label class="field-label" for="asst-visual-mode">Visual mode</label>
-            <select id="asst-visual-mode">
-              <option value="mascot-led">Mascot-led</option>
-              <option value="mixed">Mixed</option>
-              <option value="food-led">Food-led</option>
-            </select>
-            <label class="field-label" for="asst-delivery-target">Delivery target</label>
-            <select id="asst-delivery-target">
-              <option value="both">TikTok + Instagram</option>
-              <option value="tiktok">TikTok</option>
-              <option value="instagram">Instagram</option>
-            </select>
-            <label class="field-label" for="asst-reference-input">References</label>
-            <textarea
-              id="asst-reference-input"
-              rows="3"
-              placeholder="Optional. Add references the assistant should carry into generation."
-            ></textarea>
-            <div class="inline-actions">
-              <label class="ghost-button file-button" for="asst-reference-files">Upload references</label>
-              <input id="asst-reference-files" type="file" accept="image/*,video/mp4,video/webm" multiple class="hidden" />
-            </div>
-            <div id="asst-reference-chipset" class="reference-chipset"></div>
-          </div>
-
-          <section class="workflow-section workflow-section--assistant">
-            <div class="workflow-section__head">
-              <p class="eyebrow">Current workflow</p>
-              <p id="asst-workflow-summary" class="workflow-summary"></p>
-            </div>
-            <div id="asst-workflow-presets" class="workflow-preset-grid workflow-preset-grid--compact"></div>
-          </section>
-
-          <div id="message-thread" class="message-thread"></div>
-
-          <form id="assistant-form" class="assistant-input">
-            <textarea
-              id="assistant-input"
-              rows="3"
-              placeholder="Start with the rough idea, the post you want, or the result you need."
-            ></textarea>
-            <div class="assistant-input__footer">
-              <div id="assistant-status" class="assistant-status hidden"></div>
-              <button id="assistant-submit" class="primary-button" type="submit">Send</button>
-            </div>
-          </form>
-        </section>
-
-        <section class="workspace-panel">
-          <div class="workspace-panel__header">
-            <div>
-              <p class="eyebrow">Live Workspace</p>
-              <h2 id="workspace-title">Working Narrative</h2>
-              <p id="workspace-subtitle">The assistant will place your goals, hooks, proof, and generated assets here as it learns.</p>
-            </div>
-          </div>
-
-          <div class="checkpoint-strip" id="asst-checkpoint-strip">
+        <!-- CENTER CANVAS -->
+        <main class="studio-main">
+          <div class="checkpoint-strip" id="studio-checkpoint-strip">
             <div class="checkpoint" data-step="strategy">Strategy</div>
             <div class="checkpoint" data-step="hooks">Hooks</div>
             <div class="checkpoint" data-step="visuals">Visuals</div>
-            <div class="checkpoint" data-step="finalPackage">Final Package</div>
+            <div class="checkpoint" data-step="finalPackage">Package</div>
+          </div>
+          <div class="studio-canvas-stage">
+            <div id="canvas-progress-pill" class="canvas-progress-pill hidden" aria-live="polite">
+              <span class="canvas-progress-pill__dot"></span>
+              <span id="canvas-progress-text">Working…</span>
+            </div>
+            <div id="canvas-empty" class="canvas-empty">
+              <div class="canvas-empty__orb">✦</div>
+              <h3>Your strategy, hooks and assets land here.</h3>
+              <p>Type an idea and generate, or use "Guide me" for a structured brief.</p>
+            </div>
+            <div id="canvas" class="canvas"></div>
+          </div>
+        </main>
+
+        <!-- RIGHT INSPECTOR -->
+        <aside class="studio-inspector" id="studio-inspector">
+
+          <!-- Package section — always visible when output exists -->
+          <div id="inspector-package" class="inspector-package hidden">
+            <p class="eyebrow">Publishing Package</p>
+            <p id="inspector-package-status" class="assistant-status" style="margin-bottom:8px"></p>
+
+            <div class="inspector-row">
+              <p class="inspector-label">Caption</p>
+              <button id="inspector-copy-caption" class="ghost-button" type="button">Copy</button>
+            </div>
+            <p id="inspector-caption-text" class="inspector-body-text"></p>
+
+            <div class="inspector-row" style="margin-top:12px">
+              <p class="inspector-label">Hashtags</p>
+              <button id="inspector-copy-hashtags" class="ghost-button" type="button">Copy</button>
+            </div>
+            <p id="inspector-hashtags-text" class="inspector-body-text"></p>
+
+            <p class="inspector-label" style="margin-top:12px">Hooks</p>
+            <div id="inspector-hooks-list" class="package-list"></div>
+
+            <div id="inspector-publish-links" class="publish-links" style="margin-top:12px"></div>
+
+            <button id="studio-download-all-btn" class="ghost-button" style="width:100%;margin-top:12px" type="button">Download All</button>
           </div>
 
-          <section id="package-panel" class="package-panel hidden">
-            <div class="package-panel__header">
-              <div>
-                <p class="eyebrow">Publishing Package</p>
-                <h3>Ready to move into social</h3>
-              </div>
-              <p id="package-status" class="package-panel__status"></p>
-            </div>
-            <div class="package-grid">
-              <article class="package-card package-card--actions">
-                <p class="package-card__label">Next Step</p>
-                <div id="publish-links" class="publish-links"></div>
-              </article>
-              <article class="package-card">
-                <div class="package-card__head">
-                  <p class="package-card__label">Caption</p>
-                  <button id="copy-caption" class="ghost-button" type="button">Copy</button>
+          <!-- Asset inspector — shown when asset is selected -->
+          <div id="inspector-asset" class="inspector-asset hidden">
+            <div class="inspector-sep"></div>
+            <p class="eyebrow" style="margin-top:16px">Asset Inspector</p>
+            <h3 id="inspector-asset-title" class="inspector-asset-title">No asset selected</h3>
+            <p id="inspector-asset-hint" class="assistant-status">Click any generated asset on the canvas.</p>
+            <div id="inspector-asset-preview" class="refine-preview refine-preview--empty"><span>Preview</span></div>
+            <form id="studio-refine-form" class="refine-form">
+              <label class="field-label" for="studio-refine-prompt">Refine prompt</label>
+              <textarea id="studio-refine-prompt" rows="4" placeholder="Tighter framing, stronger expression, cleaner background."></textarea>
+              <div class="workflow-grid">
+                <div class="field-group">
+                  <label class="field-label" for="studio-refine-visual-mode">Visual mode</label>
+                  <select id="studio-refine-visual-mode">
+                    <option value="mascot-led">Mascot-led</option>
+                    <option value="mixed">Mixed</option>
+                    <option value="food-led">Food-led</option>
+                  </select>
                 </div>
-                <p id="caption-text" class="package-card__body"></p>
-              </article>
-              <article class="package-card">
-                <div class="package-card__head">
-                  <p class="package-card__label">Hashtags</p>
-                  <button id="copy-hashtags" class="ghost-button" type="button">Copy</button>
+                <div class="field-group">
+                  <label class="field-label" for="studio-refine-mode">Result</label>
+                  <select id="studio-refine-mode">
+                    <option value="branch">Branch variant</option>
+                    <option value="replace">Replace</option>
+                  </select>
                 </div>
-                <p id="hashtags-text" class="package-card__body"></p>
-              </article>
-              <article class="package-card">
-                <p class="package-card__label">Hooks</p>
-                <div id="hooks-list" class="package-list"></div>
-              </article>
-              <article class="package-card">
-                <p class="package-card__label">Platform Notes</p>
-                <div id="platform-notes" class="package-list"></div>
-              </article>
-              <article id="asst-voiceover-card" class="package-card hidden">
-                <p class="package-card__label">Voiceover</p>
-                <p id="voiceover-text" class="package-card__body"></p>
-              </article>
-              <article id="asst-subtitles-card" class="package-card hidden">
-                <p class="package-card__label">Subtitles</p>
-                <p id="subtitles-text" class="package-card__body"></p>
-              </article>
-              <article id="asst-clip-briefs-card" class="package-card hidden">
-                <p class="package-card__label">Clip Briefs</p>
-                <div id="clip-briefs" class="package-list"></div>
-              </article>
-            </div>
-          </section>
-
-          <div class="workspace-stage">
-            <div class="canvas-stage">
-              <div id="canvas-progress-pill" class="canvas-progress-pill hidden" aria-live="polite">
-                <span class="canvas-progress-pill__dot"></span>
-                <span id="canvas-progress-text">Working…</span>
               </div>
-              <div id="canvas-empty" class="canvas-empty">
-                <div class="canvas-empty__orb">✦</div>
-                <h3>The assistant will map your thinking here.</h3>
-                <p>As you answer each question, it will turn your thoughts into structure, assets, and clip plans.</p>
+              <div class="gen-form__footer">
+                <div id="studio-refine-status" class="assistant-status hidden"></div>
+                <button id="studio-refine-submit" class="primary-button" type="submit">Regenerate</button>
               </div>
-              <div id="canvas" class="canvas"></div>
-            </div>
-
-            <aside class="refine-panel refine-panel--workspace">
-              <div class="refine-panel__head">
-                <div>
-                  <p class="eyebrow">Asset Inspector</p>
-                  <h3 id="workspace-refine-title">No asset selected</h3>
-                </div>
-                <p id="workspace-refine-hint" class="assistant-status">
-                  Click any generated asset on the canvas to preview it and branch a refinement.
-                </p>
-              </div>
-              <div id="workspace-refine-preview" class="refine-preview refine-preview--empty">
-                <span>Preview</span>
-              </div>
-              <div id="workspace-reference-chipset" class="reference-chipset"></div>
-            </aside>
+            </form>
           </div>
-        </section>
+
+        </aside>
+
       </div>
     </div>
 
+    <!-- ═══ LIBRARY VIEW ══════════════════════════════════════════════════════ -->
     <div id="view-library" class="view view--library hidden">
       <div class="library-container">
         <div class="library-header">
@@ -501,11 +240,12 @@
           <h1 class="gen-heading">Past generations</h1>
         </div>
         <div id="library-list" class="library-list">
-          <p class="library-empty">No past generations yet. Go to Generate to make your first post.</p>
+          <p class="library-empty">No past generations yet. Go to Studio to make your first post.</p>
         </div>
       </div>
     </div>
 
+    <!-- ═══ ASSET MODAL ════════════════════════════════════════════════════════ -->
     <div id="asset-modal" class="asset-modal hidden">
       <div class="asset-modal__scrim" data-close-modal="true"></div>
       <div class="asset-modal__dialog" role="dialog" aria-modal="true" aria-label="Asset preview">
