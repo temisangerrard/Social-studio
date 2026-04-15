@@ -36,10 +36,8 @@ COPY package*.json ./
 # This ensures esbuild binaries are built for linux-x64, not darwin-arm64
 RUN npm ci --omit=dev
 
-# Copy source code after dependencies are installed
+# Copy source code — .dockerignore excludes node_modules so no local binaries bleed in
 COPY . .
-# Remove any leftover node_modules from the source (just in case)
-RUN rm -rf node_modules && npm ci --omit=dev
 
 # Create persistent data directories
 RUN mkdir -p workspace/uploads workspace/sessions workspace/boards outputs
