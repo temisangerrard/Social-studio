@@ -1528,3 +1528,164 @@ textarea {
     display: none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CANVAS PROCESS MAP — drag, connectors, skeleton, progress, inline edit
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Drag */
+.canvas-card:not([data-type="skeleton"]):not([data-type="asset"]) {
+  cursor: grab;
+  user-select: none;
+}
+.canvas-card:not([data-type="skeleton"]):not([data-type="asset"]):active {
+  cursor: grabbing;
+}
+.canvas-card.is-dragging {
+  box-shadow: 0 20px 56px rgba(0, 0, 0, 0.18), 0 6px 16px rgba(0, 0, 0, 0.12);
+  transform: scale(1.025) rotate(0.6deg);
+  z-index: 200;
+  cursor: grabbing !important;
+  transition: box-shadow 0.1s, transform 0.1s;
+}
+
+/* Skeleton shimmer */
+@keyframes canvas-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.canvas-card[data-type="skeleton"] {
+  background: linear-gradient(
+    90deg,
+    rgba(175, 179, 170, 0.10) 25%,
+    rgba(175, 179, 170, 0.22) 50%,
+    rgba(175, 179, 170, 0.10) 75%
+  );
+  background-size: 200% 100%;
+  animation: canvas-shimmer 1.6s ease-in-out infinite;
+  border: 1.5px dashed rgba(175, 179, 170, 0.28);
+  border-radius: 18px;
+  pointer-events: none;
+  box-shadow: none;
+}
+
+/* SVG connectors */
+.canvas-connector-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: visible;
+}
+
+.connector-path {
+  fill: none;
+  stroke: rgba(175, 179, 170, 0.55);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 5;
+  stroke-linecap: round;
+}
+
+.connector-arrowhead {
+  fill: rgba(175, 179, 170, 0.55);
+}
+
+/* Canvas cards sit above the SVG */
+.canvas-card {
+  z-index: 1;
+}
+
+/* Lane labels */
+.canvas-lane-label {
+  position: absolute;
+  top: 10px;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(95, 94, 91, 0.45);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 0;
+}
+
+/* Canvas progress pill */
+.canvas-progress-pill {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  background: rgba(20, 18, 14, 0.86);
+  color: #fff;
+  border-radius: 999px;
+  padding: 9px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.canvas-progress-pill.hidden {
+  opacity: 0;
+  pointer-events: none;
+  display: flex; /* keep it in flow so transition works */
+}
+
+.canvas-progress-pill__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f04d23;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.45; transform: scale(0.65); }
+}
+
+.canvas-progress-pill:not(.hidden) .canvas-progress-pill__dot {
+  animation: pulse-dot 1.1s ease-in-out infinite;
+}
+
+/* Inline text edit */
+.canvas-card__text[contenteditable="true"] {
+  outline: none;
+  border-bottom: 2px solid rgba(240, 77, 35, 0.55);
+  padding-bottom: 2px;
+  cursor: text;
+  border-radius: 0;
+}
+
+/* Button loading spinner */
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+.primary-button.is-loading {
+  opacity: 0.78;
+  cursor: wait;
+}
+
+.primary-button.is-loading::after {
+  content: "";
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: btn-spin 0.65s linear infinite;
+  margin-left: 8px;
+  vertical-align: -2px;
+}
