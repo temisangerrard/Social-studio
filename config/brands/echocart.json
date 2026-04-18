@@ -1,0 +1,24 @@
+{
+  "id": "echocart",
+  "name": "EchoCart",
+  "description": "Voice-driven shopping agent. You speak, it finds products, compares prices, and places orders. Built for the next generation of commerce where people shop by talking, not typing.",
+  "tone": "clean, modern, helpful, slightly futuristic",
+  "audience": "online shoppers frustrated with search, busy professionals, accessibility-focused users, voice-first consumers",
+  "cta": "Try EchoCart",
+  "logoPath": null,
+  "visual": {
+    "primaryColor": "#2563eb",
+    "secondaryColor": "#dbeafe",
+    "accentColor": "#1d4ed8",
+    "surfaceColor": "#f0f7ff"
+  },
+  "defaults": {
+    "platformTargets": ["tiktok", "instagram"],
+    "goal": "awareness",
+    "hashtags": ["#EchoCart", "#VoiceAI", "#VoiceShopping", "#AICommerce", "#ShopByVoice"]
+  },
+  "providers": {
+    "plannerModel": "glm-4.5",
+    "imageModel": "fal-ai/flux/schnell"
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "id": "temisangerrard",
+  "name": "Temisan Gerrard",
+  "description": "Solutions Architect and product builder operating at the intersection of finance, blockchain, and AI. Designs tokenisation infrastructure for regulated environments at ZILO, builds consumer AI products (Peppera, EchoCart, Mira), and founded Settley for tokenised real estate. Bridges compliance, fund operations, and engineering — speaks the language of regulators, fund operators, and engineering teams equally well. Ships working systems, not strategy decks.",
+  "tone": "direct, technical but accessible, builder-first, no-BS, grounded in real delivery",
+  "audience": "UK business leaders, fintech founders, institutional fund operators, blockchain builders, product people, anyone who values shipping over theorising",
+  "cta": "Visit temisangerrard.com",
+  "logoPath": null,
+  "visual": {
+    "primaryColor": "#1a1a2e",
+    "secondaryColor": "#e8e8e8",
+    "accentColor": "#d4a017",
+    "surfaceColor": "#f8f8f8"
+  },
+  "defaults": {
+    "platformTargets": ["linkedin", "instagram"],
+    "goal": "authority",
+    "hashtags": ["#BuildInPublic", "#Tokenisation", "#DigitalAssets", "#ProductBuilder", "#FinTech"]
+  },
+  "providers": {
+    "plannerModel": "glm-4.5",
+    "imageModel": "fal-ai/flux/schnell"
+  },
+  "contentPillars": [
+    {
+      "id": "build-in-public",
+      "name": "Build in Public",
+      "description": "Real-time updates on shipping products across AI, blockchain, and fintech. Scorecards, milestones, honest numbers. Covers all products — Peppera, Settley, AutoBett, EchoCart, Mira, ZILO work (where appropriate).",
+      "frequency": "weekly",
+      "platforms": ["linkedin", "instagram"],
+      "exampleIdeas": [
+        "I shipped 5 products in 90 days across AI and blockchain — here's the scoreboard",
+        "Settley's tokenisation architecture — how SPV-to-DAO governance actually works",
+        "Peppera v1 was garbage — here's why and how I fixed it",
+        "90 days zero to 5 live products — the real numbers"
+      ]
+    },
+    {
+      "id": "architecture-deep-dives",
+      "name": "Architecture & Systems Thinking",
+      "description": "Deep dives into technical architecture decisions, system design, and how to model complex systems. Covers C4/Structurizr, BPMN, event-driven architecture, tokenisation lifecycle design, smart contract orchestration, and settlement pipelines. Shows the thinking behind the build.",
+      "frequency": "weekly",
+      "platforms": ["linkedin"],
+      "exampleIdeas": [
+        "How I designed an end-to-end tokenised MMF platform — the architecture behind ZILO",
+        "Event-driven settlement with blockchain as single source of truth",
+        "Why I use C4 and BPMN to align compliance, ops, and engineering before writing code",
+        "Soulbound tokens for on-chain compliance — a first-principles approach",
+        "The 12-line function that almost killed Arena Play"
+      ]
+    },
+    {
+      "id": "tokenisation-and-finance",
+      "name": "Tokenisation & Digital Finance",
+      "description": "Insights on tokenised funds, real estate, deposits, and the infrastructure needed to make blockchain work in regulated finance. Covers real-world implementation challenges, compliance-by-design, multi-rail payments, KYC/AML, and what institutional adoption actually looks like.",
+      "frequency": "weekly",
+      "platforms": ["linkedin"],
+      "exampleIdeas": [
+        "Tokenised real estate sounds simple — here's why the infrastructure is anything but",
+        "What institutional clients actually ask about blockchain (it's not what you think)",
+        "Multi-rail payment settlement — fiat, stablecoins, and tokenised deposits in one pipeline",
+        "Compliance-by-design vs compliance-as-afterthought in digital assets",
+        "ERC-1400 lifecycle design for fund subscriptions, redemptions, and NAV-driven mint/burn"
+      ]
+    },
+    {
+      "id": "product-strategy",
+      "name": "Product Strategy & Shipping",
+      "description": "Frameworks, hot takes, and lessons on product management, strategy, and execution. Draws from managing distributed teams, running venture studio products, building consumer AI, and designing institutional fintech. The through-line: ship working systems, measure, iterate.",
+      "frequency": "weekly",
+      "platforms": ["linkedin", "instagram"],
+      "exampleIdeas": [
+        "Most companies don't need an AI strategy — they need a strategy that includes AI",
+        "The Ship-to-Learn framework — 4 steps, 6 weeks, one live product",
+        "I managed a 10-person distributed team building Settley — here's what actually worked",
+        "Stop asking which LLM to use — wrong question",
+        "The gap between 'we should use AI' and 'here's the product, it's live' is where companies die"
+      ]
+    },
+    {
+      "id": "behind-the-build",
+      "name": "Behind the Build",
+      "description": "Honest, narrative-driven posts about the reality of building products. Technical decisions, mistakes, pivots, and the human side of shipping. Works across all products and the ZILO role.",
+      "frequency": "weekly",
+      "platforms": ["linkedin"],
+      "exampleIdeas": [
+        "The thing that almost killed Arena Play wasn't the AI — it was the odds",
+        "I built EchoCart because voice shopping is genuinely terrible right now",
+        "Mira runs go-to-market without me — here's what that actually means",
+        "Translating blockchain to a room of fund managers with zero web3 experience",
+        "What I learned designing DeFi risk models at Kudy Financials in Luxembourg"
+      ]
+    }
+  ]
+}

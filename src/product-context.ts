@@ -13,7 +13,7 @@ export const defaultProductRegistry: ProductContextDefinition[] = [
   },
   {
     id: "temisangerrard",
-    name: "Temisangerrard",
+    name: "Temisan Gerrard",
     sources: [
       { repo: "temisangerrard/aos-studio", localPath: "/Users/temisan/Projects/aos-studio" },
       { repo: "temisangerrard/aos-studio" }
@@ -41,6 +41,22 @@ export const defaultProductRegistry: ProductContextDefinition[] = [
     sources: [
       { repo: "temisangerrard/settley-marketing", localPath: "/Users/temisan/Projects/settley-marketing" },
       { repo: "temisangerrard/settley-marketing" }
+    ]
+  },
+  {
+    id: "mira",
+    name: "Mira",
+    sources: [
+      { repo: "temisangerrard/mira-agent" },
+      { repo: "temisangerrard/mira-agent" }
+    ]
+  },
+  {
+    id: "hermes",
+    name: "Hermes Agent",
+    sources: [
+      { repo: "temisangerrard/hermes-agent" },
+      { repo: "temisangerrard/hermes-agent" }
     ]
   }
 ];

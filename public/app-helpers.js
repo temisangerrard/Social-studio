@@ -189,6 +189,16 @@ export function getWorkflowPresets() {
       summary: "Plan and generate a post package with slide visuals, hooks, caption, and hashtags."
     },
     {
+      id: "linkedin-carousel",
+      label: "LinkedIn Carousel",
+      summary: "Generate a LinkedIn carousel with slide copy, visual direction, and post text."
+    },
+    {
+      id: "linkedin-text",
+      label: "LinkedIn Text Post",
+      summary: "Generate a text-only LinkedIn post with hooks, body copy, and hashtags."
+    },
+    {
       id: "mascot-variants",
       label: "Mascot Variant Pack",
       summary: "Generate multiple mascot-led visual options from one prompt and pick a hero variant."
@@ -222,6 +232,11 @@ export function getPlatformPublishLinks(productName) {
       label: "Open Instagram Create",
       href: "https://www.instagram.com/create/select/",
       helper: `Open Instagram web create flow for ${productName}.`
+    },
+    {
+      label: "Open LinkedIn Post",
+      href: "https://www.linkedin.com/feed/?shareActive=true",
+      helper: `Create a new LinkedIn post for ${productName}.`
     }
   ];
 }

@@ -8,7 +8,7 @@ import type { AssistantMessage } from "./types.ts";
 import { runPipelineFromBrief, runPipelineFromRequest } from "./pipeline.ts";
 import { defaultProductRegistry, registerBrandDescription, resolveProductContext } from "./product-context.ts";
 import { createStorage } from "./storage.ts";
-import type { AssistantSession, BoardDocument, BrandProfile, GenerationRequest, PostMetadata } from "./types.ts";
+import type { AssistantSession, BatchGenerationRequest, BoardDocument, BrandProfile, CalendarSlot, ContentPillar, GenerationRequest, PostMetadata } from "./types.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..");
@@ -596,6 +596,123 @@ async function handleRequest(req: Request): Promise<Response> {
     brand.mascot.referenceImages = brand.mascot.referenceImages.filter((_, i) => i !== index);
     await storage.saveBrandProfile(brand);
     return json({ referenceImages: brand.mascot.referenceImages });
+  }
+
+  // --- Calendar API ---
+
+  if (url.pathname === "/api/calendar" && req.method === "GET") {
+    return json(await storage.listCalendarSlots());
+  }
+
+  if (url.pathname === "/api/calendar" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const slot: CalendarSlot = {
+      id: body.id as string || makeId("slot"),
+      date: body.date as string || new Date().toISOString().slice(0, 10),
+      brandProfileId: body.brandProfileId as string || "peppera",
+      platform: (body.platform as CalendarSlot["platform"]) || "instagram",
+      pillar: body.pillar as string || "",
+      idea: body.idea as string || "",
+      status: (body.status as CalendarSlot["status"]) || "idea",
+      outputPostId: body.outputPostId as string | undefined,
+      jobId: body.jobId as string | undefined,
+      tags: Array.isArray(body.tags) ? body.tags as string[] : [],
+      createdAt: body.createdAt as string || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    await storage.saveCalendarSlot(slot);
+    return json(slot);
+  }
+
+  if (url.pathname.startsWith("/api/calendar/") && !url.pathname.includes("/batch") && req.method === "PUT") {
+    const slotId = url.pathname.slice("/api/calendar/".length);
+    const existing = await storage.getCalendarSlot(slotId);
+    if (!existing) return json({ error: "Slot not found" }, { status: 404 });
+    const body = await parseJsonBody(req);
+    const updated: CalendarSlot = {
+      ...existing,
+      ...body as Partial<CalendarSlot>,
+      id: slotId,
+      createdAt: existing.createdAt,
+      updatedAt: new Date().toISOString()
+    };
+    await storage.saveCalendarSlot(updated);
+    return json(updated);
+  }
+
+  if (url.pathname.startsWith("/api/calendar/") && req.method === "DELETE") {
+    const slotId = url.pathname.slice("/api/calendar/".length);
+    await storage.deleteCalendarSlot(slotId);
+    return json({ ok: true });
+  }
+
+  if (url.pathname === "/api/calendar/batch-generate" && req.method === "POST") {
+    const body = await parseJsonBody(req) as unknown as BatchGenerationRequest;
+    const slotIds = body.slotIds || [];
+    const results: Array<{ slotId: string; jobId?: string; error?: string }> = [];
+
+    for (const slotId of slotIds) {
+      const slot = await storage.getCalendarSlot(slotId);
+      if (!slot || !slot.idea) {
+        results.push({ slotId, error: "Slot not found or has no idea" });
+        continue;
+      }
+      const brand = await storage.getBrandProfile(slot.brandProfileId);
+      if (!brand) {
+        results.push({ slotId, error: "Brand not found" });
+        continue;
+      }
+      const request: Record<string, unknown> = {
+        brandProfileId: slot.brandProfileId,
+        rawIdea: slot.idea,
+        cards: [],
+        references: [],
+        platformTargets: [slot.platform],
+        goal: brand.defaults?.goal || "awareness",
+        workflowType: "slideshow",
+        visualMode: body.visualMode || "mascot-led",
+        deliveryTargets: body.deliveryTargets || slot.platform
+      };
+      try {
+        const { jobId } = await startGeneration(request);
+        slot.status = "generating";
+        slot.jobId = jobId;
+        slot.updatedAt = new Date().toISOString();
+        await storage.saveCalendarSlot(slot);
+        results.push({ slotId, jobId });
+      } catch (error) {
+        results.push({ slotId, error: error instanceof Error ? error.message : String(error) });
+      }
+    }
+    return json({ results });
+  }
+
+  // --- Content Pillars API ---
+
+  if (url.pathname === "/api/pillars" && req.method === "GET") {
+    return json(await storage.listContentPillars());
+  }
+
+  if (url.pathname === "/api/pillars" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const pillar: ContentPillar = {
+      id: body.id as string || makeId("pillar"),
+      brandProfileId: body.brandProfileId as string || "peppera",
+      name: body.name as string || "Untitled Pillar",
+      description: body.description as string || "",
+      frequency: (body.frequency as ContentPillar["frequency"]) || "weekly",
+      platforms: Array.isArray(body.platforms) ? body.platforms as ContentPillar["platforms"] : ["instagram"],
+      defaultTone: body.defaultTone as string | undefined,
+      exampleIdeas: Array.isArray(body.exampleIdeas) ? body.exampleIdeas as string[] : []
+    };
+    await storage.saveContentPillar(pillar);
+    return json(pillar);
+  }
+
+  if (url.pathname.startsWith("/api/pillars/") && req.method === "DELETE") {
+    const pillarId = url.pathname.slice("/api/pillars/".length);
+    await storage.deleteContentPillar(pillarId);
+    return json({ ok: true });
   }
 
   // --- OpenClaw / agent-friendly endpoints ---

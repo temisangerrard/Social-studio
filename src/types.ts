@@ -1,7 +1,7 @@
-export type Platform = "tiktok" | "instagram";
-export type DeliveryTarget = "tiktok" | "instagram" | "both";
-export type PostFormat = "slideshow";
-export type WorkflowType = "slideshow" | "mascot-variants" | "reference-edit" | "video-clip" | "reel-package";
+export type Platform = "tiktok" | "instagram" | "linkedin";
+export type DeliveryTarget = "tiktok" | "instagram" | "linkedin" | "both" | "all";
+export type PostFormat = "slideshow" | "carousel" | "text-only";
+export type WorkflowType = "slideshow" | "mascot-variants" | "reference-edit" | "video-clip" | "reel-package" | "linkedin-carousel" | "linkedin-text";
 export type VisualMode = "mascot-led" | "food-led" | "mixed";
 export type ConsistencyMode = "prompt-led" | "mascot-consistent";
 export type SlideRole =
@@ -301,4 +301,46 @@ export interface RenderResult {
 export interface FalImageConfig {
   apiKey?: string;
   model?: string;
+}
+
+// ── Content Calendar ──────────────────────────────────────────────────────────
+
+export type CalendarSlotStatus = "idea" | "planned" | "generating" | "ready" | "published";
+
+export interface CalendarSlot {
+  id: string;
+  date: string; // ISO date string YYYY-MM-DD
+  brandProfileId: string;
+  platform: Platform;
+  pillar: string;
+  idea: string;
+  status: CalendarSlotStatus;
+  outputPostId?: string;
+  jobId?: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContentPillar {
+  id: string;
+  brandProfileId: string;
+  name: string;
+  description: string;
+  frequency: "daily" | "2x-week" | "weekly" | "biweekly";
+  platforms: Platform[];
+  defaultTone?: string;
+  exampleIdeas: string[];
+}
+
+export interface CalendarWeek {
+  weekStart: string; // ISO date YYYY-MM-DD (Monday)
+  slots: CalendarSlot[];
+}
+
+export interface BatchGenerationRequest {
+  slotIds: string[];
+  brandProfileId: string;
+  visualMode?: VisualMode;
+  deliveryTargets?: DeliveryTarget;
 }

@@ -2,8 +2,8 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Social Studio API",
-    "description": "AI content generation studio for Peppera, Autobett, and Settley. Generates TikTok/Instagram slideshows, mascot variants, video clips, and reel packages.",
-    "version": "1.0.0"
+    "description": "Multi-brand content generation studio. Generates TikTok/Instagram slideshows, LinkedIn carousels, mascot variants, video clips, and reel packages. Supports content calendars, pillars, batch generation, and agent-driven workflows for Peppera, AutoBett, Settley, EchoCart, Temisan Gerrard, Mira, and Hermes.",
+    "version": "2.0.0"
   },
   "servers": [
     { "url": "http://localhost:3000", "description": "Local" }
@@ -11,11 +11,11 @@
   "paths": {
     "/api/health": {
       "get": {
-        "summary": "System health and capabilities",
+        "summary": "System health, brands, and capabilities",
         "operationId": "getHealth",
         "responses": {
           "200": {
-            "description": "System is running",
+            "description": "System status",
             "content": {
               "application/json": {
                 "schema": {
@@ -33,10 +33,48 @@
         }
       }
     },
+    "/api/brands": {
+      "get": {
+        "summary": "List all brand profiles",
+        "operationId": "listBrands",
+        "responses": {
+          "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/BrandProfile" } } } } }
+        }
+      },
+      "post": {
+        "summary": "Create or update a brand profile",
+        "operationId": "saveBrand",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BrandProfile" } } } },
+        "responses": { "200": { "description": "Saved" } }
+      }
+    },
+    "/api/brands/{brandId}": {
+      "get": {
+        "summary": "Get a brand profile",
+        "operationId": "getBrand",
+        "parameters": [ { "name": "brandId", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BrandProfile" } } } } }
+      }
+    },
+    "/api/products": {
+      "get": {
+        "summary": "List all registered products with context sources",
+        "operationId": "listProducts",
+        "responses": { "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "type": "object" } } } } } }
+      }
+    },
+    "/api/products/{productId}/context": {
+      "get": {
+        "summary": "Get resolved product context (README, description)",
+        "operationId": "getProductContext",
+        "parameters": [ { "name": "productId", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProductContext" } } } } }
+      }
+    },
     "/api/generate/quick": {
       "post": {
-        "summary": "Quick generate — simplest way to create content",
-        "description": "Provide a brand, idea, and platform. Returns a job ID to poll for results.",
+        "summary": "Quick generate — simplest agent-friendly endpoint",
+        "description": "Provide brand + idea + platform. Returns a job ID to poll.",
         "operationId": "quickGenerate",
         "requestBody": {
           "required": true,
@@ -46,159 +84,64 @@
                 "type": "object",
                 "required": ["idea"],
                 "properties": {
-                  "brand": {
-                    "type": "string",
-                    "default": "peppera",
-                    "enum": ["peppera", "autobett", "settley"],
-                    "description": "Brand to generate for"
-                  },
-                  "idea": {
-                    "type": "string",
-                    "description": "The content idea in plain language",
-                    "example": "3 ingredients stressed cooks always forget"
-                  },
-                  "platform": {
-                    "type": "string",
-                    "default": "tiktok",
-                    "enum": ["tiktok", "instagram", "both"]
-                  },
-                  "visualMode": {
-                    "type": "string",
-                    "default": "mascot-led",
-                    "enum": ["mascot-led", "food-led", "mixed"]
-                  }
+                  "brand": { "type": "string", "default": "peppera", "description": "Brand ID" },
+                  "idea": { "type": "string", "description": "Content idea in plain language" },
+                  "platform": { "type": "string", "default": "tiktok", "enum": ["tiktok", "instagram", "linkedin"] },
+                  "visualMode": { "type": "string", "default": "mascot-led", "enum": ["mascot-led", "food-led", "mixed"] }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": {
-            "description": "Job started",
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/JobStarted" }
-              }
-            }
-          },
-          "400": { "description": "idea is required" },
-          "404": { "description": "Brand not found" }
+          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobStarted" } } } }
         }
       }
     },
     "/api/generate": {
       "post": {
-        "summary": "Full generate — all workflow types",
-        "description": "Full control over workflow type, visual mode, references, and delivery targets.",
+        "summary": "Full generate — all workflow types and options",
         "operationId": "generate",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": { "$ref": "#/components/schemas/GenerationRequest" }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/JobStarted" }
-              }
-            }
-          }
-        }
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GenerationRequest" } } } },
+        "responses": { "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/JobStarted" } } } } }
       }
     },
     "/api/jobs": {
       "get": {
-        "summary": "List all jobs",
+        "summary": "List all jobs, optionally filter by status",
         "operationId": "listJobs",
-        "parameters": [
-          {
-            "name": "status",
-            "in": "query",
-            "schema": { "type": "string", "enum": ["pending", "running", "done", "failed"] },
-            "description": "Filter by status"
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Job" } }
-              }
-            }
-          }
-        }
+        "parameters": [ { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["pending", "running", "done", "failed"] } } ],
+        "responses": { "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Job" } } } } } }
       }
     },
     "/api/jobs/{jobId}": {
       "get": {
-        "summary": "Poll job status",
+        "summary": "Poll job status and get result when done",
         "operationId": "getJob",
-        "parameters": [
-          { "name": "jobId", "in": "path", "required": true, "schema": { "type": "string" } }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": { "$ref": "#/components/schemas/Job" }
-              }
-            }
-          },
-          "404": { "description": "Job not found" }
-        }
+        "parameters": [ { "name": "jobId", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Job" } } } } }
       }
     },
     "/api/outputs": {
       "get": {
         "summary": "List all generated outputs",
         "operationId": "listOutputs",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "postId": { "type": "string" },
-                      "createdAt": { "type": "string" },
-                      "product": { "type": "string" },
-                      "platform": { "type": "string" }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+        "responses": { "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/OutputSummary" } } } } } }
       }
     },
     "/api/outputs/{postId}": {
       "get": {
-        "summary": "Get full output metadata",
+        "summary": "Get full output metadata including slides, caption, hashtags",
         "operationId": "getOutput",
-        "parameters": [
-          { "name": "postId", "in": "path", "required": true, "schema": { "type": "string" } }
-        ],
-        "responses": {
-          "200": { "description": "Full PostMetadata object" },
-          "404": { "description": "Output not found" }
-        }
+        "parameters": [ { "name": "postId", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Full PostMetadata" } }
       }
     },
     "/api/outputs/{postId}/text": {
       "get": {
-        "summary": "Get caption, hooks, hashtags for a post",
-        "description": "Lightweight endpoint — returns only the text assets, no slide data.",
+        "summary": "Get only text assets — caption, hooks, hashtags",
         "operationId": "getOutputText",
-        "parameters": [
-          { "name": "postId", "in": "path", "required": true, "schema": { "type": "string" } }
-        ],
+        "parameters": [ { "name": "postId", "in": "path", "required": true, "schema": { "type": "string" } } ],
         "responses": {
           "200": {
             "content": {
@@ -214,36 +157,7 @@
                 }
               }
             }
-          },
-          "404": { "description": "Output not found" }
-        }
-      }
-    },
-    "/api/brands": {
-      "get": {
-        "summary": "List all brand profiles",
-        "operationId": "listBrands",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": { "type": "array", "items": { "$ref": "#/components/schemas/BrandProfile" } }
-              }
-            }
           }
-        }
-      }
-    },
-    "/api/brands/{brandId}": {
-      "get": {
-        "summary": "Get a brand profile",
-        "operationId": "getBrand",
-        "parameters": [
-          { "name": "brandId", "in": "path", "required": true, "schema": { "type": "string" } }
-        ],
-        "responses": {
-          "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BrandProfile" } } } },
-          "404": { "description": "Brand not found" }
         }
       }
     },
@@ -255,9 +169,145 @@
           { "name": "postId", "in": "path", "required": true, "schema": { "type": "string" } },
           { "name": "filename", "in": "path", "required": true, "schema": { "type": "string" }, "example": "slide-01.png" }
         ],
+        "responses": { "200": { "content": { "image/png": {} } } }
+      }
+    },
+    "/api/calendar": {
+      "get": {
+        "summary": "List all calendar slots",
+        "operationId": "listCalendarSlots",
+        "responses": { "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/CalendarSlot" } } } } } }
+      },
+      "post": {
+        "summary": "Create a calendar slot",
+        "description": "Add a content idea to a specific date. Agents use this to plan content calendars.",
+        "operationId": "createCalendarSlot",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CalendarSlotInput" }
+            }
+          }
+        },
+        "responses": { "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CalendarSlot" } } } } }
+      }
+    },
+    "/api/calendar/{slotId}": {
+      "put": {
+        "summary": "Update a calendar slot",
+        "operationId": "updateCalendarSlot",
+        "parameters": [ { "name": "slotId", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CalendarSlotInput" } } } },
+        "responses": { "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CalendarSlot" } } } } }
+      },
+      "delete": {
+        "summary": "Delete a calendar slot",
+        "operationId": "deleteCalendarSlot",
+        "parameters": [ { "name": "slotId", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Deleted" } }
+      }
+    },
+    "/api/calendar/batch-generate": {
+      "post": {
+        "summary": "Batch generate content for multiple calendar slots",
+        "description": "Pass an array of slot IDs. Each slot with an idea will be queued for generation. Returns job IDs per slot.",
+        "operationId": "batchGenerate",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/BatchGenerationRequest" }
+            }
+          }
+        },
         "responses": {
-          "200": { "content": { "image/png": {} } },
-          "404": { "description": "Slide not found" }
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "results": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "slotId": { "type": "string" },
+                          "jobId": { "type": "string" },
+                          "error": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pillars": {
+      "get": {
+        "summary": "List all content pillars",
+        "operationId": "listPillars",
+        "responses": { "200": { "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ContentPillar" } } } } } }
+      },
+      "post": {
+        "summary": "Create or update a content pillar",
+        "operationId": "savePillar",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ContentPillar" } } } },
+        "responses": { "200": { "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ContentPillar" } } } } }
+      }
+    },
+    "/api/pillars/{pillarId}": {
+      "delete": {
+        "summary": "Delete a content pillar",
+        "operationId": "deletePillar",
+        "parameters": [ { "name": "pillarId", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "responses": { "200": { "description": "Deleted" } }
+      }
+    },
+    "/api/assistant/sessions": {
+      "get": {
+        "summary": "List assistant sessions",
+        "operationId": "listSessions",
+        "responses": { "200": { "content": { "application/json": { "schema": { "type": "array" } } } } }
+      },
+      "post": {
+        "summary": "Create a new assistant session for guided content creation",
+        "operationId": "createSession",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "productId": { "type": "string" } } } } }
+        },
+        "responses": { "200": { "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/api/assistant/sessions/{sessionId}/reply": {
+      "post": {
+        "summary": "Send a message to the assistant and get a reply",
+        "description": "The assistant interviews one question at a time, building a content brief. When ready, shouldGenerate=true.",
+        "operationId": "assistantReply",
+        "parameters": [ { "name": "sessionId", "in": "path", "required": true, "schema": { "type": "string" } } ],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "required": ["text"], "properties": { "text": { "type": "string" } } } } }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "session": { "type": "object" },
+                    "shouldGenerate": { "type": "boolean" }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -284,25 +334,21 @@
       },
       "GenerationRequest": {
         "type": "object",
-        "required": ["brandProfileId", "idea"],
+        "required": ["brandProfileId", "rawIdea"],
         "properties": {
           "brandProfileId": { "type": "string", "example": "peppera" },
-          "idea": { "type": "string" },
-          "workflowType": {
-            "type": "string",
-            "enum": ["slideshow", "mascot-variants", "reference-edit", "video-clip", "reel-package"],
-            "default": "slideshow"
-          },
-          "visualMode": {
-            "type": "string",
-            "enum": ["mascot-led", "food-led", "mixed"],
-            "default": "mascot-led"
-          },
-          "deliveryTargets": {
-            "type": "string",
-            "enum": ["tiktok", "instagram", "both"],
-            "default": "tiktok"
-          }
+          "rawIdea": { "type": "string" },
+          "notes": { "type": "string" },
+          "workflowType": { "type": "string", "enum": ["slideshow", "mascot-variants", "reference-edit", "video-clip", "reel-package", "linkedin-carousel", "linkedin-text"], "default": "slideshow" },
+          "visualMode": { "type": "string", "enum": ["mascot-led", "food-led", "mixed"], "default": "mascot-led" },
+          "platformTargets": { "type": "array", "items": { "type": "string", "enum": ["tiktok", "instagram", "linkedin"] } },
+          "deliveryTargets": { "type": "string", "enum": ["tiktok", "instagram", "linkedin", "both", "all"], "default": "tiktok" },
+          "goal": { "type": "string" },
+          "cards": { "type": "array", "items": { "type": "object" } },
+          "references": { "type": "array", "items": { "type": "object" } },
+          "referenceAssets": { "type": "array", "items": { "type": "object" } },
+          "variantCount": { "type": "integer" },
+          "videoOptions": { "type": "object" }
         }
       },
       "BrandProfile": {
@@ -312,7 +358,85 @@
           "name": { "type": "string" },
           "description": { "type": "string" },
           "tone": { "type": "string" },
-          "audience": { "type": "string" }
+          "audience": { "type": "string" },
+          "cta": { "type": "string" },
+          "visual": { "type": "object" },
+          "defaults": { "type": "object" },
+          "providers": { "type": "object" },
+          "mascot": { "type": "object" },
+          "contentPillars": { "type": "array", "items": { "$ref": "#/components/schemas/ContentPillar" } }
+        }
+      },
+      "ProductContext": {
+        "type": "object",
+        "properties": {
+          "productId": { "type": "string" },
+          "productName": { "type": "string" },
+          "summary": { "type": "string" },
+          "source": { "type": "string" },
+          "repo": { "type": "string" }
+        }
+      },
+      "CalendarSlot": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "date": { "type": "string", "format": "date", "example": "2026-04-21" },
+          "brandProfileId": { "type": "string" },
+          "platform": { "type": "string", "enum": ["tiktok", "instagram", "linkedin"] },
+          "pillar": { "type": "string", "description": "Content pillar name or ID" },
+          "idea": { "type": "string", "description": "The content idea or direction" },
+          "status": { "type": "string", "enum": ["idea", "planned", "generating", "ready", "published"] },
+          "outputPostId": { "type": "string", "description": "Links to generated output when ready" },
+          "jobId": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CalendarSlotInput": {
+        "type": "object",
+        "required": ["date", "brandProfileId", "idea"],
+        "properties": {
+          "date": { "type": "string", "format": "date", "example": "2026-04-21" },
+          "brandProfileId": { "type": "string", "example": "temisangerrard" },
+          "platform": { "type": "string", "enum": ["tiktok", "instagram", "linkedin"], "default": "instagram" },
+          "pillar": { "type": "string", "example": "build-in-public" },
+          "idea": { "type": "string", "example": "I shipped 4 AI products in 90 days — here's the scoreboard" },
+          "status": { "type": "string", "enum": ["idea", "planned"], "default": "idea" },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "BatchGenerationRequest": {
+        "type": "object",
+        "required": ["slotIds"],
+        "properties": {
+          "slotIds": { "type": "array", "items": { "type": "string" }, "description": "Calendar slot IDs to generate" },
+          "brandProfileId": { "type": "string" },
+          "visualMode": { "type": "string", "enum": ["mascot-led", "food-led", "mixed"] },
+          "deliveryTargets": { "type": "string", "enum": ["tiktok", "instagram", "linkedin", "both", "all"] }
+        }
+      },
+      "ContentPillar": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "brandProfileId": { "type": "string" },
+          "name": { "type": "string", "example": "Build in Public" },
+          "description": { "type": "string" },
+          "frequency": { "type": "string", "enum": ["daily", "2x-week", "weekly", "biweekly"] },
+          "platforms": { "type": "array", "items": { "type": "string", "enum": ["tiktok", "instagram", "linkedin"] } },
+          "defaultTone": { "type": "string" },
+          "exampleIdeas": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "OutputSummary": {
+        "type": "object",
+        "properties": {
+          "postId": { "type": "string" },
+          "createdAt": { "type": "string" },
+          "product": { "type": "string" },
+          "platform": { "type": "string" }
         }
       }
     }

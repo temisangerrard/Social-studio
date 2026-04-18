@@ -46,9 +46,10 @@ test("workspace asset URL falls back to rendered slide path when needed", () => 
 
 test("publish links include direct TikTok and Instagram destinations", () => {
   const links = getPlatformPublishLinks("Peppera");
-  assert.equal(links.length, 2);
+  assert.equal(links.length, 3);
   assert.match(links[0].href, /tiktok\.com/);
   assert.match(links[1].href, /instagram\.com/);
+  assert.match(links[2].href, /linkedin\.com/);
 });
 
 test("canvas cards include generated artifacts when workflow outputs do not have slides", () => {
@@ -82,10 +83,10 @@ test("canvas cards include generated artifacts when workflow outputs do not have
   assert.equal(assetCards[0].assetUrl, "/api/assets/peppera_tt_0020/variant-1.png");
 });
 
-test("workflow presets surface the five content workflows", () => {
+test("workflow presets surface all content workflows", () => {
   const presets = getWorkflowPresets();
   assert.deepEqual(
     presets.map((preset) => preset.id),
-    ["slideshow", "mascot-variants", "reference-edit", "video-clip", "reel-package"]
+    ["slideshow", "linkedin-carousel", "linkedin-text", "mascot-variants", "reference-edit", "video-clip", "reel-package"]
   );
 });

@@ -18,7 +18,7 @@ RUN npm ci --omit=dev
 COPY . .
 
 # Create persistent data directories (volume mounted over workspace/ at runtime)
-RUN mkdir -p workspace/uploads workspace/sessions workspace/boards workspace/outputs workspace/jobs workspace/brands
+RUN mkdir -p workspace/uploads workspace/sessions workspace/boards workspace/outputs workspace/jobs workspace/brands workspace/calendar workspace/pillars
 
 EXPOSE 3000
 

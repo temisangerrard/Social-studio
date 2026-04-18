@@ -39,11 +39,25 @@ export function getNextInterviewQuestion(brief: InferredBrief): string {
   return "I have enough to start making this. If there is one thing I must not miss, what is it?";
 }
 
+function hasAlreadyGenerated(session: AssistantSession): boolean {
+  return session.status === "done" || session.status === "generating" ||
+    session.checkpoints.finalPackage === "done";
+}
+
 function fallbackAssistantReply(
   session: AssistantSession,
   userMessage: string
 ): { reply: string; updatedBrief: InferredBrief; shouldGenerate: boolean } {
   const brief = { ...session.inferredBrief };
+
+  // If we already generated, treat follow-up messages as new directions
+  if (hasAlreadyGenerated(session)) {
+    return {
+      reply: "Got it — I'll generate a new package with that direction.",
+      updatedBrief: { ...brief, goal: userMessage },
+      shouldGenerate: true
+    };
+  }
 
   if (!brief.goal) brief.goal = userMessage;
   else if (!brief.audience) brief.audience = userMessage;

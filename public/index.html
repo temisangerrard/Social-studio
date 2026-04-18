@@ -19,6 +19,7 @@
         <span class="wordmark">Social Studio</span>
         <nav class="topnav">
           <a class="is-active" href="#" data-view="studio">Studio</a>
+          <a href="#" data-view="calendar">Calendar</a>
           <a href="#" data-view="library">Library</a>
         </nav>
       </div>
@@ -45,6 +46,7 @@
               <select id="studio-platform-select">
                 <option value="tiktok">TikTok</option>
                 <option value="instagram">Instagram</option>
+                <option value="linkedin">LinkedIn</option>
               </select>
             </div>
             <div class="field-group">
@@ -59,8 +61,10 @@
               <label class="field-label" for="studio-delivery-target">Delivery</label>
               <select id="studio-delivery-target">
                 <option value="both">TikTok + Instagram</option>
+                <option value="all">All Platforms</option>
                 <option value="tiktok">TikTok</option>
                 <option value="instagram">Instagram</option>
+                <option value="linkedin">LinkedIn</option>
               </select>
             </div>
           </div>
@@ -232,12 +236,161 @@
       </div>
     </div>
 
+    <!-- ═══ CALENDAR VIEW ═════════════════════════════════════════════════════ -->
+    <div id="view-calendar" class="view view--calendar hidden">
+      <div class="calendar-container">
+        <div class="calendar-header">
+          <div class="calendar-header__left">
+            <p class="eyebrow">Content Calendar</p>
+            <h1 class="gen-heading">Plan your week</h1>
+          </div>
+          <div class="calendar-header__right">
+            <div class="field-group">
+              <label class="field-label" for="calendar-brand-select">Brand</label>
+              <select id="calendar-brand-select"></select>
+            </div>
+            <button id="calendar-week-prev" class="ghost-button" type="button">← Prev</button>
+            <span id="calendar-week-label" class="calendar-week-label"></span>
+            <button id="calendar-week-next" class="ghost-button" type="button">Next →</button>
+          </div>
+        </div>
+
+        <!-- Pillars bar -->
+        <div class="pillars-bar">
+          <p class="eyebrow">Content Pillars</p>
+          <div id="pillars-list" class="pillars-list"></div>
+          <button id="add-pillar-btn" class="ghost-button" type="button">+ Add Pillar</button>
+        </div>
+
+        <!-- Week grid -->
+        <div id="calendar-grid" class="calendar-grid">
+          <!-- 7 day columns rendered by JS -->
+        </div>
+
+        <!-- Batch actions -->
+        <div class="calendar-actions">
+          <button id="calendar-batch-generate" class="primary-button" type="button">Generate Selected</button>
+          <button id="calendar-auto-fill" class="ghost-button" type="button">Auto-fill from Pillars</button>
+          <span id="calendar-status" class="assistant-status hidden"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PILLAR MODAL ═══════════════════════════════════════════════════════ -->
+    <div id="pillar-modal" class="asset-modal hidden">
+      <div class="asset-modal__scrim" data-close-pillar-modal="true"></div>
+      <div class="asset-modal__dialog" role="dialog" aria-modal="true" aria-label="Content pillar">
+        <button id="pillar-modal-close" class="asset-modal__close" type="button">Close</button>
+        <h2 style="font-family:'Newsreader',serif;font-size:1.6rem;color:var(--brand-strong);margin:0">Content Pillar</h2>
+        <form id="pillar-form" class="pillar-form">
+          <div class="field-group">
+            <label class="field-label" for="pillar-name">Name</label>
+            <input id="pillar-name" type="text" placeholder="e.g. Pantry Chaos, Meal Prep Monday" />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="pillar-description">Description</label>
+            <textarea id="pillar-description" rows="2" placeholder="What kind of content falls under this pillar?"></textarea>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="pillar-frequency">Frequency</label>
+              <select id="pillar-frequency">
+                <option value="daily">Daily</option>
+                <option value="2x-week">2x / week</option>
+                <option value="weekly" selected>Weekly</option>
+                <option value="biweekly">Biweekly</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="pillar-platform">Platform</label>
+              <select id="pillar-platform">
+                <option value="instagram">Instagram</option>
+                <option value="tiktok">TikTok</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="pillar-ideas">Example ideas (one per line)</label>
+            <textarea id="pillar-ideas" rows="4" placeholder="Fridge raid with random leftovers&#10;5-minute pantry dinner&#10;What I eat in a day"></textarea>
+          </div>
+          <div class="gen-form__footer">
+            <button id="pillar-delete" class="ghost-button" type="button" style="color:#c0392b">Delete</button>
+            <button id="pillar-save" class="primary-button" type="submit">Save Pillar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ═══ SLOT MODAL ═════════════════════════════════════════════════════════ -->
+    <div id="slot-modal" class="asset-modal hidden">
+      <div class="asset-modal__scrim" data-close-slot-modal="true"></div>
+      <div class="asset-modal__dialog" role="dialog" aria-modal="true" aria-label="Calendar slot">
+        <button id="slot-modal-close" class="asset-modal__close" type="button">Close</button>
+        <h2 id="slot-modal-title" style="font-family:'Newsreader',serif;font-size:1.6rem;color:var(--brand-strong);margin:0"></h2>
+        <form id="slot-form" class="pillar-form">
+          <div class="field-group">
+            <label class="field-label" for="slot-idea">Idea or direction</label>
+            <textarea id="slot-idea" rows="3" placeholder="What should this post be about?"></textarea>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="slot-pillar">Pillar</label>
+              <select id="slot-pillar"><option value="">None</option></select>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="slot-platform">Platform</label>
+              <select id="slot-platform">
+                <option value="instagram">Instagram</option>
+                <option value="tiktok">TikTok</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="slot-status">Status</label>
+            <select id="slot-status">
+              <option value="idea">Idea</option>
+              <option value="planned">Planned</option>
+              <option value="generating">Generating</option>
+              <option value="ready">Ready</option>
+              <option value="published">Published</option>
+            </select>
+          </div>
+          <div class="gen-form__footer">
+            <button id="slot-delete" class="ghost-button" type="button" style="color:#c0392b">Delete</button>
+            <button id="slot-save" class="primary-button" type="submit">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- ═══ LIBRARY VIEW ══════════════════════════════════════════════════════ -->
     <div id="view-library" class="view view--library hidden">
       <div class="library-container">
         <div class="library-header">
-          <p class="eyebrow">History</p>
-          <h1 class="gen-heading">Past generations</h1>
+          <div>
+            <p class="eyebrow">Content Hub</p>
+            <h1 class="gen-heading">Your content</h1>
+          </div>
+          <div class="library-filters">
+            <div class="field-group">
+              <label class="field-label" for="library-brand-filter">Brand</label>
+              <select id="library-brand-filter">
+                <option value="">All brands</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="library-platform-filter">Platform</label>
+              <select id="library-platform-filter">
+                <option value="">All platforms</option>
+                <option value="tiktok">TikTok</option>
+                <option value="instagram">Instagram</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="library-search">Search</label>
+              <input id="library-search" type="text" placeholder="Search content…" />
+            </div>
+          </div>
         </div>
         <div id="library-list" class="library-list">
           <p class="library-empty">No past generations yet. Go to Studio to make your first post.</p>

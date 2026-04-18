@@ -103,6 +103,22 @@ export function buildWorkflowRecipe(request: GenerationRequest): WorkflowRecipe 
     };
   }
 
+  if (workflowType === "linkedin-carousel") {
+    return {
+      workflowType,
+      operation: "image-generate",
+      model: "fal-ai/flux/schnell"
+    };
+  }
+
+  if (workflowType === "linkedin-text") {
+    return {
+      workflowType,
+      operation: "planner-only",
+      model: "planner-first"
+    };
+  }
+
   return {
     workflowType,
     operation: "image-generate",
