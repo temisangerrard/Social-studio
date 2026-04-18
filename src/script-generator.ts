@@ -1,4 +1,4 @@
-import type { ContentBrief, Slide, SlideRole } from "./types.ts";
+import type { BrandProfile, ContentBrief, Slide, SlideRole, StructuredRecipe } from "./types.ts";
 
 const SLIDE_BLUEPRINT: Array<{
   role: SlideRole;
@@ -88,4 +88,134 @@ export function generateScript(brief: ContentBrief): Slide[] {
     layout: "image_focus" as const,
     asset_path: null
   }));
+}
+
+
+/**
+ * Builds a mascot image prompt following the proven pattern:
+ * full character description + pose + 2D flat vector style + composition + --ar 1:1
+ */
+export function buildMascotSlidePrompt(
+  mascotPrompt: string,
+  pose: string,
+  expression: string,
+  scene: string
+): string {
+  return `${mascotPrompt}, ${pose}, ${expression}, ${scene}, 2D flat vector illustration style, bright cheerful colors, clean simple shapes, professional social media content design, centered composition, high-quality illustration --ar 1:1`;
+}
+
+/**
+ * Builds a 2D cartoon food illustration prompt — no photorealistic terms.
+ */
+export function buildCartoonFoodPrompt(
+  recipeName: string,
+  ingredients: string[]
+): string {
+  const ingredientList = joinIngredients(ingredients);
+  return `Delicious ${recipeName} illustration, a beautifully plated dish made with ${ingredientList}, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1`;
+}
+
+/**
+ * Generates a Peppera "5 Meals From [Ingredient]" carousel with exactly 8 slides:
+ * 1 hook, 1 problem, 5 recipe, 1 cta
+ */
+export function generatePepperaCarousel(
+  brief: ContentBrief,
+  brandConfig: BrandProfile
+): Slide[] {
+  const ingredients = toLowerList(brief.ingredients);
+  const ingredientLabel = joinIngredients(ingredients.map(titleCase));
+  const mascotPrompt = brandConfig.mascot?.visualPrompt ?? "";
+
+  const slides: Slide[] = [];
+
+  // Slide 1: Hook
+  slides.push({
+    slide_number: 1,
+    role: "hook",
+    type: "generated_image",
+    text: `5 Meals From JUST ${ingredientLabel}\nWhen your fridge is giving... minimal`,
+    image_prompt: buildMascotSlidePrompt(
+      mascotPrompt,
+      `standing in center frame holding up ${ingredientLabel} in hands`,
+      "looking excited and surprised with wide eyes and big smile",
+      "white plain background, bold text space at top for title overlay, modern minimalist layout, food blog aesthetic"
+    ),
+    visual_goal: "Mascot holding ingredients, excited — hook cover",
+    layout: "hook_cover",
+    asset_path: null,
+  });
+
+  // Slide 2: Problem
+  slides.push({
+    slide_number: 2,
+    role: "problem",
+    type: "generated_image",
+    text: "It's 8pm. You're hungry.\nYour fridge is giving... minimalist vibes 😅\nBut wait! You have " + ingredientLabel.toUpperCase(),
+    image_prompt: buildMascotSlidePrompt(
+      mascotPrompt,
+      "standing in front of open empty refrigerator, one hand on chin in thinking pose, other hand gesturing at empty fridge shelves",
+      "looking confused and slightly worried, expressive face showing concern and determination",
+      `interior kitchen scene with warm lighting, fridge interior visible with just ${joinIngredients(ingredients)} on otherwise empty shelf, relatable humor mood, soft pastel colors, cozy home kitchen atmosphere`
+    ),
+    visual_goal: "Mascot confused at empty fridge — problem setup",
+    layout: "problem_setup",
+    asset_path: null,
+  });
+
+  // Slides 3–7: Recipes (5 placeholder recipes)
+  const placeholderRecipes: Array<{ name: string; ingredients: string[] }> = [];
+  for (let i = 0; i < 5; i++) {
+    placeholderRecipes.push({
+      name: `Recipe ${i + 1}`,
+      ingredients: ingredients.length > 0 ? [...ingredients] : ["ingredient 1", "ingredient 2", "ingredient 3"],
+    });
+  }
+
+  for (let i = 0; i < 5; i++) {
+    const recipe: StructuredRecipe = {
+      recipeName: placeholderRecipes[i].name,
+      ingredients: placeholderRecipes[i].ingredients,
+      cookTime: "15 mins",
+      steps: ["Prepare ingredients", "Cook and serve"],
+      proTip: "Season to taste",
+      cost: "~£1.00",
+      serves: "1-2",
+    };
+
+    slides.push({
+      slide_number: i + 3,
+      role: "recipe",
+      type: "generated_image",
+      text: `🍳 RECIPE ${i + 1}: ${recipe.recipeName.toUpperCase()}`,
+      image_prompt: buildCartoonFoodPrompt(
+        recipe.recipeName,
+        recipe.ingredients
+      ),
+      visual_goal: `Food illustration for ${recipe.recipeName}`,
+      layout: "recipe_card",
+      asset_path: null,
+      recipe,
+    });
+  }
+
+  // Slide 8: CTA
+  const ctaText = brandConfig.cta || "Download Peppera";
+  slides.push({
+    slide_number: 8,
+    role: "cta",
+    type: "generated_image",
+    text: `Want 10,000+ MORE recipes like these?\n📱 ${ctaText} FREE\nWhich recipe are you trying first? Comment 1-5 below! 👇`,
+    image_prompt: buildMascotSlidePrompt(
+      mascotPrompt,
+      "waving happily at camera with one hand while holding smartphone displaying app interface in other hand",
+      "big friendly smile, rosy cheeks, excited enthusiastic expression, presenting phone screen to viewer, call-to-action pose suggesting download or sign-up",
+      "clean white background, brand colors green and orange prominent, professional mascot marketing pose, full body view, welcoming and engaging body language"
+    ),
+    visual_goal: "Mascot with phone, waving — CTA banner",
+    layout: "cta_banner",
+    asset_path: null,
+  });
+
+  return slides;
 }

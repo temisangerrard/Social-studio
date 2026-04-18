@@ -389,10 +389,14 @@ export async function runPipelineFromRequest(
   const workflowType = resolveWorkflowType(request);
   const deliveryTargets = resolveDeliveryTargets(request);
 
+  const isPepperaCarousel =
+    (brandProfile.id === "peppera" || brandProfile.name === "Peppera") &&
+    request.platformTargets.includes("instagram");
+
   const brief: ContentBrief = {
     product: brandProfile.name,
     platform: request.platformTargets[0] ?? "tiktok",
-    format: "slideshow",
+    format: isPepperaCarousel ? "carousel" : "slideshow",
     pillar: "canvas-planning",
     audience: brandProfile.audience,
     tone: brandProfile.tone,
@@ -404,8 +408,8 @@ export async function runPipelineFromRequest(
   const metadata: PostMetadata = {
     post_id: postId,
     product: brandProfile.name,
-    platform: brief.platform,
-    format: "slideshow",
+    platform: isPepperaCarousel ? "instagram" : brief.platform,
+    format: isPepperaCarousel ? "carousel" : "slideshow",
     workflow_type: workflowType,
     delivery_targets: deliveryTargets,
     caption: plan.caption,

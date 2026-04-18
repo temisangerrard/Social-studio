@@ -12,7 +12,8 @@ export type SlideRole =
   | "discovery"
   | "meal_reveal"
   | "benefit"
-  | "cta";
+  | "cta"
+  | "recipe";
 
 export type SlideType = "text_only" | "generated_image";
 export type SlideLayout =
@@ -20,7 +21,11 @@ export type SlideLayout =
   | "statement"
   | "image_text_split"
   | "image_focus"
-  | "cta";
+  | "cta"
+  | "hook_cover"
+  | "problem_setup"
+  | "recipe_card"
+  | "cta_banner";
 
 export type BoardCardType =
   | "idea"
@@ -204,6 +209,16 @@ export interface GenerationRequest {
   deliveryTargets?: DeliveryTarget;
 }
 
+export interface StructuredRecipe {
+  recipeName: string;
+  ingredients: string[];
+  cookTime: string;
+  steps: string[];
+  proTip?: string;
+  cost?: string;
+  serves?: string;
+}
+
 export interface Slide {
   slide_number: number;
   role: SlideRole;
@@ -213,6 +228,7 @@ export interface Slide {
   visual_goal: string;
   layout: SlideLayout;
   asset_path?: string | null;
+  recipe?: StructuredRecipe;
 }
 
 export interface PlannedPackage {

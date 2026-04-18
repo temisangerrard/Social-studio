@@ -7,10 +7,10 @@
   "cta": "Download Peppera",
   "logoPath": null,
   "visual": {
-    "primaryColor": "#f04d23",
-    "secondaryColor": "#ffd9c8",
-    "accentColor": "#7a2413",
-    "surfaceColor": "#fff7f0"
+    "primaryColor": "#4A7C59",
+    "secondaryColor": "#D9532F",
+    "accentColor": "#F5F5DC",
+    "surfaceColor": "#FFFFFF"
   },
   "defaults": {
     "platformTargets": [

@@ -9,7 +9,7 @@ import type { BrandProfile, GenerationRequest } from "./types.ts";
 
 const brand: BrandProfile = {
   id: "brand-peppera",
-  name: "Peppera",
+  name: "PepperaTest",
   description: "Meal-planning assistant",
   tone: "helpful and cheeky",
   audience: "busy home cooks",

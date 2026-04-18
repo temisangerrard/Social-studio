@@ -1,9 +1,14 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { PostMetadata, RenderResult } from "./types.ts";
-import { renderBaseTemplate } from "./templates/base.ts";
+import type { Platform, PostFormat, PostMetadata, RenderResult } from "./types.ts";
+import { selectTemplate } from "./templates/index.ts";
 
-const VIEWPORT = { width: 1080, height: 1920 };
+export function resolveViewport(platform: Platform, format: PostFormat): { width: number; height: number } {
+  if (platform === "instagram" && format === "carousel") {
+    return { width: 1080, height: 1080 };
+  }
+  return { width: 1080, height: 1920 };
+}
 
 async function exists(filePath: string | null | undefined): Promise<boolean> {
   if (!filePath) return false;
@@ -34,7 +39,8 @@ export async function renderSlides(metadata: PostMetadata): Promise<RenderResult
     args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
     ...(executablePath ? { executablePath } : {})
   });
-  const context = await browser.newContext({ viewport: VIEWPORT, deviceScaleFactor: 1 });
+  const viewport = resolveViewport(metadata.platform, metadata.format);
+  const context = await browser.newContext({ viewport, deviceScaleFactor: 1 });
   const page = await context.newPage();
 
   const results: RenderResult[] = [];
@@ -46,10 +52,13 @@ export async function renderSlides(metadata: PostMetadata): Promise<RenderResult
         imageDataUrl = await imageToDataUrl(slide.asset_path!);
       }
 
-      const html = renderBaseTemplate({
+      const templateFn = selectTemplate(slide.layout);
+      const html = templateFn({
         slide,
         productName: metadata.product,
-        imageDataUrl
+        imageDataUrl,
+        brandVisual: metadata.brand_profile.visual,
+        slideCount: metadata.slides.length,
       });
 
       const outputPath = path.join(
