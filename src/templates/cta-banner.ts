@@ -10,62 +10,57 @@ function escapeHtml(value: string): string {
 }
 
 export function renderCtaBannerTemplate(input: CarouselTemplateInput): string {
-  const { slide, brandVisual, imageDataUrl, slideCount, productName } = input;
+  const { slide, brandVisual, slideCount, productName } = input;
   const { primaryColor, secondaryColor, accentColor, surfaceColor } = brandVisual;
+  const font = brandVisual.fontFamily ?? "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
+  const textSecondary = brandVisual.textSecondary ?? "#5C5450";
 
-  const bgContent = imageDataUrl
-    ? `<img src="${imageDataUrl}" alt="" style="position:absolute;top:0;left:0;width:1080px;height:540px;object-fit:cover;z-index:0;" />`
-    : `<div style="position:absolute;top:0;left:0;width:1080px;height:540px;background:linear-gradient(135deg, ${primaryColor} 0%, ${accentColor} 100%);z-index:0;display:flex;align-items:center;justify-content:center;">
-        <span style="font-size:160px;">🌶️</span>
-      </div>`;
-
-  // Parse slide text for engagement question if present
   const textLines = (slide.text ?? "").split("\n").filter((l) => l.trim().length > 0);
   const engagementLine = textLines.find((l) => l.includes("?") || l.toLowerCase().includes("comment")) ?? "";
 
   const dots = Array.from({ length: slideCount }, (_, i) =>
-    `<div style="width:10px;height:10px;border-radius:50%;background:${i === slide.slide_number - 1 ? secondaryColor : "rgba(0,0,0,0.2)"};"></div>`
-  ).join("\n      ");
+    `<div style="width:10px;height:10px;border-radius:50%;background:${i === slide.slide_number - 1 ? primaryColor : secondaryColor};"></div>`
+  ).join("\n          ");
 
   return `<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-</head>
-<body style="margin:0;padding:0;width:1080px;height:1080px;overflow:hidden;font-family:'Inter',-apple-system,system-ui,sans-serif;position:relative;background:${accentColor};">
-  <!-- Mascot image upper portion -->
-  ${bgContent}
+<head><meta charset="UTF-8" /></head>
+<body style="margin:0;padding:0;width:1080px;height:1080px;overflow:hidden;font-family:${font};position:relative;background:${accentColor};">
+  <!-- Card -->
+  <div style="position:absolute;top:60px;left:60px;right:60px;bottom:60px;background:${surfaceColor};border-radius:40px;box-shadow:0 8px 40px rgba(0,0,0,0.08);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:72px;box-sizing:border-box;">
+    <!-- Emoji -->
+    <div style="font-size:64px;margin-bottom:28px;">🌶️</div>
 
-  <!-- CTA content area -->
-  <div style="position:absolute;top:540px;left:0;width:1080px;height:540px;background:${accentColor};display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 60px;box-sizing:border-box;z-index:1;">
     <!-- Headline -->
-    <div style="font-size:42px;font-weight:900;color:${primaryColor};text-align:center;line-height:1.2;margin-bottom:12px;">
-      Want 10,000+ MORE recipes like these?
+    <div style="font-size:46px;font-weight:800;color:${primaryColor};text-align:center;line-height:1.15;letter-spacing:-0.02em;margin-bottom:16px;">
+      Want 10,000+ MORE<br/>recipes like these?
     </div>
 
     <!-- Subtitle -->
-    <div style="font-size:28px;font-weight:500;color:#555;text-align:center;margin-bottom:28px;">
+    <div style="font-size:28px;font-weight:500;color:${textSecondary};text-align:center;margin-bottom:40px;">
       Using whatever random ingredients you have!
     </div>
 
-    <!-- Download button -->
-    <div style="background:${secondaryColor};color:${surfaceColor};font-size:34px;font-weight:800;padding:20px 48px;border-radius:50px;text-align:center;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,0,0,0.15);">
+    <!-- CTA pill button -->
+    <div style="background:${primaryColor};color:${surfaceColor};font-size:32px;font-weight:700;padding:22px 52px;border-radius:50px;text-align:center;margin-bottom:20px;">
       📱 Download ${escapeHtml(productName)} FREE
     </div>
 
     <!-- Small text -->
-    <div style="font-size:24px;color:#777;text-align:center;margin-bottom:20px;">
-      Link in bio → No credit card needed
+    <div style="font-size:22px;color:${textSecondary};text-align:center;margin-bottom:36px;">
+      Link in bio · No credit card needed
     </div>
 
-    <!-- Engagement question -->
-    ${engagementLine ? `<div style="font-size:30px;font-weight:700;color:${primaryColor};text-align:center;">${escapeHtml(engagementLine)}</div>` : ""}
+    <!-- Divider -->
+    <div style="width:60px;height:4px;background:${secondaryColor};border-radius:2px;margin-bottom:28px;"></div>
+
+    <!-- Engagement -->
+    ${engagementLine ? `<div style="font-size:28px;font-weight:700;color:${primaryColor};text-align:center;">${escapeHtml(engagementLine)}</div>` : ""}
   </div>
 
-  <!-- Slide dots -->
-  <div style="position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:2;">
-      ${dots}
+  <!-- Dots -->
+  <div style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:10px;">
+          ${dots}
   </div>
 </body>
 </html>`;

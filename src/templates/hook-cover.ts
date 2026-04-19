@@ -10,49 +10,44 @@ function escapeHtml(value: string): string {
 }
 
 export function renderHookCoverTemplate(input: CarouselTemplateInput): string {
-  const { slide, brandVisual, imageDataUrl, slideCount } = input;
-  const { primaryColor, secondaryColor, accentColor } = brandVisual;
+  const { slide, brandVisual, slideCount } = input;
+  const { primaryColor, secondaryColor, accentColor, surfaceColor } = brandVisual;
+  const font = brandVisual.fontFamily ?? "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
+  const textColor = brandVisual.textColor ?? "#1D1B19";
 
   const lines = (slide.text ?? "").split("\n");
   const title = escapeHtml(lines[0] ?? "");
   const subtitle = escapeHtml(lines.slice(1).join(" ") ?? "");
 
-  const bgContent = imageDataUrl
-    ? `<img src="${imageDataUrl}" alt="" style="position:absolute;top:0;left:0;width:1080px;height:1080px;object-fit:cover;z-index:0;" />`
-    : `<div style="position:absolute;top:0;left:0;width:1080px;height:1080px;background:linear-gradient(135deg, ${accentColor} 0%, ${primaryColor} 100%);z-index:0;"></div>`;
-
   const dots = Array.from({ length: slideCount }, (_, i) =>
-    `<div style="width:10px;height:10px;border-radius:50%;background:${i === slide.slide_number - 1 ? secondaryColor : "rgba(255,255,255,0.4)"};"></div>`
-  ).join("\n      ");
+    `<div style="width:10px;height:10px;border-radius:50%;background:${i === slide.slide_number - 1 ? primaryColor : secondaryColor};"></div>`
+  ).join("\n          ");
 
   return `<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-</head>
-<body style="margin:0;padding:0;width:1080px;height:1080px;overflow:hidden;font-family:'Inter',-apple-system,system-ui,sans-serif;position:relative;background:${accentColor};">
-  ${bgContent}
-  <!-- Dark overlay for text readability -->
-  <div style="position:absolute;top:0;left:0;width:1080px;height:1080px;background:linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.15) 60%, rgba(0,0,0,0.4) 100%);z-index:1;"></div>
+<head><meta charset="UTF-8" /></head>
+<body style="margin:0;padding:0;width:1080px;height:1080px;overflow:hidden;font-family:${font};position:relative;background:${accentColor};">
+  <!-- Card -->
+  <div style="position:absolute;top:60px;left:60px;right:60px;bottom:60px;background:${surfaceColor};border-radius:40px;box-shadow:0 8px 40px rgba(0,0,0,0.08);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px;box-sizing:border-box;">
+    <!-- Emoji -->
+    <div style="font-size:72px;margin-bottom:36px;">🍳🍞</div>
 
-  <!-- Header bar -->
-  <div style="position:absolute;top:0;left:0;width:1080px;height:100px;background:${primaryColor};z-index:2;display:flex;align-items:center;justify-content:center;">
-    <span style="color:#ffffff;font-size:28px;font-weight:700;letter-spacing:0.05em;">PEPPERA</span>
+    <!-- Title -->
+    <h1 style="margin:0;font-size:72px;font-weight:800;color:${textColor};text-align:center;line-height:1.05;letter-spacing:-0.03em;">${title}</h1>
+
+    <!-- Divider -->
+    <div style="width:80px;height:5px;background:${primaryColor};border-radius:3px;margin:32px 0;"></div>
+
+    <!-- Subtitle -->
+    ${subtitle ? `<p style="margin:0;font-size:32px;font-weight:500;color:${brandVisual.textSecondary ?? '#5C5450'};text-align:center;line-height:1.4;">${subtitle}</p>` : ""}
+
+    <!-- Swipe hint -->
+    <div style="margin-top:48px;font-size:24px;color:${brandVisual.textSecondary ?? '#5C5450'};font-weight:600;letter-spacing:0.04em;">SWIPE → FOR RECIPES</div>
   </div>
 
-  <!-- Title text -->
-  <div style="position:absolute;top:140px;left:60px;right:60px;z-index:2;text-align:center;">
-    <h1 style="margin:0;font-size:72px;font-weight:900;color:#ffffff;text-shadow:0 4px 20px rgba(0,0,0,0.6);line-height:1.1;letter-spacing:-0.02em;">${title}</h1>
-    ${subtitle ? `<p style="margin:24px 0 0 0;font-size:36px;font-weight:500;color:${accentColor};text-shadow:0 2px 12px rgba(0,0,0,0.5);line-height:1.3;">${subtitle}</p>` : ""}
-  </div>
-
-  <!-- Accent stripe -->
-  <div style="position:absolute;bottom:80px;left:50%;transform:translateX(-50%);width:120px;height:6px;background:${secondaryColor};border-radius:3px;z-index:2;"></div>
-
-  <!-- Slide dots -->
-  <div style="position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:2;">
-      ${dots}
+  <!-- Dots -->
+  <div style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:10px;">
+          ${dots}
   </div>
 </body>
 </html>`;

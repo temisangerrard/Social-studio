@@ -116,8 +116,9 @@ export function buildCartoonFoodPrompt(
 }
 
 /**
- * Generates a Peppera "5 Meals From [Ingredient]" carousel with exactly 8 slides:
- * 1 hook, 1 problem, 5 recipe, 1 cta
+ * Generates a Peppera "5 Meals From [Ingredient]" carousel with exactly 7 slides:
+ * 1 hook (text-only, brand colours), 5 recipe cards (food image + recipe text), 1 CTA (text-only)
+ * No mascot image generation — just food illustrations and branded text slides.
  */
 export function generatePepperaCarousel(
   brief: ContentBrief,
@@ -125,57 +126,26 @@ export function generatePepperaCarousel(
 ): Slide[] {
   const ingredients = toLowerList(brief.ingredients);
   const ingredientLabel = joinIngredients(ingredients.map(titleCase));
-  const mascotPrompt = brandConfig.mascot?.visualPrompt ?? "";
 
   const slides: Slide[] = [];
 
-  // Slide 1: Hook
+  // Slide 1: Hook (text-only, no image generation)
   slides.push({
     slide_number: 1,
     role: "hook",
-    type: "generated_image",
-    text: `5 Meals From JUST ${ingredientLabel}\nWhen your fridge is giving... minimal`,
-    image_prompt: buildMascotSlidePrompt(
-      mascotPrompt,
-      `standing in center frame holding up ${ingredientLabel} in hands`,
-      "looking excited and surprised with wide eyes and big smile",
-      "white plain background, bold text space at top for title overlay, modern minimalist layout, food blog aesthetic"
-    ),
-    visual_goal: "Mascot holding ingredients, excited — hook cover",
+    type: "text_only",
+    text: `5 Meals From JUST ${ingredientLabel} 🍳\nWhen your fridge is giving... minimal`,
+    image_prompt: null,
+    visual_goal: "Bold title card with brand colours",
     layout: "hook_cover",
     asset_path: null,
   });
 
-  // Slide 2: Problem
-  slides.push({
-    slide_number: 2,
-    role: "problem",
-    type: "generated_image",
-    text: "It's 8pm. You're hungry.\nYour fridge is giving... minimalist vibes 😅\nBut wait! You have " + ingredientLabel.toUpperCase(),
-    image_prompt: buildMascotSlidePrompt(
-      mascotPrompt,
-      "standing in front of open empty refrigerator, one hand on chin in thinking pose, other hand gesturing at empty fridge shelves",
-      "looking confused and slightly worried, expressive face showing concern and determination",
-      `interior kitchen scene with warm lighting, fridge interior visible with just ${joinIngredients(ingredients)} on otherwise empty shelf, relatable humor mood, soft pastel colors, cozy home kitchen atmosphere`
-    ),
-    visual_goal: "Mascot confused at empty fridge — problem setup",
-    layout: "problem_setup",
-    asset_path: null,
-  });
-
-  // Slides 3–7: Recipes (5 placeholder recipes)
-  const placeholderRecipes: Array<{ name: string; ingredients: string[] }> = [];
-  for (let i = 0; i < 5; i++) {
-    placeholderRecipes.push({
-      name: `Recipe ${i + 1}`,
-      ingredients: ingredients.length > 0 ? [...ingredients] : ["ingredient 1", "ingredient 2", "ingredient 3"],
-    });
-  }
-
+  // Slides 2–6: Recipes (food image + recipe text)
   for (let i = 0; i < 5; i++) {
     const recipe: StructuredRecipe = {
-      recipeName: placeholderRecipes[i].name,
-      ingredients: placeholderRecipes[i].ingredients,
+      recipeName: `Recipe ${i + 1}`,
+      ingredients: ingredients.length > 0 ? [...ingredients] : ["ingredient 1", "ingredient 2", "ingredient 3"],
       cookTime: "15 mins",
       steps: ["Prepare ingredients", "Cook and serve"],
       proTip: "Season to taste",
@@ -184,14 +154,11 @@ export function generatePepperaCarousel(
     };
 
     slides.push({
-      slide_number: i + 3,
+      slide_number: i + 2,
       role: "recipe",
       type: "generated_image",
       text: `🍳 RECIPE ${i + 1}: ${recipe.recipeName.toUpperCase()}`,
-      image_prompt: buildCartoonFoodPrompt(
-        recipe.recipeName,
-        recipe.ingredients
-      ),
+      image_prompt: buildCartoonFoodPrompt(recipe.recipeName, recipe.ingredients),
       visual_goal: `Food illustration for ${recipe.recipeName}`,
       layout: "recipe_card",
       asset_path: null,
@@ -199,20 +166,15 @@ export function generatePepperaCarousel(
     });
   }
 
-  // Slide 8: CTA
+  // Slide 7: CTA (text-only, no image generation)
   const ctaText = brandConfig.cta || "Download Peppera";
   slides.push({
-    slide_number: 8,
+    slide_number: 7,
     role: "cta",
-    type: "generated_image",
+    type: "text_only",
     text: `Want 10,000+ MORE recipes like these?\n📱 ${ctaText} FREE\nWhich recipe are you trying first? Comment 1-5 below! 👇`,
-    image_prompt: buildMascotSlidePrompt(
-      mascotPrompt,
-      "waving happily at camera with one hand while holding smartphone displaying app interface in other hand",
-      "big friendly smile, rosy cheeks, excited enthusiastic expression, presenting phone screen to viewer, call-to-action pose suggesting download or sign-up",
-      "clean white background, brand colors green and orange prominent, professional mascot marketing pose, full body view, welcoming and engaging body language"
-    ),
-    visual_goal: "Mascot with phone, waving — CTA banner",
+    image_prompt: null,
+    visual_goal: "CTA card with brand colours and engagement question",
     layout: "cta_banner",
     asset_path: null,
   });

@@ -56,6 +56,9 @@ export interface BrandVisualSettings {
   secondaryColor: string;
   accentColor: string;
   surfaceColor: string;
+  textColor?: string;
+  textSecondary?: string;
+  fontFamily?: string;
 }
 
 export interface BrandDefaults {

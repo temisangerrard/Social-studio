@@ -60,10 +60,10 @@ export function brandProfileFromBrief(brief: ContentBrief): BrandProfile {
     cta: brief.goal === "installs" ? `Download ${brief.product}` : `Try ${brief.product}`,
     logoPath: null,
     visual: {
-      primaryColor: "#f04d23",
-      secondaryColor: "#ffd9c8",
-      accentColor: "#7a2413",
-      surfaceColor: "#fff7f0"
+      primaryColor: "#893516",
+      secondaryColor: "#FFDBC9",
+      accentColor: "#FEF8F3",
+      surfaceColor: "#FFFFFF"
     },
     defaults: {
       platformTargets: [brief.platform],
@@ -72,9 +72,24 @@ export function brandProfileFromBrief(brief: ContentBrief): BrandProfile {
     },
     providers: {
       plannerModel: process.env.GLM_MODEL ?? "glm-4.5-air",
-      imageModel: process.env.FAL_MODEL ?? "fal-ai/flux/schnell"
+      imageModel: process.env.FAL_MODEL ?? "fal-ai/nano-banana-2"
     }
   };
+}
+
+/**
+ * Tries to load the brand profile from config/brands/{id}.json,
+ * falls back to brandProfileFromBrief if not found.
+ */
+async function loadOrCreateBrandProfile(brief: ContentBrief): Promise<BrandProfile> {
+  const id = slugify(brief.product);
+  const configPath = path.resolve("config", "brands", `${id}.json`);
+  try {
+    const raw = await fs.readFile(configPath, "utf8");
+    return JSON.parse(raw) as BrandProfile;
+  } catch {
+    return brandProfileFromBrief(brief);
+  }
 }
 
 function requestFromBrief(brief: ContentBrief): GenerationRequest {
@@ -538,7 +553,8 @@ export async function runPipelineFromBrief(
   outputRoot?: string
 ): Promise<PostMetadata> {
   const brief = normalizeBrief(briefInput);
-  return runPipelineFromRequest(requestFromBrief(brief), brandProfileFromBrief(brief), outputRoot);
+  const brandProfile = await loadOrCreateBrandProfile(brief);
+  return runPipelineFromRequest(requestFromBrief(brief), brandProfile, outputRoot);
 }
 
 export async function runPipeline(options: PipelineOptions): Promise<PostMetadata> {

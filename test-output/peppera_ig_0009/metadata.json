@@ -1,0 +1,396 @@
+{
+  "post_id": "peppera_ig_0009",
+  "product": "Peppera",
+  "platform": "instagram",
+  "format": "carousel",
+  "workflow_type": "slideshow",
+  "delivery_targets": "instagram",
+  "caption": "Staring at a nearly empty fridge? Don't worry! We've created 5 delicious meals you can make with just eggs and bread. These simple recipes will rescue your dinner plans and save you a trip to the shop. With Peppera, you'll never wonder 'what's for dinner' again—just enter what you have, and get practical recipe ideas instantly. Ready to transform your meal planning? Download Peppera today!",
+  "hooks": [
+    "Transform eggs and bread into 5 delicious dinners!",
+    "Only eggs and bread in the fridge? No problem!",
+    "5 meals you can make with just eggs and bread"
+  ],
+  "hashtags": [
+    "#mealplanning",
+    "#easydinners",
+    "#eggsandbread",
+    "#pantrycooking",
+    "#ukfoodie",
+    "#simplemeals",
+    "#budgetcooking",
+    "#pepperarecipes"
+  ],
+  "platform_notes": "Instagram carousel with 7 slides: text hook, 5 recipe slides with food images, and text CTA. Each recipe should be simple enough for busy UK home cooks to make with minimal ingredients.",
+  "brief": {
+    "product": "Peppera",
+    "platform": "instagram",
+    "format": "carousel",
+    "pillar": "canvas-planning",
+    "audience": "busy home cooks",
+    "tone": "warm, calm, personal, lightly premium",
+    "goal": "installs",
+    "idea": "5 meals from eggs and bread",
+    "ingredients": []
+  },
+  "brand_profile": {
+    "id": "peppera",
+    "name": "Peppera",
+    "description": "A meal-planning assistant that turns rough ingredients into practical dinner ideas.",
+    "tone": "warm, calm, personal, lightly premium",
+    "audience": "busy home cooks",
+    "cta": "Download Peppera",
+    "logoPath": null,
+    "visual": {
+      "primaryColor": "#893516",
+      "secondaryColor": "#FFDBC9",
+      "accentColor": "#FEF8F3",
+      "surfaceColor": "#FFFFFF",
+      "textColor": "#1D1B19",
+      "textSecondary": "#5C5450",
+      "fontFamily": "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+    },
+    "defaults": {
+      "platformTargets": [
+        "tiktok",
+        "instagram"
+      ],
+      "goal": "installs",
+      "hashtags": [
+        "#mealideas",
+        "#easydinners",
+        "#cooksmarter"
+      ]
+    },
+    "providers": {
+      "plannerModel": "glm-4.5",
+      "imageModel": "fal-ai/nano-banana-2"
+    },
+    "mascot": {
+      "name": "Peppera",
+      "description": "A cute anthropomorphic green bell pepper character with a round bulbous body narrowing at the top, bright lime-green skin with subtle darker green vertical ridges, large expressive oval eyes with white sclera and small black pupils, thin curved black eyebrows, a small open-mouth smile showing warmth. Wears a red bandana tied around the top of the head with the knot visible on the right side. Has simple thin black-stroke arms and legs with small rounded hands and feet. The overall style is flat 2D cartoon illustration with bold outlines, vibrant saturated colors, and no shading or gradients.",
+      "role": "The recurring face of Peppera's TikTok and Instagram content — the main character in every visual story.",
+      "visualPrompt": "A cute anthropomorphic green bell pepper character named Peppera. Round bulbous body narrowing at the top, bright lime-green skin with subtle darker green vertical ridges. Large expressive oval eyes with white sclera and small black pupils, thin curved black eyebrows, small open-mouth smile. Wears a red bandana tied around the top of the head with the knot visible on the right side. Simple thin black-stroke arms and legs with small rounded hands and feet. Flat 2D cartoon illustration style with bold outlines, vibrant saturated colors, no shading or gradients. Solid color background.",
+      "usageRules": [
+        "Always include the mascot in mascot-led slides: hook, problem, escalation, reaction, discovery, cta.",
+        "Never include the mascot in meal_reveal or benefit slides — those are food-only.",
+        "The mascot must always have the red bandana, green pepper body, and same face shape.",
+        "Vary only the pose and expression to match the slide role — never vary the core design.",
+        "Never add accessories not in the spec (no chef hat, no utensils unless the slide prompt explicitly calls for them)."
+      ],
+      "referenceImages": [
+        "https://raw.githubusercontent.com/temisangerrard/Social-studio/main/assets/mascot/peppera-hero.png",
+        "https://raw.githubusercontent.com/temisangerrard/Social-studio/main/assets/mascot/peppera-confused.png",
+        "https://raw.githubusercontent.com/temisangerrard/Social-studio/main/assets/mascot/peppera-chef-happy.png",
+        "https://raw.githubusercontent.com/temisangerrard/Social-studio/main/assets/mascot/peppera-standing.png"
+      ]
+    }
+  },
+  "generation_request": {
+    "brandProfileId": "peppera",
+    "rawIdea": "5 meals from eggs and bread",
+    "notes": "Pillar: pantry chaos. Ingredients: eggs, bread.",
+    "cards": [
+      {
+        "id": "brief-idea",
+        "type": "idea",
+        "text": "5 meals from eggs and bread",
+        "x": 80,
+        "y": 80,
+        "width": 280,
+        "height": 180,
+        "tags": [
+          "idea"
+        ]
+      },
+      {
+        "id": "brief-audience",
+        "type": "audience",
+        "text": "UK home cooks",
+        "x": 420,
+        "y": 80,
+        "width": 240,
+        "height": 160,
+        "tags": [
+          "audience"
+        ]
+      }
+    ],
+    "references": [],
+    "referenceAssets": [],
+    "platformTargets": [
+      "instagram"
+    ],
+    "goal": "installs",
+    "workflowType": "slideshow",
+    "visualMode": "mascot-led",
+    "deliveryTargets": "instagram"
+  },
+  "slides": [
+    {
+      "slide_number": 1,
+      "role": "hook",
+      "type": "text_only",
+      "text": "5 Meals From JUST Eggs and Bread 🍳\nWhen your fridge is giving... minimal",
+      "image_prompt": null,
+      "visual_goal": "Bold title card with brand colours",
+      "layout": "hook_cover",
+      "asset_path": null
+    },
+    {
+      "slide_number": 2,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 1: FRENCH TOAST",
+      "image_prompt": "Delicious Recipe 1 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 1",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0009/assets/generated/slide-02-recipe.jpg",
+      "recipe": {
+        "recipeName": "French Toast",
+        "ingredients": [
+          "4 thick slices bread",
+          "2 large eggs",
+          "1/4 cup milk",
+          "1/2 tsp vanilla extract",
+          "Pinch of cinnamon",
+          "Butter for frying",
+          "Maple syrup for serving"
+        ],
+        "cookTime": "15 mins",
+        "steps": [
+          "Beat eggs, milk, vanilla, and cinnamon in a shallow dish",
+          "Dip each bread slice in egg mixture, coating both sides",
+          "Melt butter in frying pan over medium heat",
+          "Cook bread 2-3 minutes per side until golden brown"
+        ],
+        "proTip": "Stale bread works best for French toast as it absorbs the egg mixture better",
+        "cost": "~£1.50",
+        "serves": "2"
+      }
+    },
+    {
+      "slide_number": 3,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 2: EGG-IN-A-BASKET",
+      "image_prompt": "Delicious Recipe 2 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 2",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0009/assets/generated/slide-03-recipe.jpg",
+      "recipe": {
+        "recipeName": "Egg-in-a-Basket",
+        "ingredients": [
+          "2 slices bread",
+          "2 large eggs",
+          "1 tbsp butter",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "10 mins",
+        "steps": [
+          "Cut a circle in the center of each bread slice",
+          "Melt butter in frying pan over medium heat",
+          "Place bread in pan, crack egg into the hole",
+          "Fry 2-3 minutes per side until egg is cooked to your liking"
+        ],
+        "proTip": "Use the bread circles to make mini croutons or toast them on the side",
+        "cost": "~£0.80",
+        "serves": "1"
+      }
+    },
+    {
+      "slide_number": 4,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 3: BREAD PUDDING",
+      "image_prompt": "Delicious Recipe 3 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 3",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0009/assets/generated/slide-04-recipe.jpg",
+      "recipe": {
+        "recipeName": "Bread Pudding",
+        "ingredients": [
+          "4 cups bread cubes",
+          "3 large eggs",
+          "2 cups milk",
+          "1/4 cup sugar",
+          "1 tsp vanilla extract",
+          "1/2 tsp cinnamon",
+          "Pinch of salt",
+          "Butter for baking dish"
+        ],
+        "cookTime": "45 mins",
+        "steps": [
+          "Preheat oven to 180°C",
+          "Arrange bread cubes in buttered baking dish",
+          "Whisk eggs, milk, sugar, vanilla, cinnamon and salt",
+          "Pour egg mixture over bread and bake 35-40 minutes until set"
+        ],
+        "proTip": "Let the bread soak in the egg mixture for at least 15 minutes before baking for best results",
+        "cost": "~£2.00",
+        "serves": "4"
+      }
+    },
+    {
+      "slide_number": 5,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 4: STRATA",
+      "image_prompt": "Delicious Recipe 4 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 4",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0009/assets/generated/slide-05-recipe.jpg",
+      "recipe": {
+        "recipeName": "Strata",
+        "ingredients": [
+          "6 slices bread",
+          "4 large eggs",
+          "1 1/2 cups milk",
+          "1 cup cheese, grated",
+          "1/2 tsp salt",
+          "1/4 tsp black pepper",
+          "Butter for baking dish"
+        ],
+        "cookTime": "50 mins",
+        "steps": [
+          "Preheat oven to 180°C",
+          "Layer bread and cheese in buttered baking dish",
+          "Beat eggs, milk, salt and pepper together",
+          "Pour egg mixture over bread and cheese, bake 40-45 minutes"
+        ],
+        "proTip": "For extra flavour, add cooked bacon or vegetables between the layers",
+        "cost": "~£2.50",
+        "serves": "4"
+      }
+    },
+    {
+      "slide_number": 6,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 5: BREAD AND EGG FRITTATA",
+      "image_prompt": "Delicious Recipe 5 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 5",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0009/assets/generated/slide-06-recipe.jpg",
+      "recipe": {
+        "recipeName": "Bread and Egg Frittata",
+        "ingredients": [
+          "4 slices bread",
+          "6 large eggs",
+          "1/4 cup milk",
+          "1/2 cup cheese",
+          "2 tbsp olive oil",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "25 mins",
+        "steps": [
+          "Preheat oven to 200°C",
+          "Tear bread into pieces and place in baking dish",
+          "Beat eggs with milk, salt and pepper",
+          "Pour egg mixture over bread, top with cheese, bake 20 minutes"
+        ],
+        "proTip": "Let it rest for 5 minutes before serving for easier slicing",
+        "cost": "~£2.20",
+        "serves": "4"
+      }
+    },
+    {
+      "slide_number": 7,
+      "role": "cta",
+      "type": "text_only",
+      "text": "Want 10,000+ MORE recipes like these?\n📱 Download Peppera FREE\nWhich recipe are you trying first? Comment 1-5 below! 👇",
+      "image_prompt": null,
+      "visual_goal": "CTA card with brand colours and engagement question",
+      "layout": "cta_banner",
+      "asset_path": null
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "slide-01",
+      "kind": "image",
+      "role": "hook",
+      "title": "5 Meals From JUST Eggs and Bread 🍳\nWhen your fridge is giving... minimal",
+      "prompt": "5 Meals From JUST Eggs and Bread 🍳\nWhen your fridge is giving... minimal",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-02",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 1: FRENCH TOAST",
+      "prompt": "Delicious Recipe 1 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0009/assets/generated/slide-02-recipe.jpg",
+      "preview_path": "test-output/peppera_ig_0009/assets/generated/slide-02-recipe.jpg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-03",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 2: EGG-IN-A-BASKET",
+      "prompt": "Delicious Recipe 2 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0009/assets/generated/slide-03-recipe.jpg",
+      "preview_path": "test-output/peppera_ig_0009/assets/generated/slide-03-recipe.jpg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-04",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 3: BREAD PUDDING",
+      "prompt": "Delicious Recipe 3 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0009/assets/generated/slide-04-recipe.jpg",
+      "preview_path": "test-output/peppera_ig_0009/assets/generated/slide-04-recipe.jpg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-05",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 4: STRATA",
+      "prompt": "Delicious Recipe 4 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0009/assets/generated/slide-05-recipe.jpg",
+      "preview_path": "test-output/peppera_ig_0009/assets/generated/slide-05-recipe.jpg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-06",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 5: BREAD AND EGG FRITTATA",
+      "prompt": "Delicious Recipe 5 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0009/assets/generated/slide-06-recipe.jpg",
+      "preview_path": "test-output/peppera_ig_0009/assets/generated/slide-06-recipe.jpg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-07",
+      "kind": "image",
+      "role": "cta",
+      "title": "Want 10,000+ MORE recipes like these?\n📱 Download Peppera FREE\nWhich recipe are you trying first? Comment 1-5 below! 👇",
+      "prompt": "Want 10,000+ MORE recipes like these?\n📱 Download Peppera FREE\nWhich recipe are you trying first? Comment 1-5 below! 👇",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    }
+  ],
+  "reel_package": null,
+  "output_dir": "test-output/peppera_ig_0009",
+  "assets_dir": "test-output/peppera_ig_0009/assets/generated",
+  "slides_dir": "test-output/peppera_ig_0009/slides",
+  "created_at": "2026-04-19T04:40:38.941Z",
+  "planner_provider": "glm",
+  "image_provider": "fal",
+  "render_status": "complete",
+  "render_error": null
+}

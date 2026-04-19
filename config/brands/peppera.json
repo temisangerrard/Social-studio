@@ -2,15 +2,18 @@
   "id": "peppera",
   "name": "Peppera",
   "description": "A meal-planning assistant that turns rough ingredients into practical dinner ideas.",
-  "tone": "helpful, witty, clean",
+  "tone": "warm, calm, personal, lightly premium",
   "audience": "busy home cooks",
   "cta": "Download Peppera",
   "logoPath": null,
   "visual": {
-    "primaryColor": "#4A7C59",
-    "secondaryColor": "#D9532F",
-    "accentColor": "#F5F5DC",
-    "surfaceColor": "#FFFFFF"
+    "primaryColor": "#893516",
+    "secondaryColor": "#FFDBC9",
+    "accentColor": "#FEF8F3",
+    "surfaceColor": "#FFFFFF",
+    "textColor": "#1D1B19",
+    "textSecondary": "#5C5450",
+    "fontFamily": "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
   },
   "defaults": {
     "platformTargets": [

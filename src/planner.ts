@@ -363,7 +363,8 @@ export function buildPlannerPrompt({ brand, request }: PlannerContext): string {
     baseLines.push(
       "",
       "PEPPERA CAROUSEL FORMAT:",
-      "Slides must contain exactly 8 items with roles: hook, problem, recipe, recipe, recipe, recipe, recipe, cta.",
+      "Slides must contain exactly 7 items with roles: hook, recipe, recipe, recipe, recipe, recipe, cta.",
+      "The hook and cta slides are text-only (no image generation needed).",
       "Each recipe slide MUST include a `recipe` object with these fields:",
       "  - recipeName: string (a recognisable, real meal name)",
       "  - ingredients: string[] (3–10 specific items with quantities, e.g. '2 large eggs')",
