@@ -8,6 +8,13 @@ import {
   titleCase
 } from "./app-helpers.js";
 
+import {
+  CanvasEngine,
+  downloadArtboard,
+  downloadAllAsZip,
+  buildDownloadFilename
+} from "./canvas-engine.js";
+
 const WORKFLOW_PRESETS = getWorkflowPresets();
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -20,7 +27,8 @@ const studioState = {
   selectedAsset: null,
   workflowType: "slideshow",
   canvasLoadingStage: null,
-  downloading: false
+  downloading: false,
+  canvasEngine: null
 };
 
 // ── Element refs ──────────────────────────────────────────────────────────────
@@ -432,12 +440,44 @@ function renderInspectorAsset() {
   els.inspectorAssetHint.textContent = `${titleCase(sel.assetKind || "image")} — click to open full size.`;
   showAssetNode(els.inspectorAssetPreview, sel);
   els.studioRefinePrompt.value ||= sel.prompt || "";
+
+  // Add/update download button for selected artboard
+  let dlBtn = els.inspectorAsset.querySelector(".inspector-download-btn");
+  if (!dlBtn) {
+    dlBtn = document.createElement("button");
+    dlBtn.className = "ghost-button inspector-download-btn";
+    dlBtn.type = "button";
+    dlBtn.textContent = "Download Asset";
+    els.inspectorAsset.insertBefore(dlBtn, els.studioRefineForm);
+    dlBtn.addEventListener("click", async () => {
+      if (!studioState.canvasEngine) return;
+      const selected = studioState.canvasEngine.getSelectedArtboard();
+      if (selected) {
+        try {
+          dlBtn.disabled = true;
+          dlBtn.textContent = "Downloading…";
+          await downloadArtboard(selected);
+        } catch (err) {
+          showStatus(err instanceof Error ? err.message : "Download failed.");
+        } finally {
+          dlBtn.disabled = false;
+          dlBtn.textContent = "Download Asset";
+        }
+      }
+    });
+  }
 }
 
 function selectAsset(assetId) {
   studioState.selectedAsset = outputAssets(studioState.generatedOutput).find((a) => a.itemId === assetId) || null;
   renderCanvas();
   renderInspectorAsset();
+  // Also select in canvas engine if available
+  if (studioState.canvasEngine) {
+    const artboards = studioState.canvasEngine.getArtboards();
+    const match = artboards.find((a) => a.id === assetId);
+    if (match) studioState.canvasEngine._selection.select(match.id);
+  }
 }
 
 // ── Canvas drag ───────────────────────────────────────────────────────────────
@@ -763,6 +803,20 @@ function finishGeneration(output) {
   setCheckpoint("finalPackage", "done");
   hideCanvasProgress();
   hideStatus();
+  // Load into canvas engine
+  loadOutputToEngine(output);
+}
+
+/**
+ * Load output into the CanvasEngine (infinite canvas).
+ * Falls back to old renderCanvas() if engine not available.
+ */
+function loadOutputToEngine(output) {
+  if (studioState.canvasEngine && output) {
+    // Hide old canvas empty state
+    els.canvasEmpty.classList.add("hidden");
+    studioState.canvasEngine.loadOutput(output);
+  }
 }
 
 // ── Quick form ────────────────────────────────────────────────────────────────
@@ -1006,6 +1060,7 @@ els.studioRefineForm.addEventListener("submit", async (e) => {
     const brief = studioState.session?.inferredBrief || {};
     studioState.canvasCards = buildCanvasCards(brief, studioState.generatedOutput, makeId);
     renderCanvas();
+    loadOutputToEngine(studioState.generatedOutput);
     renderInspectorPackage();
     renderInspectorAsset();
     els.studioRefineStatus.textContent = "Done.";
@@ -1024,21 +1079,29 @@ async function downloadAllAssets() {
   els.studioDownloadAllBtn.disabled = true;
   els.studioDownloadAllBtn.textContent = "Downloading…";
   try {
-    const zip = new window.JSZip();
-    await Promise.all(outputAssets(output).map(async (item, i) => {
-      if (!item.assetUrl) return;
-      const res = await fetch(item.assetUrl);
-      if (!res.ok) return;
-      const blob = await res.blob();
-      const ext = item.assetUrl.split(".").pop() || (item.assetKind === "video" ? "mp4" : "png");
-      zip.file(`${item.itemId || `asset-${i + 1}`}.${ext}`, blob);
-    }));
-    const content = await zip.generateAsync({ type: "blob" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(content);
-    a.download = `${output.post_id}-assets.zip`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    // Use canvas engine's artboards for primary strip filtering if available
+    if (studioState.canvasEngine) {
+      await downloadAllAsZip(studioState.canvasEngine.getArtboards(), output);
+    } else {
+      // Fallback to old behavior
+      const zip = new window.JSZip();
+      await Promise.all(outputAssets(output).map(async (item, i) => {
+        if (!item.assetUrl) return;
+        const res = await fetch(item.assetUrl);
+        if (!res.ok) return;
+        const blob = await res.blob();
+        const ext = item.assetUrl.split(".").pop() || (item.assetKind === "video" ? "mp4" : "png");
+        zip.file(`${item.itemId || `asset-${i + 1}`}.${ext}`, blob);
+      }));
+      const content = await zip.generateAsync({ type: "blob" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(content);
+      a.download = `${output.post_id}-assets.zip`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+  } catch (err) {
+    showStatus(err instanceof Error ? err.message : "Download failed.");
   } finally {
     studioState.downloading = false;
     els.studioDownloadAllBtn.disabled = false;
@@ -1110,6 +1173,7 @@ async function loadOutputIntoCanvas(postId) {
   const brief = { goal: output.caption || output.post_id, audience: null, offer: null, tone: null, platform: null };
   studioState.canvasCards = buildCanvasCards(brief, output, makeId);
   renderCanvas();
+  loadOutputToEngine(output);
   renderInspectorPackage();
   renderInspectorAsset();
   switchView("studio");
@@ -1617,7 +1681,110 @@ async function bootstrap() {
   updateWorkflowUI();
   await createSession("peppera");
   initCanvasDrag();
+
+  // Initialize CanvasEngine on the studio canvas stage
+  const stageEl = document.querySelector(".studio-canvas-stage");
+  if (stageEl) {
+    studioState.canvasEngine = new CanvasEngine(stageEl, {
+      onSelect: (artboardDesc) => {
+        if (artboardDesc) {
+          // Map artboard descriptor to the existing selectedAsset format
+          const assets = outputAssets(studioState.generatedOutput);
+          const match = assets.find((a) => a.itemId === artboardDesc.id) || null;
+          if (match) {
+            studioState.selectedAsset = match;
+          } else {
+            // Build a compatible asset object from the descriptor
+            studioState.selectedAsset = {
+              itemId: artboardDesc.id,
+              assetKind: artboardDesc.type,
+              role: artboardDesc.role,
+              text: artboardDesc.text || artboardDesc.label,
+              prompt: artboardDesc.prompt,
+              assetUrl: artboardDesc.assetUrl,
+              sourceAssetId: null,
+              variantGroup: null,
+              slideNumber: artboardDesc.slideNumber,
+              order: artboardDesc.order
+            };
+          }
+        } else {
+          studioState.selectedAsset = null;
+        }
+        renderInspectorAsset();
+      },
+      onReorder: (orderedIds) => {
+        // Update studioState slide order if needed
+        if (studioState.generatedOutput) {
+          studioState.generatedOutput._artboardOrder = orderedIds;
+        }
+      },
+      onZoomChange: (_zoom) => {
+        // Could update UI if needed
+      }
+    });
+  }
+
+  // Mobile inspector overlay toggle
+  initMobileInspector();
+
   els.studioIdeaInput.focus();
+}
+
+/**
+ * Set up mobile inspector FAB toggle and overlay behavior.
+ * At ≤640px viewport: sidebar/inspector hidden, FAB shows inspector as overlay.
+ */
+function initMobileInspector() {
+  const fab = document.getElementById("canvas-fab-inspector");
+  const inspector = document.getElementById("studio-inspector");
+  const closeBtn = document.getElementById("inspector-overlay-close");
+  if (!fab || !inspector) return;
+
+  function openInspectorOverlay() {
+    inspector.classList.add("studio-inspector--overlay", "is-open");
+    inspector.style.display = "";
+  }
+
+  function closeInspectorOverlay() {
+    inspector.classList.remove("is-open");
+    // After transition, remove overlay class
+    setTimeout(() => {
+      if (!inspector.classList.contains("is-open")) {
+        inspector.classList.remove("studio-inspector--overlay");
+      }
+    }, 300);
+  }
+
+  fab.addEventListener("click", () => {
+    if (inspector.classList.contains("is-open")) {
+      closeInspectorOverlay();
+    } else {
+      openInspectorOverlay();
+    }
+  });
+
+  if (closeBtn) {
+    closeBtn.addEventListener("click", closeInspectorOverlay);
+  }
+
+  // Responsive layout: vertical artboards at ≤640px
+  const mql = window.matchMedia("(max-width: 640px)");
+  function handleMobileLayout(e) {
+    if (!studioState.canvasEngine) return;
+    if (e.matches) {
+      studioState.canvasEngine.arrangeVertical();
+    } else {
+      studioState.canvasEngine.arrangeHorizontal();
+      // Close overlay if open
+      closeInspectorOverlay();
+    }
+  }
+  mql.addEventListener("change", handleMobileLayout);
+  // Apply on init if already mobile
+  if (mql.matches && studioState.canvasEngine) {
+    studioState.canvasEngine.arrangeVertical();
+  }
 }
 
 bootstrap().catch((err) => showStatus(err instanceof Error ? err.message : String(err)));
