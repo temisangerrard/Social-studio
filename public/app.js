@@ -582,14 +582,23 @@ async function runGeneration(rawIdea, notes) {
   const { jobId } = await res.json();
 
   return pollJob(jobId, (job) => {
-    if (job.stage === "rendering" || job.status === "running") {
+    const stage = job.stage || job.status || "working";
+    console.log("[studio] Job progress:", jobId, stage);
+    if (stage === "planning" || job.status === "running") {
+      setCheckpoint("strategy", "active");
+      showCanvasProgress("Planning recipes and content…");
+    }
+    if (stage === "generating") {
       setCheckpoint("strategy", "done");
       setCheckpoint("hooks", "done");
       setCheckpoint("visuals", "active");
-      studioState.canvasLoadingStage = "generating";
-      renderCanvas();
-      showCanvasProgress("Generating visuals…");
+      showCanvasProgress("Generating food images…");
     }
+    if (stage === "rendering") {
+      setCheckpoint("visuals", "done");
+      showCanvasProgress("Rendering final slides…");
+    }
+    studioState.canvasLoadingStage = stage;
   });
 }
 
@@ -602,6 +611,17 @@ function finishGeneration(output) {
   setCheckpoint("finalPackage", "done");
   hideCanvasProgress();
   hideStatus();
+
+  // Debug: log what we got
+  console.log("[studio] Generation complete:", output.post_id);
+  console.log("[studio] Slides:", output.slides?.length, "Artifacts:", output.artifacts?.length);
+  if (output.slides) {
+    output.slides.forEach((s, i) => console.log(`  slide ${i}:`, s.role, s.asset_path || "no-asset"));
+  }
+  if (output.artifacts) {
+    output.artifacts.forEach((a, i) => console.log(`  artifact ${i}:`, a.role, a.asset_path || "no-asset"));
+  }
+
   // Load into canvas engine
   loadOutputToEngine(output);
 }
@@ -644,18 +664,19 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
   try {
     const output = await runGeneration(idea, els.studioNotesInput.value.trim());
     finishGeneration(output);
-    studioState.canvasCards = buildCanvasCards(brief, output, makeId);
     clearButtonLoading(els.studioSubmit);
-    renderCanvas();
     renderInspectorPackage();
     renderInspectorAsset();
+    // Show inspector with the results
+    const inspectorEl = document.getElementById("studio-inspector");
+    if (inspectorEl) inspectorEl.classList.remove("hidden");
   } catch (err) {
     studioState.canvasLoadingStage = null;
     hideCanvasProgress();
     clearButtonLoading(els.studioSubmit);
-    showStatus(err instanceof Error ? err.message : String(err));
+    console.error("[studio] Generation error:", err);
+    showCanvasProgress(err instanceof Error ? err.message : String(err));
     resetCheckpoints();
-    renderCanvas();
   }
 });
 

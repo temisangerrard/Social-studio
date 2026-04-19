@@ -12,6 +12,7 @@ interface ImageGeneratorOptions {
     secondaryColor?: string;
   };
   mascotReferenceImages?: string[];
+  onProgress?: (slideNumber: number, total: number, status: string) => void;
 }
 
 function sanitizeFilename(value: string): string {
@@ -193,7 +194,8 @@ export async function generateImagesForSlides(
     falModel = "fal-ai/flux/schnell",
     brandName = "Brand",
     brandColors = {},
-    mascotReferenceImages = []
+    mascotReferenceImages = [],
+    onProgress
   } = options;
   const colors = {
     primaryColor: brandColors.primaryColor ?? "#f04d23",
@@ -202,10 +204,19 @@ export async function generateImagesForSlides(
 
   await fs.mkdir(assetsDir, { recursive: true });
 
+  const imageSlides = slides.filter((s) => s.type === "generated_image" && s.image_prompt);
+  const totalImages = imageSlides.length;
+  let imageIndex = 0;
+
   for (const slide of slides) {
     if (slide.type !== "generated_image" || !slide.image_prompt) {
       continue;
     }
+
+    imageIndex++;
+    const recipeName = slide.recipe?.recipeName || slide.role;
+    if (onProgress) onProgress(imageIndex, totalImages, `Generating ${recipeName} (${imageIndex}/${totalImages})`);
+    console.log(`[image-generator] Generating ${imageIndex}/${totalImages}: ${recipeName}`);
 
     const extension = falKey ? "jpg" : "svg";
     const filename = `slide-${String(slide.slide_number).padStart(2, "0")}-${sanitizeFilename(slide.role)}.${extension}`;

@@ -89,7 +89,8 @@ function uploadExtensionForMimeType(mimeType: string): string {
 interface Job {
   id: string;
   status: "pending" | "running" | "done" | "failed";
-  stage: "queued" | "planning" | "rendering" | "done" | "failed";
+  stage: "queued" | "planning" | "generating" | "rendering" | "done" | "failed";
+  progress?: string;
   brief?: Record<string, unknown>;
   request?: GenerationRequest;
   result?: PostMetadata;
@@ -347,7 +348,7 @@ async function startGeneration(body: Record<string, unknown>): Promise<{ jobId: 
         throw new Error(`Brand profile not found: ${request.brandProfileId}`);
       }
 
-      job.stage = "rendering";
+      job.stage = "generating";
       await saveJob(job);
       const result = await runPipelineFromRequest(request, brand, OUTPUTS_ROOT);
       job.result = result;
@@ -355,6 +356,7 @@ async function startGeneration(body: Record<string, unknown>): Promise<{ jobId: 
       job.stage = "done";
       await saveJob(job);
     } catch (error) {
+      console.error(`[job ${job.id}] Generation failed:`, error instanceof Error ? error.message : error);
       job.status = "failed";
       job.stage = "failed";
       job.error = error instanceof Error ? error.message : String(error);

@@ -1754,6 +1754,10 @@ export class CanvasEngine {
     const artboards = buildArtboardDescriptors(output);
     const overlays = buildOverlayDescriptors(output);
 
+    console.log("[canvas-engine] loadOutput:", output?.post_id);
+    console.log("[canvas-engine] artboards:", artboards.length, artboards.map(a => `${a.label} → ${a.assetUrl}`));
+    console.log("[canvas-engine] overlays:", overlays.length);
+
     this._artboardManager.artboards = artboards;
     this._artboardManager.overlays = overlays;
 
