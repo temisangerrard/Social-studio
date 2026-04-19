@@ -631,11 +631,110 @@ function finishGeneration(output) {
  * Falls back to old renderCanvas() if engine not available.
  */
 function loadOutputToEngine(output) {
-  if (studioState.canvasEngine && output) {
-    // Hide old canvas empty state
-    els.canvasEmpty.classList.add("hidden");
-    studioState.canvasEngine.loadOutput(output);
+  console.log("[studio] loadOutputToEngine called, engine:", !!studioState.canvasEngine, "output:", !!output);
+  if (!output) return;
+
+  // Hide empty state
+  if (els.canvasEmpty) els.canvasEmpty.classList.add("hidden");
+
+  // Get the stage element and render directly
+  const stage = document.getElementById("studio-canvas-stage");
+  if (!stage) { console.error("[studio] No stage element"); return; }
+
+  // Remove any previous output render
+  const prev = stage.querySelector(".canvas-output");
+  if (prev) prev.remove();
+
+  // Build the output HTML directly
+  const container = document.createElement("div");
+  container.className = "canvas-output";
+
+  // Slides strip
+  const strip = document.createElement("div");
+  strip.className = "canvas-output__strip";
+
+  const items = (output.artifacts && output.artifacts.length) ? output.artifacts : (output.slides || []);
+  const postId = output.post_id || "";
+
+  items.forEach((item, i) => {
+    const card = document.createElement("div");
+    card.className = "canvas-output__card";
+
+    // Resolve image URL
+    let imgUrl = null;
+    if (item.asset_path) {
+      const filename = item.asset_path.split("/").pop();
+      imgUrl = `/api/assets/${postId}/${filename}`;
+    }
+
+    if (imgUrl) {
+      const img = document.createElement("img");
+      img.src = imgUrl;
+      img.alt = item.role || "slide";
+      img.loading = "lazy";
+      img.onerror = () => { img.style.display = "none"; };
+      card.appendChild(img);
+    } else {
+      const placeholder = document.createElement("div");
+      placeholder.className = "canvas-output__placeholder";
+      placeholder.textContent = item.role || "slide";
+      card.appendChild(placeholder);
+    }
+
+    // Label
+    const label = document.createElement("div");
+    label.className = "canvas-output__label";
+    label.textContent = `${String(i + 1).padStart(2, "0")} — ${(item.role || "slide").charAt(0).toUpperCase() + (item.role || "slide").slice(1)}`;
+    card.appendChild(label);
+
+    // Recipe info below image
+    const recipe = item.recipe || (output.slides && output.slides[i] && output.slides[i].recipe);
+    if (recipe) {
+      const info = document.createElement("div");
+      info.className = "canvas-output__recipe";
+      info.innerHTML = `<strong>${recipe.recipeName || ""}</strong>`;
+      if (recipe.cookTime) info.innerHTML += `<span class="canvas-output__meta">${recipe.cookTime}</span>`;
+      if (recipe.ingredients && recipe.ingredients.length) {
+        info.innerHTML += `<div class="canvas-output__ingredients">${recipe.ingredients.join(" · ")}</div>`;
+      }
+      if (recipe.steps && recipe.steps.length) {
+        info.innerHTML += `<div class="canvas-output__steps">${recipe.steps.map((s, j) => `<span>${j + 1}. ${s}</span>`).join(" ")}</div>`;
+      }
+      if (recipe.proTip) {
+        info.innerHTML += `<div class="canvas-output__tip">${recipe.proTip}</div>`;
+      }
+      card.appendChild(info);
+    }
+
+    strip.appendChild(card);
+  });
+
+  container.appendChild(strip);
+
+  // Caption + hashtags below the strip
+  if (output.caption) {
+    const captionEl = document.createElement("div");
+    captionEl.className = "canvas-output__caption";
+    captionEl.innerHTML = `<strong>Caption</strong><p>${output.caption}</p>`;
+    container.appendChild(captionEl);
   }
+
+  if (output.hashtags && output.hashtags.length) {
+    const tagsEl = document.createElement("div");
+    tagsEl.className = "canvas-output__hashtags";
+    tagsEl.textContent = output.hashtags.join(" ");
+    container.appendChild(tagsEl);
+  }
+
+  if (output.hooks && output.hooks.length) {
+    const hooksEl = document.createElement("div");
+    hooksEl.className = "canvas-output__hooks";
+    hooksEl.innerHTML = `<strong>Hooks</strong>` + output.hooks.map(h => `<p>${h}</p>`).join("");
+    container.appendChild(hooksEl);
+  }
+
+  stage.appendChild(container);
+  console.log("[studio] Output rendered to canvas:", items.length, "items");
 }
 
 // ── Quick form ────────────────────────────────────────────────────────────────
@@ -666,10 +765,6 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
     finishGeneration(output);
     clearButtonLoading(els.studioSubmit);
     renderInspectorPackage();
-    renderInspectorAsset();
-    // Show inspector with the results
-    const inspectorEl = document.getElementById("studio-inspector");
-    if (inspectorEl) inspectorEl.classList.remove("hidden");
   } catch (err) {
     studioState.canvasLoadingStage = null;
     hideCanvasProgress();
@@ -1512,17 +1607,12 @@ async function bootstrap() {
 
   // Initialize CanvasEngine on the studio canvas stage
   const stageEl = document.querySelector(".studio-canvas-stage");
+  console.log("[studio] Canvas stage element:", stageEl ? "found" : "NOT FOUND");
   if (stageEl) {
-    studioState.canvasEngine = new CanvasEngine(stageEl, {
-      onSelect: (artboardDesc) => {
-        if (artboardDesc) {
-          // Map artboard descriptor to the existing selectedAsset format
-          const assets = outputAssets(studioState.generatedOutput);
-          const match = assets.find((a) => a.itemId === artboardDesc.id) || null;
-          if (match) {
-            studioState.selectedAsset = match;
-          } else {
-            // Build a compatible asset object from the descriptor
+    try {
+      studioState.canvasEngine = new CanvasEngine(stageEl, {
+        onSelect: (artboardDesc) => {
+          if (artboardDesc) {
             studioState.selectedAsset = {
               itemId: artboardDesc.id,
               assetKind: artboardDesc.type,
@@ -1535,22 +1625,22 @@ async function bootstrap() {
               slideNumber: artboardDesc.slideNumber,
               order: artboardDesc.order
             };
+          } else {
+            studioState.selectedAsset = null;
           }
-        } else {
-          studioState.selectedAsset = null;
-        }
-        renderInspectorAsset();
-      },
-      onReorder: (orderedIds) => {
-        // Update studioState slide order if needed
-        if (studioState.generatedOutput) {
-          studioState.generatedOutput._artboardOrder = orderedIds;
-        }
-      },
-      onZoomChange: (_zoom) => {
-        // Could update UI if needed
-      }
-    });
+          renderInspectorAsset();
+        },
+        onReorder: (orderedIds) => {
+          if (studioState.generatedOutput) {
+            studioState.generatedOutput._artboardOrder = orderedIds;
+          }
+        },
+        onZoomChange: () => {}
+      });
+      console.log("[studio] CanvasEngine created successfully");
+    } catch (err) {
+      console.error("[studio] CanvasEngine creation FAILED:", err);
+    }
   }
 
   // Mobile inspector overlay toggle
