@@ -16,6 +16,7 @@ import {
 import type {
   BrandProfile,
   ContentBrief,
+  ContentTypeDefinition,
   GenerationRequest,
   GeneratedArtifact,
   PipelineOptions,
@@ -27,6 +28,74 @@ interface PipelineDependencies {
   planPackage: typeof planSocialPackage;
   generateSlideImages: typeof generateImagesForSlides;
   renderPackageSlides: typeof renderSlides;
+}
+
+// ── Content Type Validation ───────────────────────────────────────────────────
+
+function isValidBlueprintEntry(entry: unknown): boolean {
+  if (!entry || typeof entry !== "object") return false;
+  const e = entry as Record<string, unknown>;
+  return (
+    typeof e.role === "string" &&
+    (e.type === "text_only" || e.type === "generated_image") &&
+    Array.isArray(e.textFields) &&
+    (e.imagePromptTemplate === null || typeof e.imagePromptTemplate === "string") &&
+    typeof e.layout === "string"
+  );
+}
+
+function isValidContentType(ct: unknown): boolean {
+  if (!ct || typeof ct !== "object") return false;
+  const c = ct as Record<string, unknown>;
+  return (
+    typeof c.id === "string" &&
+    typeof c.name === "string" &&
+    typeof c.imageStyle === "string" &&
+    Array.isArray(c.platformTargets) &&
+    Array.isArray(c.slideBlueprint) &&
+    (c.slideBlueprint as unknown[]).length > 0 &&
+    (c.slideBlueprint as unknown[]).every(isValidBlueprintEntry)
+  );
+}
+
+export function validateContentTypes(brand: BrandProfile): ContentTypeDefinition[] {
+  if (!Array.isArray(brand.contentTypes)) return [];
+  const valid: ContentTypeDefinition[] = [];
+  for (const ct of brand.contentTypes) {
+    if (isValidContentType(ct)) {
+      valid.push(ct);
+    } else {
+      console.warn(`[pipeline] Skipping invalid content type in brand "${brand.id}":`, (ct as any)?.id ?? "unknown");
+    }
+  }
+  return valid;
+}
+
+// ── Content Type Resolution ───────────────────────────────────────────────────
+
+export function resolveContentType(
+  brand: BrandProfile,
+  contentTypeId?: string
+): ContentTypeDefinition | null {
+  const validTypes = validateContentTypes(brand);
+  if (validTypes.length === 0) return null;
+
+  // Try explicit contentTypeId first
+  if (contentTypeId) {
+    const match = validTypes.find((ct) => ct.id === contentTypeId);
+    if (match) return match;
+    console.warn(`[pipeline] Content type "${contentTypeId}" not found for brand "${brand.id}", trying default`);
+  }
+
+  // Fall back to defaultContentType
+  if (brand.defaultContentType) {
+    const defaultMatch = validTypes.find((ct) => ct.id === brand.defaultContentType);
+    if (defaultMatch) return defaultMatch;
+    console.warn(`[pipeline] Default content type "${brand.defaultContentType}" not found for brand "${brand.id}", using first`);
+  }
+
+  // Fall back to first valid content type
+  return validTypes[0];
 }
 
 let environmentLoaded = false;
@@ -224,7 +293,8 @@ function normalizeRequest(input: unknown): GenerationRequest {
     deliveryTargets:
       request.deliveryTargets === "tiktok" || request.deliveryTargets === "instagram" || request.deliveryTargets === "both"
         ? request.deliveryTargets
-        : "both"
+        : "both",
+    contentTypeId: typeof request.contentTypeId === "string" ? request.contentTypeId : undefined
   };
 }
 
@@ -397,9 +467,13 @@ export async function runPipelineFromRequest(
   const imageGenerator = dependencies?.generateSlideImages ?? generateImagesForSlides;
   const renderer = dependencies?.renderPackageSlides ?? renderSlides;
 
+  // Resolve content type from brand config
+  const contentType = resolveContentType(brandProfile, request.contentTypeId);
+
   const { plan, provider } = await planner({
     brand: brandProfile,
-    request
+    request,
+    contentType: contentType ?? undefined
   });
   const workflowType = resolveWorkflowType(request);
   const deliveryTargets = resolveDeliveryTargets(request);
@@ -426,6 +500,7 @@ export async function runPipelineFromRequest(
     format: isPepperaCarousel ? "carousel" : "slideshow",
     workflow_type: workflowType,
     delivery_targets: deliveryTargets,
+    content_type_id: contentType?.id,
     caption: plan.caption,
     hooks: plan.hooks,
     hashtags: plan.hashtags,

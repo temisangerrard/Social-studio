@@ -21,6 +21,52 @@
     "plannerModel": "glm-4.5",
     "imageModel": "fal-ai/flux/schnell"
   },
+  "defaultContentType": "thought-leadership",
+  "contentTypes": [
+    {
+      "id": "thought-leadership",
+      "name": "Thought Leadership",
+      "imageStyle": "professional editorial portrait or abstract concept visual, dark premium tones, gold accents, authority aesthetic",
+      "platformTargets": ["linkedin", "instagram"],
+      "slideBlueprint": [
+        { "role": "insight", "type": "generated_image", "textFields": ["headline", "body"], "imagePromptTemplate": "Professional thought leadership visual for {headline}", "layout": "image_focus" }
+      ]
+    },
+    {
+      "id": "case-study",
+      "name": "Case Study",
+      "imageStyle": "professional editorial portrait or abstract concept visual, dark premium tones, gold accents, authority aesthetic",
+      "platformTargets": ["linkedin", "instagram"],
+      "slideBlueprint": [
+        { "role": "challenge", "type": "generated_image", "textFields": ["challengeText"], "imagePromptTemplate": "Visual representing business challenge", "layout": "image_focus" },
+        { "role": "approach", "type": "generated_image", "textFields": ["approachText"], "imagePromptTemplate": "Visual representing strategic approach", "layout": "image_focus" },
+        { "role": "result", "type": "generated_image", "textFields": ["resultText"], "imagePromptTemplate": "Visual representing successful outcome", "layout": "image_focus" },
+        { "role": "cta", "type": "text_only", "textFields": ["headline", "cta"], "imagePromptTemplate": null, "layout": "cta_banner" }
+      ]
+    },
+    {
+      "id": "personal-story",
+      "name": "Personal Story",
+      "imageStyle": "professional editorial portrait or abstract concept visual, dark premium tones, gold accents, authority aesthetic",
+      "platformTargets": ["linkedin", "instagram"],
+      "slideBlueprint": [
+        { "role": "story", "type": "generated_image", "textFields": ["headline", "body"], "imagePromptTemplate": "Editorial portrait or narrative visual for personal story", "layout": "image_focus" }
+      ]
+    },
+    {
+      "id": "thread-carousel",
+      "name": "Thread Carousel",
+      "imageStyle": "professional editorial portrait or abstract concept visual, dark premium tones, gold accents, authority aesthetic",
+      "platformTargets": ["linkedin", "instagram"],
+      "slideBlueprint": [
+        { "role": "hook", "type": "text_only", "textFields": ["title", "subtitle"], "imagePromptTemplate": null, "layout": "hook_cover" },
+        { "role": "content", "type": "generated_image", "textFields": ["point"], "imagePromptTemplate": "Abstract concept visual for {point}", "layout": "image_focus" },
+        { "role": "content", "type": "generated_image", "textFields": ["point"], "imagePromptTemplate": "Abstract concept visual for {point}", "layout": "image_focus" },
+        { "role": "content", "type": "generated_image", "textFields": ["point"], "imagePromptTemplate": "Abstract concept visual for {point}", "layout": "image_focus" },
+        { "role": "cta", "type": "text_only", "textFields": ["headline", "cta"], "imagePromptTemplate": null, "layout": "cta_banner" }
+      ]
+    }
+  ],
   "contentPillars": [
     {
       "id": "build-in-public",

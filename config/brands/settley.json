@@ -20,5 +20,41 @@
   "providers": {
     "plannerModel": "glm-4.5",
     "imageModel": "fal-ai/flux/schnell"
-  }
+  },
+  "defaultContentType": "property-showcase",
+  "contentTypes": [
+    {
+      "id": "property-showcase",
+      "name": "Property Showcase",
+      "imageStyle": "premium architectural photography, clean lines, trust-building real estate visual, bright natural lighting",
+      "platformTargets": ["tiktok", "instagram"],
+      "slideBlueprint": [
+        { "role": "hero", "type": "generated_image", "textFields": ["propertyName", "location"], "imagePromptTemplate": "Architectural hero shot of {propertyName}", "layout": "image_focus" },
+        { "role": "detail", "type": "generated_image", "textFields": ["featureName", "description"], "imagePromptTemplate": "Interior detail shot showing {featureName}", "layout": "image_focus" },
+        { "role": "detail", "type": "generated_image", "textFields": ["featureName", "description"], "imagePromptTemplate": "Interior detail shot showing {featureName}", "layout": "image_focus" },
+        { "role": "detail", "type": "generated_image", "textFields": ["featureName", "description"], "imagePromptTemplate": "Interior detail shot showing {featureName}", "layout": "image_focus" },
+        { "role": "cta", "type": "text_only", "textFields": ["headline", "cta"], "imagePromptTemplate": null, "layout": "cta_banner" }
+      ]
+    },
+    {
+      "id": "market-insight",
+      "name": "Market Insight",
+      "imageStyle": "premium architectural photography, clean lines, trust-building real estate visual, bright natural lighting",
+      "platformTargets": ["tiktok", "instagram"],
+      "slideBlueprint": [
+        { "role": "data", "type": "generated_image", "textFields": ["headline", "statistic"], "imagePromptTemplate": "Data visualisation for real estate market insight", "layout": "image_focus" },
+        { "role": "analysis", "type": "generated_image", "textFields": ["insight", "explanation"], "imagePromptTemplate": "Market analysis visual with charts and graphs", "layout": "image_focus" },
+        { "role": "cta", "type": "text_only", "textFields": ["headline", "cta"], "imagePromptTemplate": null, "layout": "cta_banner" }
+      ]
+    },
+    {
+      "id": "investment-update",
+      "name": "Investment Update",
+      "imageStyle": "premium architectural photography, clean lines, trust-building real estate visual, bright natural lighting",
+      "platformTargets": ["tiktok", "instagram"],
+      "slideBlueprint": [
+        { "role": "update", "type": "generated_image", "textFields": ["headline", "body", "metrics"], "imagePromptTemplate": "Investment performance visual with premium aesthetic", "layout": "image_focus" }
+      ]
+    }
+  ]
 }

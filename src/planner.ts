@@ -1,9 +1,10 @@
-import { generateScript, generatePepperaCarousel, buildCartoonFoodPrompt } from "./script-generator.ts";
-import type { BrandProfile, GenerationRequest, PlannedPackage, Slide, StructuredRecipe } from "./types.ts";
+import { generateScript, generatePepperaCarousel, generateFromBlueprint, buildCartoonFoodPrompt } from "./script-generator.ts";
+import type { BrandProfile, ContentTypeDefinition, GenerationRequest, PlannedPackage, Slide, StructuredRecipe } from "./types.ts";
 
 interface PlannerContext {
   brand: BrandProfile;
   request: GenerationRequest;
+  contentType?: ContentTypeDefinition;
 }
 
 // ── Fallback Recipe Lookup Table ──────────────────────────────────────────────
@@ -337,7 +338,7 @@ function applyMascotToPrompt(
   ].join(" ");
 }
 
-export function buildPlannerPrompt({ brand, request }: PlannerContext): string {
+export function buildPlannerPrompt({ brand, request, contentType }: PlannerContext): string {
   const visualMode = resolveVisualMode(request);
   const isPeppera = brand.id === "peppera" || brand.name === "Peppera";
 
@@ -359,7 +360,22 @@ export function buildPlannerPrompt({ brand, request }: PlannerContext): string {
     cardSummary(request),
   ];
 
-  if (isPeppera) {
+  // Content type context for GLM
+  if (contentType && !(isPeppera && contentType.id === "recipe-carousel")) {
+    baseLines.push(
+      "",
+      `CONTENT TYPE: ${contentType.name} (${contentType.id})`,
+      `Image style: ${contentType.imageStyle}`,
+      `Slide count: ${contentType.slideBlueprint.length}`,
+      "Slide blueprint:",
+      ...contentType.slideBlueprint.map((entry, i) =>
+        `  ${i + 1}. role="${entry.role}", type="${entry.type}", layout="${entry.layout}", textFields=[${entry.textFields.join(", ")}]`
+      ),
+      "",
+      "Generate slides matching this exact blueprint structure.",
+      "Each slide must have the role, type, and layout specified above.",
+    );
+  } else if (isPeppera) {
     baseLines.push(
       "",
       "PEPPERA CAROUSEL FORMAT:",
@@ -453,6 +469,13 @@ function isPepperaCarouselBrief(brand: BrandProfile, request: GenerationRequest)
   return (brand.id === "peppera" || brand.name === "Peppera");
 }
 
+/**
+ * Check if the content type is Peppera's recipe-carousel, which should use the existing path.
+ */
+function isPepperaRecipeCarousel(brand: BrandProfile, contentType?: ContentTypeDefinition): boolean {
+  return (brand.id === "peppera" || brand.name === "Peppera") && contentType?.id === "recipe-carousel";
+}
+
 function extractIngredients(request: GenerationRequest): string[] {
   // Try to extract ingredients from cards or rawIdea
   const ingredientCards = request.cards
@@ -468,12 +491,23 @@ function extractIngredients(request: GenerationRequest): string[] {
   return found.length > 0 ? found : ingredientCards.length > 0 ? ingredientCards : ["eggs", "bread"];
 }
 
-export function fallbackPlanSocialPackage({ brand, request }: PlannerContext): PlannedPackage {
-  // Detect Peppera carousel briefs
-  if (isPepperaCarouselBrief(brand, request)) {
-    return fallbackPlanPepperaCarousel({ brand, request });
+export function fallbackPlanSocialPackage({ brand, request, contentType }: PlannerContext): PlannedPackage {
+  // Route 1: Peppera recipe-carousel — use existing dedicated path
+  if (isPepperaRecipeCarousel(brand, contentType)) {
+    return fallbackPlanPepperaCarousel({ brand, request, contentType });
   }
 
+  // Route 2: Peppera without explicit content type — backward compat
+  if (!contentType && isPepperaCarouselBrief(brand, request)) {
+    return fallbackPlanPepperaCarousel({ brand, request, contentType });
+  }
+
+  // Route 3: Non-Peppera with content type — use blueprint
+  if (contentType) {
+    return fallbackPlanFromBlueprint({ brand, request, contentType });
+  }
+
+  // Route 4: No content type — existing generic 8-slide path
   const visualMode = resolveVisualMode(request);
   const hookSeed = topCardsByType(request, "hook")[0] || request.rawIdea;
   const problemSeed = topCardsByType(request, "problem")[0] || "Dinner indecision is hitting again";
@@ -544,6 +578,41 @@ export function fallbackPlanSocialPackage({ brand, request }: PlannerContext): P
       instagram: "Use the strongest visual cover and cleaner CTA framing."
     },
     slides
+  };
+}
+
+function fallbackPlanFromBlueprint({ brand, request, contentType }: PlannerContext): PlannedPackage {
+  const ct = contentType!;
+  const brief: import("./types.ts").ContentBrief = {
+    product: brand.name,
+    platform: request.platformTargets[0] ?? "instagram",
+    format: "slideshow",
+    pillar: "content-type",
+    audience: brand.audience,
+    tone: brand.tone,
+    goal: request.goal,
+    idea: request.rawIdea,
+    ingredients: [],
+  };
+
+  const slides = generateFromBlueprint(ct, brief, brand);
+
+  const hooks = [
+    request.rawIdea,
+    `${brand.name} — ${ct.name}`,
+    `New from ${brand.name}`,
+  ];
+
+  const caption = `${request.rawIdea}. ${brand.name} — ${ct.name}. ${brand.cta}.`;
+
+  return {
+    hooks,
+    caption,
+    hashtags: Array.from(new Set([...brand.defaults.hashtags])).map(normalizeHashtag),
+    platformNotes: {
+      instagram: "Use the strongest visual cover.",
+    },
+    slides,
   };
 }
 
@@ -663,8 +732,9 @@ export async function planSocialPackage(
 
     const glmPlan = parsePlannerResponse(content);
 
-    // For Peppera carousels, merge GLM's recipe data onto our structured carousel
-    if (isPepperaCarouselBrief(context.brand, context.request)) {
+    // For Peppera carousels (recipe-carousel or legacy), merge GLM's recipe data onto our structured carousel
+    if (isPepperaRecipeCarousel(context.brand, context.contentType) ||
+        (!context.contentType && isPepperaCarouselBrief(context.brand, context.request))) {
       const ingredients = extractIngredients(context.request);
       const brief: import("./types.ts").ContentBrief = {
         product: context.brand.name,
@@ -717,6 +787,40 @@ export async function planSocialPackage(
           hashtags: glmPlan.hashtags,
           platformNotes: glmPlan.platformNotes,
           slides: structuredSlides,
+        },
+        provider: "glm"
+      };
+    }
+
+    // For non-Peppera content types, use blueprint structure with GLM text
+    if (context.contentType && !isPepperaRecipeCarousel(context.brand, context.contentType)) {
+      const brief: import("./types.ts").ContentBrief = {
+        product: context.brand.name,
+        platform: context.request.platformTargets[0] ?? "instagram",
+        format: "slideshow",
+        pillar: "content-type",
+        audience: context.brand.audience,
+        tone: context.brand.tone,
+        goal: context.request.goal,
+        idea: context.request.rawIdea,
+        ingredients: [],
+      };
+      const blueprintSlides = generateFromBlueprint(context.contentType, brief, context.brand);
+
+      // Merge GLM text onto blueprint slides where possible
+      for (let i = 0; i < blueprintSlides.length && i < glmPlan.slides.length; i++) {
+        if (glmPlan.slides[i].text) {
+          blueprintSlides[i].text = glmPlan.slides[i].text;
+        }
+      }
+
+      return {
+        plan: {
+          hooks: glmPlan.hooks,
+          caption: glmPlan.caption,
+          hashtags: glmPlan.hashtags,
+          platformNotes: glmPlan.platformNotes,
+          slides: blueprintSlides,
         },
         provider: "glm"
       };

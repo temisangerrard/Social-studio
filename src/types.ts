@@ -27,6 +27,24 @@ export type SlideLayout =
   | "recipe_card"
   | "cta_banner";
 
+// ── Content Type System ───────────────────────────────────────────────────────
+
+export interface SlideBlueprintEntry {
+  role: string;
+  type: SlideType;
+  textFields: string[];
+  imagePromptTemplate: string | null;
+  layout: string;
+}
+
+export interface ContentTypeDefinition {
+  id: string;
+  name: string;
+  slideBlueprint: SlideBlueprintEntry[];
+  imageStyle: string;
+  platformTargets: Platform[];
+}
+
 export type BoardCardType =
   | "idea"
   | "hook"
@@ -93,6 +111,8 @@ export interface BrandProfile {
   defaults: BrandDefaults;
   providers: BrandProviders;
   mascot?: BrandMascot;
+  contentTypes?: ContentTypeDefinition[];
+  defaultContentType?: string;
 }
 
 export interface BoardCard {
@@ -210,6 +230,7 @@ export interface GenerationRequest {
   videoOptions?: VideoOptions;
   variantCount?: number;
   deliveryTargets?: DeliveryTarget;
+  contentTypeId?: string;
 }
 
 export interface StructuredRecipe {
@@ -280,6 +301,7 @@ export interface PostMetadata {
   format: PostFormat;
   workflow_type?: WorkflowType;
   delivery_targets?: DeliveryTarget;
+  content_type_id?: string;
   caption: string;
   hooks: string[];
   hashtags: string[];

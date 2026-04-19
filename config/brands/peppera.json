@@ -49,5 +49,52 @@
       "https://raw.githubusercontent.com/temisangerrard/Social-studio/main/assets/mascot/peppera-chef-happy.png",
       "https://raw.githubusercontent.com/temisangerrard/Social-studio/main/assets/mascot/peppera-standing.png"
     ]
-  }
+  },
+  "defaultContentType": "recipe-carousel",
+  "contentTypes": [
+    {
+      "id": "recipe-carousel",
+      "name": "Recipe Carousel",
+      "imageStyle": "professional food photography, appetising, natural lighting",
+      "platformTargets": ["instagram", "tiktok"],
+      "slideBlueprint": [
+        { "role": "hook", "type": "text_only", "textFields": ["title", "subtitle"], "imagePromptTemplate": null, "layout": "hook_cover" },
+        { "role": "recipe", "type": "generated_image", "textFields": ["recipeName"], "imagePromptTemplate": "Food photo of {recipeName}", "layout": "recipe_card" },
+        { "role": "recipe", "type": "generated_image", "textFields": ["recipeName"], "imagePromptTemplate": "Food photo of {recipeName}", "layout": "recipe_card" },
+        { "role": "recipe", "type": "generated_image", "textFields": ["recipeName"], "imagePromptTemplate": "Food photo of {recipeName}", "layout": "recipe_card" },
+        { "role": "recipe", "type": "generated_image", "textFields": ["recipeName"], "imagePromptTemplate": "Food photo of {recipeName}", "layout": "recipe_card" },
+        { "role": "recipe", "type": "generated_image", "textFields": ["recipeName"], "imagePromptTemplate": "Food photo of {recipeName}", "layout": "recipe_card" },
+        { "role": "cta", "type": "text_only", "textFields": ["headline", "subtitle", "cta"], "imagePromptTemplate": null, "layout": "cta_banner" }
+      ]
+    },
+    {
+      "id": "single-recipe",
+      "name": "Single Recipe Post",
+      "imageStyle": "professional food photography, appetising, natural lighting, hero shot",
+      "platformTargets": ["instagram", "tiktok"],
+      "slideBlueprint": [
+        { "role": "recipe", "type": "generated_image", "textFields": ["recipeName", "ingredients", "cookTime", "steps"], "imagePromptTemplate": "Hero food photo of {recipeName}", "layout": "recipe_card" }
+      ]
+    },
+    {
+      "id": "cooking-tip",
+      "name": "Cooking Tip",
+      "imageStyle": "warm kitchen photography, instructional, clean composition",
+      "platformTargets": ["instagram", "tiktok"],
+      "slideBlueprint": [
+        { "role": "tip", "type": "generated_image", "textFields": ["tip"], "imagePromptTemplate": "Kitchen scene illustrating cooking tip", "layout": "image_focus" }
+      ]
+    },
+    {
+      "id": "ingredient-spotlight",
+      "name": "Ingredient Spotlight",
+      "imageStyle": "professional food photography, ingredient hero shot, natural lighting",
+      "platformTargets": ["instagram", "tiktok"],
+      "slideBlueprint": [
+        { "role": "hero", "type": "generated_image", "textFields": ["ingredientName", "description"], "imagePromptTemplate": "Hero shot of {ingredientName}", "layout": "image_focus" },
+        { "role": "recipe", "type": "generated_image", "textFields": ["recipeName"], "imagePromptTemplate": "Food photo of {recipeName} featuring {ingredientName}", "layout": "recipe_card" },
+        { "role": "recipe", "type": "generated_image", "textFields": ["recipeName"], "imagePromptTemplate": "Food photo of {recipeName} featuring {ingredientName}", "layout": "recipe_card" }
+      ]
+    }
+  ]
 }

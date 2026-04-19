@@ -41,6 +41,7 @@ const els = {
   },
 
   studioProductSelect: document.getElementById("studio-product-select"),
+  studioContentTypeSelect: document.getElementById("studio-content-type-select"),
   studioPlatformSelect: document.getElementById("studio-platform-select"),
   studioVisualMode: document.getElementById("studio-visual-mode"),
   studioDeliveryTarget: document.getElementById("studio-delivery-target"),
@@ -334,6 +335,27 @@ function renderReferenceChips() {
   ).join("");
 }
 
+// ── Content Type Selector ─────────────────────────────────────────────────────
+function updateContentTypeSelector(brandId) {
+  const brand = getBrandById(brandId);
+  const select = els.studioContentTypeSelect;
+  if (!select) return;
+
+  if (!brand || !brand.contentTypes || brand.contentTypes.length === 0) {
+    select.innerHTML = '<option value="">Standard</option>';
+    return;
+  }
+
+  select.innerHTML = brand.contentTypes.map((ct) =>
+    `<option value="${escapeHtml(ct.id)}">${escapeHtml(ct.name)}</option>`
+  ).join("");
+
+  // Auto-select default content type
+  if (brand.defaultContentType) {
+    select.value = brand.defaultContentType;
+  }
+}
+
 // ── Workflow UI ───────────────────────────────────────────────────────────────
 function updateWorkflowUI() {
   const preset = getWorkflowPreset(studioState.workflowType);
@@ -568,6 +590,7 @@ async function runGeneration(rawIdea, notes) {
     workflowType: studioState.workflowType,
     visualMode: els.studioVisualMode.value,
     deliveryTargets: els.studioDeliveryTarget.value,
+    contentTypeId: els.studioContentTypeSelect?.value || undefined,
     variantCount: studioState.workflowType === "mascot-variants" ? 4 : undefined,
     videoOptions: ["video-clip", "reel-package"].includes(studioState.workflowType)
       ? { duration: 5, aspectRatio: "9:16", withAudio: true, consistencyMode: "mascot-consistent" }
@@ -830,6 +853,18 @@ function loadOutputToEngine(output) {
       label.textContent = `${String(i + 1).padStart(2, "0")} — Cta`;
       ctaCard.appendChild(label);
       strip.appendChild(ctaCard);
+      return;
+    }
+
+    // Text-only slides with unknown roles — render as branded text card
+    if (item.type === 'text_only' && !item.asset_path) {
+      const textCard = renderHookCard(item, brandVisual, brandName);
+      const label = document.createElement("div");
+      label.className = "canvas-output__label";
+      const roleName = (item.role || "slide").charAt(0).toUpperCase() + (item.role || "slide").slice(1);
+      label.textContent = `${String(i + 1).padStart(2, "0")} — ${roleName}`;
+      textCard.appendChild(label);
+      strip.appendChild(textCard);
       return;
     }
 
@@ -1953,6 +1988,7 @@ els.inspectorCopyHashtags.addEventListener("click", () =>
 els.studioProductSelect.addEventListener("change", async () => {
   renderBrandEditor(els.studioProductSelect.value);
   renderReferenceChips();
+  updateContentTypeSelector(els.studioProductSelect.value);
   await createSession(els.studioProductSelect.value);
 });
 
@@ -2514,6 +2550,7 @@ calEls.librarySearch?.addEventListener("input", renderLibrary);
 async function bootstrap() {
   await loadProducts();
   renderBrandEditor("peppera");
+  updateContentTypeSelector("peppera");
   updateWorkflowUI();
   await createSession("peppera");
   initCanvasDrag();

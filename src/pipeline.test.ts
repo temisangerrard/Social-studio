@@ -3,8 +3,8 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { brandProfileFromBrief, runPipelineFromRequest } from "./pipeline.ts";
-import type { BrandProfile, GenerationRequest, PlannedPackage, Slide } from "./types.ts";
+import { brandProfileFromBrief, resolveContentType, runPipelineFromRequest, validateContentTypes } from "./pipeline.ts";
+import type { BrandProfile, ContentTypeDefinition, GenerationRequest, PlannedPackage, Slide } from "./types.ts";
 
 function makeRequest(): GenerationRequest {
   return {
@@ -89,4 +89,81 @@ test("pipeline still writes metadata when slide rendering fails", async () => {
   assert.match(savedMetadata.render_error, /Renderer unavailable/);
   assert.match(caption, /Peppera/);
   assert.match(hooks, /leftovers/i);
+});
+
+
+// ── resolveContentType tests ──────────────────────────────────────────────────
+
+function makeBrandWithContentTypes(): BrandProfile {
+  return {
+    ...makeBrand(),
+    defaultContentType: "recipe-carousel",
+    contentTypes: [
+      {
+        id: "recipe-carousel",
+        name: "Recipe Carousel",
+        imageStyle: "food photography",
+        platformTargets: ["instagram"],
+        slideBlueprint: [
+          { role: "hook", type: "text_only", textFields: ["title"], imagePromptTemplate: null, layout: "hook_cover" },
+          { role: "recipe", type: "generated_image", textFields: ["recipeName"], imagePromptTemplate: "Food photo of {recipeName}", layout: "recipe_card" },
+          { role: "cta", type: "text_only", textFields: ["headline"], imagePromptTemplate: null, layout: "cta_banner" }
+        ]
+      },
+      {
+        id: "single-recipe",
+        name: "Single Recipe",
+        imageStyle: "hero food shot",
+        platformTargets: ["instagram"],
+        slideBlueprint: [
+          { role: "recipe", type: "generated_image", textFields: ["recipeName"], imagePromptTemplate: "Hero food photo", layout: "recipe_card" }
+        ]
+      }
+    ]
+  };
+}
+
+test("resolveContentType returns matching content type by id", () => {
+  const brand = makeBrandWithContentTypes();
+  const result = resolveContentType(brand, "single-recipe");
+  assert.equal(result?.id, "single-recipe");
+});
+
+test("resolveContentType falls back to defaultContentType when id omitted", () => {
+  const brand = makeBrandWithContentTypes();
+  const result = resolveContentType(brand);
+  assert.equal(result?.id, "recipe-carousel");
+});
+
+test("resolveContentType returns null when brand has no contentTypes", () => {
+  const brand = makeBrand();
+  const result = resolveContentType(brand);
+  assert.equal(result, null);
+});
+
+test("resolveContentType falls back when contentTypeId doesn't match", () => {
+  const brand = makeBrandWithContentTypes();
+  const result = resolveContentType(brand, "nonexistent");
+  assert.equal(result?.id, "recipe-carousel");
+});
+
+test("validateContentTypes skips invalid entries", () => {
+  const brand: BrandProfile = {
+    ...makeBrand(),
+    contentTypes: [
+      {
+        id: "valid",
+        name: "Valid",
+        imageStyle: "test",
+        platformTargets: ["instagram"],
+        slideBlueprint: [
+          { role: "hook", type: "text_only", textFields: ["title"], imagePromptTemplate: null, layout: "hook_cover" }
+        ]
+      },
+      { id: "invalid" } as any // missing required fields
+    ]
+  };
+  const valid = validateContentTypes(brand);
+  assert.equal(valid.length, 1);
+  assert.equal(valid[0].id, "valid");
 });

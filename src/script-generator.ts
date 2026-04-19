@@ -1,4 +1,4 @@
-import type { BrandProfile, ContentBrief, Slide, SlideRole, StructuredRecipe } from "./types.ts";
+import type { BrandProfile, ContentBrief, ContentTypeDefinition, Slide, SlideRole, StructuredRecipe } from "./types.ts";
 
 const SLIDE_BLUEPRINT: Array<{
   role: SlideRole;
@@ -194,4 +194,42 @@ export function generatePepperaCarousel(
   });
 
   return slides;
+}
+
+
+/**
+ * Generates slides from a ContentTypeDefinition's slideBlueprint.
+ * This is the universal, data-driven alternative to brand-specific generators.
+ * Applies the content type's imageStyle to all generated_image slides.
+ */
+export function generateFromBlueprint(
+  contentType: ContentTypeDefinition,
+  brief: ContentBrief,
+  brand: BrandProfile
+): Slide[] {
+  return contentType.slideBlueprint.map((entry, index) => {
+    const isTextOnly = entry.type === "text_only";
+
+    // Build image prompt: prepend imageStyle to the template
+    let imagePrompt: string | null = null;
+    if (!isTextOnly && entry.imagePromptTemplate) {
+      imagePrompt = `${contentType.imageStyle}, ${entry.imagePromptTemplate}`;
+    } else if (!isTextOnly) {
+      imagePrompt = `${contentType.imageStyle}, ${entry.role} visual for ${brand.name}`;
+    }
+
+    // Build text from the brief idea and role
+    const text = brief.idea || entry.role;
+
+    return {
+      slide_number: index + 1,
+      role: entry.role as SlideRole,
+      type: entry.type,
+      text,
+      image_prompt: isTextOnly ? null : imagePrompt,
+      visual_goal: `${entry.role} slide for ${contentType.name}`,
+      layout: entry.layout as Slide["layout"],
+      asset_path: null
+    };
+  });
 }
