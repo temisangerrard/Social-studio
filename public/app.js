@@ -487,225 +487,17 @@ function selectAsset(assetId) {
   }
 }
 
-// ── Canvas drag ───────────────────────────────────────────────────────────────
-let canvasDrag = null;
-
-function initCanvasDrag() {
-  els.canvas.addEventListener("mousedown", (e) => {
-    const card = e.target.closest(".canvas-card");
-    if (!card || card.dataset.type === "skeleton" || card.dataset.type === "asset") return;
-    if (e.target.closest("button, input, textarea") || e.target.contentEditable === "true") return;
-    const cardData = studioState.canvasCards.find((c) => c.id === card.dataset.cardId);
-    if (!cardData) return;
-    canvasDrag = { cardEl: card, cardData, startX: e.clientX, startY: e.clientY, origX: cardData.x, origY: cardData.y };
-    card.classList.add("is-dragging");
-    e.preventDefault();
-  });
-
-  document.addEventListener("mousemove", (e) => {
-    if (!canvasDrag) return;
-    const { cardEl, cardData, startX, startY, origX, origY } = canvasDrag;
-    cardData.x = Math.max(0, origX + (e.clientX - startX));
-    cardData.y = Math.max(0, origY + (e.clientY - startY));
-    cardEl.style.left = `${cardData.x}px`;
-    cardEl.style.top = `${cardData.y}px`;
-    drawConnectors();
-  });
-
-  document.addEventListener("mouseup", () => {
-    if (!canvasDrag) return;
-    canvasDrag.cardEl.classList.remove("is-dragging");
-    canvasDrag = null;
-  });
-
-  els.canvas.addEventListener("touchstart", (e) => {
-    const card = e.target.closest(".canvas-card");
-    if (!card || card.dataset.type === "skeleton" || card.dataset.type === "asset") return;
-    if (e.target.closest("button")) return;
-    const cardData = studioState.canvasCards.find((c) => c.id === card.dataset.cardId);
-    if (!cardData) return;
-    const t = e.touches[0];
-    canvasDrag = { cardEl: card, cardData, startX: t.clientX, startY: t.clientY, origX: cardData.x, origY: cardData.y };
-    card.classList.add("is-dragging");
-  }, { passive: true });
-
-  document.addEventListener("touchmove", (e) => {
-    if (!canvasDrag) return;
-    const t = e.touches[0];
-    const { cardEl, cardData, startX, startY, origX, origY } = canvasDrag;
-    cardData.x = Math.max(0, origX + (t.clientX - startX));
-    cardData.y = Math.max(0, origY + (t.clientY - startY));
-    cardEl.style.left = `${cardData.x}px`;
-    cardEl.style.top = `${cardData.y}px`;
-    drawConnectors();
-  }, { passive: true });
-
-  document.addEventListener("touchend", () => {
-    if (!canvasDrag) return;
-    canvasDrag.cardEl.classList.remove("is-dragging");
-    canvasDrag = null;
-  });
-}
-
-// ── SVG connectors ────────────────────────────────────────────────────────────
-function drawConnectors() {
-  let svg = els.canvas.querySelector(".canvas-connector-svg");
-  if (!svg) {
-    svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    svg.classList.add("canvas-connector-svg");
-    svg.innerHTML = `<defs>
-      <marker id="canvas-arrow" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto">
-        <path d="M0,0.5 L0,6.5 L6,3.5 z" class="connector-arrowhead"/>
-      </marker>
-    </defs>`;
-    els.canvas.insertBefore(svg, els.canvas.firstChild);
-  }
-  svg.style.width = "3000px";
-  svg.style.height = "2000px";
-  svg.querySelectorAll(".connector-path").forEach((el) => el.remove());
-
-  const cards = studioState.canvasCards || [];
-  const stratCards = cards.filter((c) => ["goal", "audience", "proof", "visual"].includes(c.type));
-  const growthCards = cards.filter((c) => c.type === "hook");
-  const assetCards = cards.filter((c) => c.type === "asset");
-
-  function makePath(x1, y1, x2, y2) {
-    const cpX = x1 + (x2 - x1) * 0.55;
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.classList.add("connector-path");
-    path.setAttribute("d", `M${x1},${y1} C${cpX},${y1} ${cpX},${y2} ${x2},${y2}`);
-    path.setAttribute("marker-end", "url(#canvas-arrow)");
-    svg.appendChild(path);
-  }
-
-  if (stratCards.length && growthCards.length) {
-    const tgt = growthCards[0];
-    stratCards.forEach((src) => {
-      makePath(src.x + (src.width || 280), src.y + (src.height || 200) / 2, tgt.x, tgt.y + (tgt.height || 200) / 2);
-    });
-  }
-  if (growthCards.length && assetCards.length) {
-    const src = growthCards[growthCards.length - 1];
-    const tgt = assetCards[0];
-    makePath(src.x + (src.width || 300), src.y + (src.height || 180) / 2, tgt.x, tgt.y + (tgt.height || 460) / 2);
-  }
-}
+// ── Canvas drag — handled by CanvasEngine ─────────────────────────────────────
+function initCanvasDrag() { /* no-op — CanvasEngine handles drag */ }
+function drawConnectors() { /* no-op — CanvasEngine handles connectors */ }
 
 // ── Canvas render ─────────────────────────────────────────────────────────────
 function renderCanvas() {
-  els.canvas.innerHTML = "";
-  const cards = studioState.canvasCards || [];
-  const isLoading = !!studioState.canvasLoadingStage;
-  els.canvasEmpty.classList.toggle("hidden", cards.length > 0 || isLoading);
-
-  [
-    { x: 72, label: "Strategy" },
-    { x: 400, label: "Growth Logic" },
-    { x: 760, label: "Assets" }
-  ].forEach(({ x, label }) => {
-    if (!cards.length && !isLoading) return;
-    const lbl = document.createElement("div");
-    lbl.className = "canvas-lane-label";
-    lbl.style.left = `${x}px`;
-    lbl.textContent = label;
-    els.canvas.appendChild(lbl);
-  });
-
-  if (isLoading) {
-    Array.from({ length: 8 }, (_, i) => ({
-      x: 760 + (i % 4) * 240, y: 52 + Math.floor(i / 4) * 520, width: 210, height: 460
-    })).forEach((sk) => {
-      const el = document.createElement("article");
-      el.className = "canvas-card";
-      el.dataset.type = "skeleton";
-      el.style.cssText = `left:${sk.x}px;top:${sk.y}px;width:${sk.width}px;min-height:${sk.height}px`;
-      els.canvas.appendChild(el);
-    });
+  // Old card-based canvas removed — CanvasEngine handles all rendering
+  if (els.canvasEmpty && !studioState.generatedOutput) {
+    els.canvasEmpty.classList.remove("hidden");
   }
-
-  cards.forEach((card) => {
-    const article = document.createElement("article");
-    article.className = "canvas-card";
-    article.dataset.type = card.type || "idea";
-    article.dataset.cardId = card.id;
-    article.style.left = `${card.x}px`;
-    article.style.top = `${card.y}px`;
-    article.style.width = `${card.width}px`;
-    if (card.type === "asset") {
-      article.style.minHeight = `${card.height}px`;
-    } else {
-      article.style.height = `${card.height}px`;
-    }
-
-    if (card.type === "asset") {
-      article.classList.add("is-clickable");
-      article.dataset.kind = card.assetKind || "image";
-      if (studioState.selectedAsset?.itemId === card.itemId) article.classList.add("is-selected");
-    }
-
-    let body;
-    if (card.type === "asset" && card.assetUrl) {
-      const visual = card.assetKind === "video"
-        ? `<video src="${card.assetUrl}" muted playsinline preload="metadata"></video>`
-        : `<img src="${card.assetUrl}" alt="${escapeHtml(card.text || "Generated asset")}" loading="lazy" />`;
-      const branchMeta = card.sourceAssetId
-        ? `<span class="canvas-card__branch">From ${escapeHtml(card.sourceAssetId)}</span>` : "";
-      body = `
-        <button class="asset-thumb-button" type="button"
-          data-asset-id="${escapeHtml(card.itemId || "")}"
-          data-asset-kind="${escapeHtml(card.assetKind || "image")}"
-          data-asset-url="${escapeHtml(card.assetUrl)}"
-          data-asset-title="${escapeHtml(card.text || "Generated asset")}">
-          <div class="asset-thumb">${visual}</div>
-          <span>Open Asset</span>
-        </button>
-        ${branchMeta}
-        <p class="canvas-card__text">${escapeHtml(card.text || "")}</p>`;
-    } else {
-      body = `<p class="canvas-card__text${card.type === "hook" ? " is-short" : ""}" data-editable="true">${escapeHtml(card.text || "")}</p>`;
-    }
-
-    article.innerHTML = `
-      <span class="canvas-card__badge">${escapeHtml(titleCase(card.type))}</span>
-      ${body}
-      <div class="canvas-card__tags">${escapeHtml((card.tags || []).join(", "))}</div>`;
-
-    if (card.type !== "asset") {
-      const textEl = article.querySelector("[data-editable]");
-      if (textEl) {
-        article.addEventListener("dblclick", (e) => {
-          if (e.target.closest("button")) return;
-          textEl.contentEditable = "true";
-          textEl.focus();
-          const range = document.createRange();
-          range.selectNodeContents(textEl);
-          const sel = window.getSelection();
-          sel.removeAllRanges();
-          sel.addRange(range);
-        });
-        textEl.addEventListener("blur", () => {
-          textEl.contentEditable = "false";
-          card.text = textEl.textContent.trim();
-        });
-        textEl.addEventListener("keydown", (ke) => {
-          if (ke.key === "Enter" && !ke.shiftKey) { ke.preventDefault(); textEl.blur(); }
-          if (ke.key === "Escape") { textEl.textContent = card.text || ""; textEl.blur(); }
-        });
-      }
-    }
-
-    els.canvas.appendChild(article);
-  });
-
-  drawConnectors();
 }
-
-els.canvas.addEventListener("click", (e) => {
-  const btn = e.target.closest("[data-asset-id]");
-  if (!btn) return;
-  selectAsset(btn.dataset.assetId);
-  openAssetPreview(btn.dataset.assetUrl, btn.dataset.assetTitle || "Generated asset", btn.dataset.assetKind || "image");
-});
 
 // ── Poll job ──────────────────────────────────────────────────────────────────
 async function pollJob(jobId, onUpdate) {
@@ -1174,6 +966,12 @@ async function loadOutputIntoCanvas(postId) {
   const res = await fetch(`/api/outputs/${postId}`);
   if (!res.ok) return;
   const output = await res.json();
+
+  // Save current studio state so user can return to it
+  if (studioState.generatedOutput && studioState.generatedOutput.post_id !== postId) {
+    studioState._previousOutput = studioState.generatedOutput;
+  }
+
   studioState.generatedOutput = output;
   studioState.workflowType = output.workflow_type || "slideshow";
   studioState.selectedAsset = outputAssets(output)[0] || null;
@@ -1746,9 +1544,14 @@ async function bootstrap() {
     if (drawerClose) drawerClose.addEventListener("click", () => drawer.classList.add("hidden"));
   }
 
+  // Inspector toggle from toolbar
+  const inspectorToggle = document.getElementById("toolbar-inspector-toggle");
+  if (inspectorToggle && inspector) {
+    inspectorToggle.addEventListener("click", () => inspector.classList.toggle("hidden"));
+  }
+
   // Inspector close button
   const inspectorClose = document.getElementById("inspector-overlay-close");
-  const inspector = document.getElementById("studio-inspector");
   if (inspectorClose && inspector) {
     inspectorClose.addEventListener("click", () => inspector.classList.add("hidden"));
   }
