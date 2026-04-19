@@ -31,216 +31,125 @@
 
     <!-- ═══ STUDIO VIEW ═══════════════════════════════════════════════════════ -->
     <div id="view-studio" class="view view--studio">
-      <div class="studio-shell">
 
-        <!-- LEFT SIDEBAR -->
-        <aside class="studio-sidebar">
-
-          <!-- Brand/platform selects (compact 2x2 grid) -->
-          <div id="studio-product-select-wrap" class="studio-settings-grid">
-            <div class="field-group">
-              <label class="field-label" for="studio-product-select">Product</label>
-              <select id="studio-product-select"></select>
-            </div>
-            <div class="field-group">
-              <label class="field-label" for="studio-platform-select">Platform</label>
-              <select id="studio-platform-select">
-                <option value="tiktok">TikTok</option>
-                <option value="instagram">Instagram</option>
-                <option value="linkedin">LinkedIn</option>
-              </select>
-            </div>
-            <div class="field-group">
-              <label class="field-label" for="studio-visual-mode">Visual mode</label>
-              <select id="studio-visual-mode">
-                <option value="mascot-led">Mascot-led</option>
-                <option value="mixed">Mixed</option>
-                <option value="food-led">Food-led</option>
-              </select>
-            </div>
-            <div class="field-group">
-              <label class="field-label" for="studio-delivery-target">Delivery</label>
-              <select id="studio-delivery-target">
-                <option value="both">TikTok + Instagram</option>
-                <option value="all">All Platforms</option>
-                <option value="tiktok">TikTok</option>
-                <option value="instagram">Instagram</option>
-                <option value="linkedin">LinkedIn</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Workflow presets -->
-          <section class="workflow-section">
-            <p class="eyebrow">Workflow</p>
-            <div id="studio-workflow-presets" class="workflow-preset-grid"></div>
-            <p id="studio-workflow-summary" class="workflow-summary"></p>
-          </section>
-
-          <!-- Quick generate form -->
-          <form id="studio-quick-form" class="studio-quick-form">
-            <div class="field-group">
-              <label class="field-label" for="studio-idea-input">Idea or direction</label>
-              <textarea id="studio-idea-input" rows="4" placeholder="e.g. Peppera fridge raid — leftover rescue post for TikTok"></textarea>
-            </div>
-            <div class="field-group">
-              <label class="field-label" for="studio-notes-input">Ingredients or notes</label>
-              <input id="studio-notes-input" type="text" placeholder="eggs, peppers, leftover rice…" />
-            </div>
-            <div class="field-group">
-              <label class="field-label" for="studio-reference-input">Reference URLs</label>
-              <textarea id="studio-reference-input" rows="2" placeholder="One per line. Style references, existing assets, mascot refs."></textarea>
-              <div class="inline-actions">
-                <label class="ghost-button file-button" for="studio-reference-files">Upload references</label>
-                <input id="studio-reference-files" type="file" multiple class="hidden" accept="image/*,video/mp4,video/webm" />
-              </div>
-            </div>
-            <div id="studio-reference-chipset" class="reference-chipset"></div>
-            <div class="studio-quick-form__footer">
-              <div id="studio-status" class="assistant-status hidden"></div>
-              <button id="studio-submit" class="primary-button" type="submit">Generate</button>
-            </div>
-          </form>
-
-          <!-- Or divider -->
-          <div class="studio-divider"><span>or</span></div>
-
-          <!-- Chat toggle + panel -->
-          <button id="chat-toggle" class="chat-toggle-btn" type="button">
-            <span>Guide me through it</span><span class="chat-toggle-caret">›</span>
-          </button>
-          <div id="chat-panel" class="chat-panel hidden">
-            <div id="studio-message-thread" class="message-thread studio-thread"></div>
-            <form id="studio-chat-form" class="assistant-input">
-              <textarea id="studio-chat-input" rows="3" placeholder="Start with the rough idea or result you need."></textarea>
-              <div class="assistant-input__footer">
-                <div id="studio-chat-status" class="assistant-status hidden"></div>
-                <button id="studio-chat-submit" class="primary-button" type="submit">Send</button>
-              </div>
-            </form>
-          </div>
-
-          <!-- Brand editor (details/summary collapsible) -->
-          <details class="brand-editor">
-            <summary class="brand-editor__summary">Brand editor</summary>
-            <div class="brand-editor__body">
-              <p id="brand-mascot-name" class="brand-editor__name"></p>
-              <p id="brand-mascot-role" class="brand-editor__copy"></p>
-              <label class="field-label" for="brand-mascot-visual-prompt">Mascot prompt</label>
-              <textarea id="brand-mascot-visual-prompt" rows="3"></textarea>
-              <label class="field-label" for="brand-mascot-rules">Mascot rules</label>
-              <textarea id="brand-mascot-rules" rows="4"></textarea>
-              <div>
-                <p class="field-label">Reference images</p>
-                <div id="brand-mascot-references" class="brand-ref-grid"></div>
-                <div class="inline-actions" style="margin-top:8px">
-                  <label class="ghost-button file-button" for="brand-mascot-ref-files">Upload images</label>
-                  <input id="brand-mascot-ref-files" type="file" accept="image/*" multiple class="hidden" />
-                </div>
-                <div id="brand-mascot-ref-status" class="assistant-status hidden"></div>
-              </div>
-              <div class="brand-editor__footer">
-                <div id="brand-editor-status" class="assistant-status hidden"></div>
-                <button id="brand-editor-save" class="ghost-button" type="button">Save Mascot</button>
-              </div>
-            </div>
-          </details>
-
-        </aside>
-
-        <!-- CENTER CANVAS -->
-        <main class="studio-main">
-          <div class="checkpoint-strip" id="studio-checkpoint-strip">
-            <div class="checkpoint" data-step="strategy">Strategy</div>
-            <div class="checkpoint" data-step="hooks">Hooks</div>
-            <div class="checkpoint" data-step="visuals">Visuals</div>
-            <div class="checkpoint" data-step="finalPackage">Package</div>
-          </div>
-          <div class="studio-canvas-stage">
-            <div id="canvas-progress-pill" class="canvas-progress-pill hidden" aria-live="polite">
-              <span class="canvas-progress-pill__dot"></span>
-              <span id="canvas-progress-text">Working…</span>
-            </div>
-            <div id="canvas-empty" class="canvas-empty">
-              <div class="canvas-empty__orb">✦</div>
-              <h3>Your strategy, hooks and assets land here.</h3>
-              <p>Type an idea and generate, or use "Guide me" for a structured brief.</p>
-            </div>
-            <div id="canvas" class="canvas"></div>
-          </div>
-        </main>
-
-        <!-- RIGHT INSPECTOR -->
-        <aside class="studio-inspector" id="studio-inspector">
-
-          <!-- Mobile overlay close button -->
-          <button class="inspector-overlay-close" id="inspector-overlay-close" type="button" aria-label="Close inspector">✕</button>
-
-          <!-- Package section — always visible when output exists -->
-          <div id="inspector-package" class="inspector-package hidden">
-            <p class="eyebrow">Publishing Package</p>
-            <p id="inspector-package-status" class="assistant-status" style="margin-bottom:8px"></p>
-
-            <div class="inspector-row">
-              <p class="inspector-label">Caption</p>
-              <button id="inspector-copy-caption" class="ghost-button" type="button">Copy</button>
-            </div>
-            <p id="inspector-caption-text" class="inspector-body-text"></p>
-
-            <div class="inspector-row" style="margin-top:12px">
-              <p class="inspector-label">Hashtags</p>
-              <button id="inspector-copy-hashtags" class="ghost-button" type="button">Copy</button>
-            </div>
-            <p id="inspector-hashtags-text" class="inspector-body-text"></p>
-
-            <p class="inspector-label" style="margin-top:12px">Hooks</p>
-            <div id="inspector-hooks-list" class="package-list"></div>
-
-            <div id="inspector-publish-links" class="publish-links" style="margin-top:12px"></div>
-
-            <button id="studio-download-all-btn" class="ghost-button" style="width:100%;margin-top:12px" type="button">Download All</button>
-          </div>
-
-          <!-- Asset inspector — shown when asset is selected -->
-          <div id="inspector-asset" class="inspector-asset hidden">
-            <div class="inspector-sep"></div>
-            <p class="eyebrow" style="margin-top:16px">Asset Inspector</p>
-            <h3 id="inspector-asset-title" class="inspector-asset-title">No asset selected</h3>
-            <p id="inspector-asset-hint" class="assistant-status">Click any generated asset on the canvas.</p>
-            <div id="inspector-asset-preview" class="refine-preview refine-preview--empty"><span>Preview</span></div>
-            <form id="studio-refine-form" class="refine-form">
-              <label class="field-label" for="studio-refine-prompt">Refine prompt</label>
-              <textarea id="studio-refine-prompt" rows="4" placeholder="Tighter framing, stronger expression, cleaner background."></textarea>
-              <div class="workflow-grid">
-                <div class="field-group">
-                  <label class="field-label" for="studio-refine-visual-mode">Visual mode</label>
-                  <select id="studio-refine-visual-mode">
-                    <option value="mascot-led">Mascot-led</option>
-                    <option value="mixed">Mixed</option>
-                    <option value="food-led">Food-led</option>
-                  </select>
-                </div>
-                <div class="field-group">
-                  <label class="field-label" for="studio-refine-mode">Result</label>
-                  <select id="studio-refine-mode">
-                    <option value="branch">Branch variant</option>
-                    <option value="replace">Replace</option>
-                  </select>
-                </div>
-              </div>
-              <div class="gen-form__footer">
-                <div id="studio-refine-status" class="assistant-status hidden"></div>
-                <button id="studio-refine-submit" class="primary-button" type="submit">Regenerate</button>
-              </div>
-            </form>
-          </div>
-
-        </aside>
-
+      <!-- CANVAS IS THE WORKSPACE — full width, full height -->
+      <div class="studio-canvas-stage" id="studio-canvas-stage">
+        <div id="canvas-progress-pill" class="canvas-progress-pill hidden" aria-live="polite">
+          <span class="canvas-progress-pill__dot"></span>
+          <span id="canvas-progress-text">Working…</span>
+        </div>
+        <div id="canvas-empty" class="canvas-empty">
+          <h3>What do you want to create?</h3>
+          <p>Describe your idea below and hit generate.</p>
+        </div>
+        <div id="canvas" class="canvas"></div>
       </div>
 
-      <!-- Mobile FAB for inspector toggle -->
-      <button id="canvas-fab-inspector" class="canvas-fab-inspector" type="button" aria-label="Toggle inspector">☰</button>
+      <!-- FLOATING TOOLBAR — bottom center, always visible -->
+      <div class="studio-toolbar" id="studio-toolbar">
+        <button id="toolbar-drawer-toggle" class="toolbar-btn" type="button" title="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/></svg>
+        </button>
+        <div class="toolbar-input-group">
+          <select id="studio-product-select" class="toolbar-select" title="Brand"></select>
+          <select id="studio-platform-select" class="toolbar-select" title="Platform">
+            <option value="instagram">Instagram</option>
+            <option value="tiktok">TikTok</option>
+            <option value="linkedin">LinkedIn</option>
+          </select>
+        </div>
+        <div class="toolbar-divider"></div>
+        <input id="studio-idea-input" class="toolbar-idea-input" type="text" placeholder="5 meals from eggs and bread…" />
+        <button id="studio-submit" class="toolbar-generate-btn" type="button">Generate</button>
+      </div>
+
+      <!-- DRAWER — slides out from left, hidden by default -->
+      <aside class="studio-drawer hidden" id="studio-drawer">
+        <div class="studio-drawer__header">
+          <span class="studio-drawer__title">Settings</span>
+          <button id="drawer-close" class="studio-drawer__close" type="button">✕</button>
+        </div>
+        <div class="studio-drawer__body">
+          <div class="field-group">
+            <label class="field-label" for="studio-visual-mode">Visual mode</label>
+            <select id="studio-visual-mode">
+              <option value="food-led" selected>Food-led</option>
+              <option value="mascot-led">Mascot-led</option>
+              <option value="mixed">Mixed</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="studio-delivery-target">Delivery</label>
+            <select id="studio-delivery-target">
+              <option value="instagram">Instagram</option>
+              <option value="tiktok">TikTok</option>
+              <option value="both">TikTok + Instagram</option>
+              <option value="all">All Platforms</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="studio-notes-input">Ingredients or notes</label>
+            <input id="studio-notes-input" type="text" placeholder="eggs, peppers, leftover rice…" />
+          </div>
+
+          <div id="studio-status" class="assistant-status hidden"></div>
+
+          <!-- Hidden elements needed by existing JS -->
+          <div class="hidden">
+            <div id="studio-workflow-presets"></div>
+            <p id="studio-workflow-summary"></p>
+            <textarea id="studio-reference-input" rows="1"></textarea>
+            <input id="studio-reference-files" type="file" multiple class="hidden" />
+            <div id="studio-reference-chipset"></div>
+            <div id="studio-checkpoint-strip"></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- INSPECTOR — slides out from right, only when asset selected -->
+      <aside class="studio-inspector hidden" id="studio-inspector">
+        <button class="inspector-overlay-close" id="inspector-overlay-close" type="button">✕</button>
+
+        <div id="inspector-package" class="inspector-package hidden">
+          <p class="eyebrow">Package</p>
+          <div class="inspector-row">
+            <p class="inspector-label">Caption</p>
+            <button id="inspector-copy-caption" class="ghost-button" type="button">Copy</button>
+          </div>
+          <p id="inspector-caption-text" class="inspector-body-text"></p>
+          <div class="inspector-row" style="margin-top:12px">
+            <p class="inspector-label">Hashtags</p>
+            <button id="inspector-copy-hashtags" class="ghost-button" type="button">Copy</button>
+          </div>
+          <p id="inspector-hashtags-text" class="inspector-body-text"></p>
+          <p class="inspector-label" style="margin-top:12px">Hooks</p>
+          <div id="inspector-hooks-list" class="package-list"></div>
+          <div id="inspector-publish-links" class="publish-links" style="margin-top:12px"></div>
+          <p id="inspector-package-status" class="assistant-status" style="margin-top:8px"></p>
+          <button id="studio-download-all-btn" class="ghost-button" style="width:100%;margin-top:12px" type="button">Download All</button>
+        </div>
+
+        <div id="inspector-asset" class="inspector-asset hidden">
+          <p class="eyebrow" style="margin-top:16px">Selected</p>
+          <h3 id="inspector-asset-title" class="inspector-asset-title"></h3>
+          <p id="inspector-asset-hint" class="assistant-status"></p>
+          <div id="inspector-asset-preview" class="refine-preview refine-preview--empty"><span>Preview</span></div>
+          <form id="studio-refine-form" class="refine-form">
+            <label class="field-label" for="studio-refine-prompt">Refine</label>
+            <textarea id="studio-refine-prompt" rows="3" placeholder="Describe what to change…"></textarea>
+            <div class="gen-form__footer">
+              <div id="studio-refine-status" class="assistant-status hidden"></div>
+              <button id="studio-refine-submit" class="primary-button" type="submit">Regenerate</button>
+            </div>
+          </form>
+          <!-- Hidden fields needed by existing JS -->
+          <div class="hidden">
+            <select id="studio-refine-visual-mode"><option value="food-led">Food-led</option></select>
+            <select id="studio-refine-mode"><option value="branch">Branch</option><option value="replace">Replace</option></select>
+          </div>
+        </div>
+      </aside>
+
     </div>
 
     <!-- ═══ CALENDAR VIEW ═════════════════════════════════════════════════════ -->

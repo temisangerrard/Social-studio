@@ -434,7 +434,14 @@ function showAssetNode(container, asset) {
 
 function renderInspectorAsset() {
   const sel = studioState.selectedAsset;
+  const inspectorEl = document.getElementById("studio-inspector");
   els.inspectorAsset.classList.toggle("hidden", !sel);
+
+  // Show/hide the inspector panel based on selection
+  if (inspectorEl) {
+    inspectorEl.classList.toggle("hidden", !sel && !studioState.generatedOutput);
+  }
+
   if (!sel) return;
   els.inspectorAssetTitle.textContent = sel.text || "Selected asset";
   els.inspectorAssetHint.textContent = `${titleCase(sel.assetKind || "image")} — click to open full size.`;
@@ -1727,6 +1734,34 @@ async function bootstrap() {
 
   // Mobile inspector overlay toggle
   initMobileInspector();
+
+  // Drawer toggle
+  const drawerToggle = document.getElementById("toolbar-drawer-toggle");
+  const drawer = document.getElementById("studio-drawer");
+  const drawerClose = document.getElementById("drawer-close");
+  if (drawerToggle && drawer) {
+    drawerToggle.addEventListener("click", () => drawer.classList.toggle("hidden"));
+    if (drawerClose) drawerClose.addEventListener("click", () => drawer.classList.add("hidden"));
+  }
+
+  // Toolbar generate button — triggers the same flow as the old form submit
+  const toolbarSubmit = document.getElementById("studio-submit");
+  if (toolbarSubmit) {
+    toolbarSubmit.addEventListener("click", (e) => {
+      e.preventDefault();
+      // Trigger the existing quick form submit handler
+      if (els.studioQuickForm) {
+        els.studioQuickForm.dispatchEvent(new Event("submit", { bubbles: true }));
+      }
+    });
+  }
+
+  // Inspector close button
+  const inspectorClose = document.getElementById("inspector-overlay-close");
+  const inspector = document.getElementById("studio-inspector");
+  if (inspectorClose && inspector) {
+    inspectorClose.addEventListener("click", () => inspector.classList.add("hidden"));
+  }
 
   els.studioIdeaInput.focus();
 }

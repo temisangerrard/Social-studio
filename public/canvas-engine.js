@@ -1986,7 +1986,6 @@ export class CanvasEngine {
    * Uses CSS radial-gradient that scales with zoom.
    */
   _applyGridBackground() {
-    this._stageEl.style.backgroundColor = "#1e1e2e";
     this._updateGridBackground();
   }
 
@@ -1998,7 +1997,7 @@ export class CanvasEngine {
     const offsetX = this._transform.panX % gridSize;
     const offsetY = this._transform.panY % gridSize;
     this._stageEl.style.backgroundImage =
-      `radial-gradient(circle, #374151 1px, transparent 1px)`;
+      `radial-gradient(circle, rgba(175,179,170,0.35) 1px, transparent 1px)`;
     this._stageEl.style.backgroundSize = `${gridSize}px ${gridSize}px`;
     this._stageEl.style.backgroundPosition = `${offsetX}px ${offsetY}px`;
   }

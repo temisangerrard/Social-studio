@@ -2687,3 +2687,421 @@ details.brand-editor[open] > summary.brand-editor__summary::before {
     left: 12px;
   }
 }
+
+/* ═══ CANVAS-FIRST STUDIO LAYOUT ═══════════════════════════════════════════ */
+
+.view--studio {
+  position: relative;
+  height: calc(100vh - var(--topbar-h));
+  overflow: hidden;
+}
+
+/* Canvas takes full viewport */
+.view--studio .studio-canvas-stage {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--background);
+  background-image: radial-gradient(rgba(175,179,170,0.35) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.view--studio .canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  padding: 24px;
+}
+
+.view--studio .canvas-empty h3 {
+  margin: 0;
+  font-family: "Newsreader", serif;
+  font-size: 2rem;
+  font-style: italic;
+  color: var(--brand-strong);
+}
+
+.view--studio .canvas-empty p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+/* ── Floating toolbar — bottom center ──────────────────────────────────── */
+
+.studio-toolbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(16px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(47,52,45,0.12), 0 2px 8px rgba(47,52,45,0.06);
+  max-width: calc(100vw - 32px);
+}
+
+.toolbar-btn {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 10px;
+  color: var(--brand-strong);
+  display: grid;
+  place-items: center;
+}
+
+.toolbar-btn:hover {
+  background: var(--surface-soft);
+}
+
+.toolbar-select {
+  border: 1px solid rgba(175,179,170,0.25);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.toolbar-input-group {
+  display: flex;
+  gap: 6px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(175,179,170,0.25);
+  margin: 0 4px;
+}
+
+.toolbar-idea-input {
+  border: 1px solid rgba(175,179,170,0.25);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  color: var(--ink);
+  min-width: 280px;
+  flex: 1;
+}
+
+.toolbar-idea-input::placeholder {
+  color: var(--outline);
+}
+
+.toolbar-generate-btn {
+  border: 0;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: var(--brand-strong);
+  color: #faf7f2;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.toolbar-generate-btn:hover {
+  background: var(--highlight);
+}
+
+/* ── Drawer — slides from left ─────────────────────────────────────────── */
+
+.studio-drawer {
+  position: fixed;
+  top: var(--topbar-h);
+  left: 0;
+  bottom: 0;
+  width: 320px;
+  z-index: 25;
+  background: rgba(250,249,244,0.97);
+  backdrop-filter: blur(16px);
+  border-right: 1px solid rgba(175,179,170,0.15);
+  box-shadow: 4px 0 24px rgba(47,52,45,0.08);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  transition: transform 0.25s ease;
+}
+
+.studio-drawer.hidden {
+  transform: translateX(-100%);
+  display: flex !important;
+  pointer-events: none;
+}
+
+.studio-drawer:not(.hidden) {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.studio-drawer__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.studio-drawer__title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand-strong);
+}
+
+.studio-drawer__close {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--muted);
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.studio-drawer__close:hover {
+  background: var(--surface-soft);
+}
+
+/* ── Inspector — slides from right ─────────────────────────────────────── */
+
+.view--studio .studio-inspector {
+  position: fixed;
+  top: var(--topbar-h);
+  right: 0;
+  bottom: 0;
+  width: 340px;
+  z-index: 25;
+  background: rgba(250,249,244,0.97);
+  backdrop-filter: blur(16px);
+  border-left: 1px solid rgba(175,179,170,0.15);
+  box-shadow: -4px 0 24px rgba(47,52,45,0.08);
+  padding: 20px;
+  overflow-y: auto;
+  transition: transform 0.25s ease;
+}
+
+.view--studio .studio-inspector.hidden {
+  transform: translateX(100%);
+  display: block !important;
+  pointer-events: none;
+}
+
+.view--studio .studio-inspector:not(.hidden) {
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.inspector-overlay-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.1rem;
+  color: var(--muted);
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+/* ── Zoom controls — bottom left ───────────────────────────────────────── */
+
+.canvas-zoom-controls {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  z-index: 28;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(12px);
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(47,52,45,0.1);
+}
+
+.canvas-zoom-btn {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--brand-strong);
+}
+
+.canvas-zoom-btn:hover {
+  background: var(--surface-soft);
+}
+
+.canvas-zoom-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--muted);
+  min-width: 40px;
+  text-align: center;
+}
+
+/* ── Artboard styles ───────────────────────────────────────────────────── */
+
+.canvas-artboard {
+  position: absolute;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 4px 20px rgba(47,52,45,0.08);
+  cursor: pointer;
+  transition: box-shadow 0.15s ease;
+}
+
+.canvas-artboard:hover {
+  box-shadow: 0 8px 32px rgba(47,52,45,0.14);
+}
+
+.canvas-artboard img,
+.canvas-artboard video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.canvas-artboard--selected {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+
+.canvas-artboard--dragging {
+  box-shadow: 0 20px 48px rgba(0,0,0,0.18);
+  transform: scale(1.02);
+  z-index: 100;
+}
+
+.canvas-artboard--loading {
+  background: linear-gradient(90deg, rgba(175,179,170,0.1) 25%, rgba(175,179,170,0.2) 50%, rgba(175,179,170,0.1) 75%);
+  background-size: 200% 100%;
+  animation: canvas-shimmer 1.6s ease-in-out infinite;
+}
+
+.canvas-artboard__label {
+  position: absolute;
+  bottom: -28px;
+  left: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.canvas-artboard__badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.8);
+  background: rgba(0,0,0,0.35);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.canvas-artboard__error {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* ── Overlay styles ────────────────────────────────────────────────────── */
+
+.canvas-overlay {
+  position: absolute;
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 2px 12px rgba(47,52,45,0.06);
+  font-size: 0.82rem;
+  color: var(--ink);
+  line-height: 1.5;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.canvas-overlay--hook {
+  border-left: 3px solid var(--highlight);
+}
+
+.canvas-overlay--caption {
+  background: rgba(255,255,255,0.95);
+}
+
+.canvas-overlay--hashtag {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+/* ── Mobile ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .studio-toolbar {
+    bottom: 16px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-idea-input {
+    min-width: 0;
+    flex: 1 1 100%;
+    order: 10;
+  }
+
+  .toolbar-generate-btn {
+    width: 100%;
+    order: 11;
+  }
+
+  .studio-drawer {
+    width: 100%;
+  }
+
+  .view--studio .studio-inspector {
+    width: 100%;
+  }
+
+  .canvas-zoom-controls {
+    bottom: auto;
+    top: calc(var(--topbar-h) + 12px);
+    left: 12px;
+  }
+}
