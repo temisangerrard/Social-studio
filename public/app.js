@@ -912,6 +912,742 @@ function loadOutputToEngine(output) {
 
   stage.appendChild(container);
   console.log("[studio] Output rendered to canvas:", items.length, "items");
+
+  // ── Wire interactivity onto rendered cards ──────────────────────────────
+  wireCardInteractivity(strip, output, postId, brandVisual);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INTERACTIVE CANVAS EDITOR — Selection, Inline Editing, Drag, Download, Keys
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentOutput = null;
+let selectedCardIndex = -1;
+let patchTimer = null;
+let pendingPatch = {};
+let patchFailed = false;
+
+// ── InlineEditor ──────────────────────────────────────────────────────────────
+const InlineEditor = (() => {
+  let activeElement = null;
+  let previousValue = '';
+  let options = {};
+
+  function activate(element, opts = {}) {
+    if (activeElement) deactivate(activeElement);
+    activeElement = element;
+    options = opts;
+    previousValue = element.textContent;
+    element.contentEditable = 'true';
+    element.classList.add('canvas-output__card--editing');
+    element.focus();
+
+    // Select all text
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    element.addEventListener('blur', handleBlur);
+    element.addEventListener('keydown', handleKeydown);
+    element.addEventListener('paste', handlePaste);
+  }
+
+  function deactivate(element) {
+    if (!element) return '';
+    element.contentEditable = 'false';
+    element.classList.remove('canvas-output__card--editing');
+    element.removeEventListener('blur', handleBlur);
+    element.removeEventListener('keydown', handleKeydown);
+    element.removeEventListener('paste', handlePaste);
+    const text = element.textContent;
+    activeElement = null;
+    return text;
+  }
+
+  function handleBlur() {
+    if (!activeElement) return;
+    const el = activeElement;
+    const text = deactivate(el);
+    // Restore if required field is empty
+    if (options.required && !text.trim()) {
+      el.textContent = previousValue;
+      return;
+    }
+    if (options.onCommit) options.onCommit(text);
+  }
+
+  function handleKeydown(e) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      const el = activeElement;
+      el.textContent = previousValue;
+      deactivate(el);
+      if (options.onCancel) options.onCancel();
+      return;
+    }
+    if (e.key === 'Enter' && !options.multiline) {
+      e.preventDefault();
+      handleBlur();
+    }
+  }
+
+  function handlePaste(e) {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
+  }
+
+  function isActive() {
+    return activeElement !== null;
+  }
+
+  return { activate, deactivate, isActive };
+})();
+
+// ── patchOutput (debounced) ───────────────────────────────────────────────────
+function schedulePatch(postId, partial) {
+  Object.assign(pendingPatch, partial);
+  if (patchTimer) clearTimeout(patchTimer);
+  showSaveIndicator('saving');
+  patchTimer = setTimeout(() => flushPatch(postId), 2000);
+}
+
+async function flushPatch(postId) {
+  if (!postId || Object.keys(pendingPatch).length === 0) return;
+  const body = { ...pendingPatch };
+  pendingPatch = {};
+  patchTimer = null;
+  try {
+    const res = await fetch(`/api/outputs/${postId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    if (res.status === 404) {
+      showSaveIndicator('error');
+      return;
+    }
+    if (!res.ok) throw new Error('PATCH failed');
+    patchFailed = false;
+    showSaveIndicator('saved');
+  } catch {
+    patchFailed = true;
+    showSaveIndicator('warning');
+    // Re-queue the failed patch
+    Object.assign(pendingPatch, body);
+  }
+}
+
+function showSaveIndicator(state) {
+  let indicator = document.querySelector('.canvas-save-indicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.className = 'canvas-save-indicator';
+    const toolbar = document.getElementById('studio-quick-form');
+    if (toolbar) toolbar.parentElement.insertBefore(indicator, toolbar);
+  }
+  indicator.classList.remove('canvas-save-indicator--warning', 'canvas-save-indicator--error', 'canvas-save-indicator--saved');
+  if (state === 'saved') {
+    indicator.textContent = '✓ Saved';
+    indicator.classList.add('canvas-save-indicator--saved');
+    setTimeout(() => { indicator.textContent = ''; }, 2000);
+  } else if (state === 'warning') {
+    indicator.textContent = '⚠ Unsaved changes';
+    indicator.classList.add('canvas-save-indicator--warning');
+  } else if (state === 'error') {
+    indicator.textContent = '✕ Output no longer exists';
+    indicator.classList.add('canvas-save-indicator--error');
+  } else if (state === 'saving') {
+    indicator.textContent = '…';
+  }
+}
+
+// ── regenerateSlide ───────────────────────────────────────────────────────────
+async function regenerateSlide(postId, slideNumber, imagePrompt) {
+  const res = await fetch(`/api/outputs/${postId}/slides/${slideNumber}/regenerate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image_prompt: imagePrompt })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Regeneration failed' }));
+    throw new Error(err.error || 'Regeneration failed');
+  }
+  return res.json();
+}
+
+// ── Card Selection ────────────────────────────────────────────────────────────
+function selectCard(index, cards, output, brandVisual) {
+  const prev = cards[selectedCardIndex];
+  if (prev) prev.classList.remove('canvas-output__card--selected');
+
+  selectedCardIndex = index;
+  if (index >= 0 && index < cards.length) {
+    const card = cards[index];
+    card.classList.add('canvas-output__card--selected');
+    card.style.borderColor = brandVisual.primaryColor || '#333';
+    populateDetailPanel(index, output);
+  } else {
+    selectedCardIndex = -1;
+    hideDetailPanel();
+  }
+}
+
+function deselectCard(cards) {
+  if (selectedCardIndex >= 0 && cards[selectedCardIndex]) {
+    cards[selectedCardIndex].classList.remove('canvas-output__card--selected');
+  }
+  selectedCardIndex = -1;
+  hideDetailPanel();
+}
+
+function populateDetailPanel(index, output) {
+  const inspector = document.getElementById('studio-inspector');
+  const assetSection = document.getElementById('inspector-asset');
+  if (!inspector || !assetSection) return;
+
+  const slides = output.slides || output.artifacts || [];
+  const slide = slides[index];
+  if (!slide) return;
+
+  inspector.classList.remove('hidden');
+  assetSection.classList.remove('hidden');
+
+  const titleEl = document.getElementById('inspector-asset-title');
+  const hintEl = document.getElementById('inspector-asset-hint');
+  const previewEl = document.getElementById('inspector-asset-preview');
+
+  if (titleEl) titleEl.textContent = `Slide ${slide.slide_number || index + 1} — ${(slide.role || 'slide').charAt(0).toUpperCase() + (slide.role || 'slide').slice(1)}`;
+  if (hintEl) {
+    let hint = slide.text || '';
+    if (slide.recipe) hint = slide.recipe.recipeName || hint;
+    hintEl.textContent = hint;
+  }
+
+  // Preview
+  if (previewEl) {
+    previewEl.innerHTML = '';
+    previewEl.classList.remove('refine-preview--empty');
+    const postId = output.post_id || '';
+    if (slide.asset_path) {
+      const filename = slide.asset_path.split('/').pop();
+      const img = document.createElement('img');
+      img.src = `/api/assets/${postId}/${filename}`;
+      img.alt = slide.role || 'slide';
+      previewEl.appendChild(img);
+    } else {
+      previewEl.classList.add('refine-preview--empty');
+      previewEl.innerHTML = '<span>Text card</span>';
+    }
+  }
+
+  // Regenerate prompt
+  const promptEl = document.getElementById('studio-refine-prompt');
+  if (promptEl) promptEl.value = slide.image_prompt || '';
+
+  // Show/hide regenerate button based on role
+  const regenBtn = document.getElementById('studio-refine-submit');
+  if (regenBtn) {
+    const canRegen = slide.role === 'recipe' || !!slide.image_prompt;
+    regenBtn.style.display = canRegen ? '' : 'none';
+    if (promptEl) promptEl.style.display = canRegen ? '' : 'none';
+  }
+}
+
+function hideDetailPanel() {
+  const assetSection = document.getElementById('inspector-asset');
+  if (assetSection) assetSection.classList.add('hidden');
+}
+
+// ── DragReorderController ─────────────────────────────────────────────────────
+const DragReorderController = (() => {
+  let strip = null;
+  let cards = [];
+  let onReorder = null;
+  let holdTimer = null;
+  let dragging = false;
+  let dragCard = null;
+  let dragIndex = -1;
+  let placeholder = null;
+
+  function init(stripEl, opts = {}) {
+    strip = stripEl;
+    onReorder = opts.onReorder || null;
+    cards = Array.from(strip.querySelectorAll('.canvas-output__card'));
+    strip.addEventListener('pointerdown', onPointerDown);
+  }
+
+  function destroy() {
+    if (strip) strip.removeEventListener('pointerdown', onPointerDown);
+    strip = null;
+    cards = [];
+  }
+
+  function onPointerDown(e) {
+    const card = e.target.closest('.canvas-output__card');
+    if (!card || InlineEditor.isActive()) return;
+    const idx = Array.from(strip.children).indexOf(card);
+    // Lock hook (first) and CTA (last)
+    const allCards = Array.from(strip.querySelectorAll('.canvas-output__card'));
+    if (idx === 0 || idx === allCards.length - 1) return;
+
+    holdTimer = setTimeout(() => {
+      startDrag(card, idx, e);
+    }, 200);
+
+    const onUp = () => {
+      clearTimeout(holdTimer);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointermove', onMoveCancel);
+    };
+    const onMoveCancel = (ev) => {
+      if (Math.abs(ev.clientX - e.clientX) > 5 || Math.abs(ev.clientY - e.clientY) > 5) {
+        clearTimeout(holdTimer);
+      }
+    };
+    document.addEventListener('pointerup', onUp, { once: true });
+    document.addEventListener('pointermove', onMoveCancel);
+  }
+
+  function startDrag(card, idx) {
+    dragging = true;
+    dragCard = card;
+    dragIndex = idx;
+    card.classList.add('canvas-output__card--dragging');
+    card.setPointerCapture && card.releasePointerCapture && card.releasePointerCapture(1);
+
+    document.addEventListener('pointermove', onDragMove);
+    document.addEventListener('pointerup', onDragEnd);
+  }
+
+  function onDragMove(e) {
+    if (!dragging || !strip) return;
+    // Remove old indicator
+    const oldInd = strip.querySelector('.canvas-output__drop-indicator');
+    if (oldInd) oldInd.remove();
+
+    const allCards = Array.from(strip.querySelectorAll('.canvas-output__card'));
+    let insertIdx = -1;
+    for (let i = 0; i < allCards.length; i++) {
+      const rect = allCards[i].getBoundingClientRect();
+      const mid = rect.left + rect.width / 2;
+      if (e.clientX < mid) { insertIdx = i; break; }
+    }
+    if (insertIdx === -1) insertIdx = allCards.length;
+
+    // Don't allow drop at position 0 (hook) or last (cta)
+    if (insertIdx <= 0) insertIdx = 1;
+    if (insertIdx >= allCards.length) insertIdx = allCards.length - 1;
+
+    // Show indicator
+    const indicator = document.createElement('div');
+    indicator.className = 'canvas-output__drop-indicator';
+    if (insertIdx < allCards.length) {
+      strip.insertBefore(indicator, allCards[insertIdx]);
+    } else {
+      strip.appendChild(indicator);
+    }
+  }
+
+  function onDragEnd(e) {
+    if (!dragging || !strip) return;
+    document.removeEventListener('pointermove', onDragMove);
+    document.removeEventListener('pointerup', onDragEnd);
+
+    dragCard.classList.remove('canvas-output__card--dragging');
+
+    // Remove indicator
+    const ind = strip.querySelector('.canvas-output__drop-indicator');
+    if (ind) ind.remove();
+
+    // Calculate drop position
+    const allCards = Array.from(strip.querySelectorAll('.canvas-output__card'));
+    let insertIdx = -1;
+    for (let i = 0; i < allCards.length; i++) {
+      const rect = allCards[i].getBoundingClientRect();
+      const mid = rect.left + rect.width / 2;
+      if (e.clientX < mid) { insertIdx = i; break; }
+    }
+    if (insertIdx === -1) insertIdx = allCards.length;
+    if (insertIdx <= 0) insertIdx = 1;
+    if (insertIdx >= allCards.length) insertIdx = allCards.length - 1;
+
+    // Perform reorder in DOM
+    if (insertIdx !== dragIndex) {
+      strip.removeChild(dragCard);
+      const newCards = Array.from(strip.querySelectorAll('.canvas-output__card'));
+      if (insertIdx - 1 >= newCards.length) {
+        strip.appendChild(dragCard);
+      } else {
+        // Adjust index since we removed the card
+        const adjustedIdx = insertIdx > dragIndex ? insertIdx - 1 : insertIdx;
+        if (adjustedIdx < newCards.length) {
+          strip.insertBefore(dragCard, newCards[adjustedIdx]);
+        } else {
+          strip.appendChild(dragCard);
+        }
+      }
+      if (onReorder) onReorder();
+    }
+
+    dragging = false;
+    dragCard = null;
+    dragIndex = -1;
+  }
+
+  return { init, destroy };
+})();
+
+// ── Download helpers ──────────────────────────────────────────────────────────
+function getDownloadFilename(postId, slideNumber) {
+  return `${postId}-slide-${String(slideNumber).padStart(2, '0')}.png`;
+}
+
+async function downloadSlide(card, postId, slideNumber) {
+  const img = card.querySelector('img');
+  if (img && img.src) {
+    // Image card — fetch blob
+    try {
+      const res = await fetch(img.src);
+      const blob = await res.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = getDownloadFilename(postId, slideNumber);
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch {
+      // Fallback: use html2canvas-style approach
+      downloadCardAsCanvas(card, postId, slideNumber);
+    }
+  } else {
+    // Text card — capture DOM to canvas
+    downloadCardAsCanvas(card, postId, slideNumber);
+  }
+}
+
+function downloadCardAsCanvas(card, postId, slideNumber) {
+  try {
+    const canvas = document.createElement('canvas');
+    const rect = card.getBoundingClientRect();
+    canvas.width = rect.width * 2;
+    canvas.height = rect.height * 2;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(2, 2);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, rect.width, rect.height);
+    // Simple text rendering fallback
+    ctx.fillStyle = '#333';
+    ctx.font = '16px sans-serif';
+    ctx.fillText('Download from browser — use screenshot', 20, rect.height / 2);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = getDownloadFilename(postId, slideNumber);
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+  } catch {
+    console.warn('[studio] DOM capture failed for text card');
+  }
+}
+
+async function downloadAllSlides(output) {
+  if (!window.JSZip) {
+    showSaveIndicator('warning');
+    alert('ZIP library not available. Please reload the page.');
+    return;
+  }
+  const zip = new window.JSZip();
+  const postId = output.post_id || 'output';
+  const slides = output.slides || [];
+
+  for (const slide of slides) {
+    if (slide.asset_path) {
+      const filename = slide.asset_path.split('/').pop();
+      try {
+        const res = await fetch(`/api/assets/${postId}/${filename}`);
+        if (res.ok) {
+          const blob = await res.blob();
+          zip.file(getDownloadFilename(postId, slide.slide_number), blob);
+        }
+      } catch { /* skip */ }
+    }
+  }
+
+  if (output.caption) zip.file('caption.txt', output.caption);
+  if (output.hashtags?.length) zip.file('hashtags.txt', output.hashtags.join(' '));
+
+  const content = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(content);
+  a.download = `${postId}-all-slides.zip`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── Wire interactivity ────────────────────────────────────────────────────────
+function wireCardInteractivity(strip, output, postId, brandVisual) {
+  currentOutput = output;
+  selectedCardIndex = -1;
+  const cards = Array.from(strip.querySelectorAll('.canvas-output__card'));
+
+  // Click to select
+  cards.forEach((card, i) => {
+    card.addEventListener('click', (e) => {
+      if (InlineEditor.isActive()) return;
+      e.stopPropagation();
+      selectCard(i, cards, output, brandVisual);
+    });
+  });
+
+  // Click empty space to deselect
+  const stage = document.getElementById('studio-canvas-stage');
+  if (stage) {
+    stage.addEventListener('click', (e) => {
+      if (e.target.closest('.canvas-output__card')) return;
+      if (e.target.closest('.studio-inspector')) return;
+      deselectCard(cards);
+    });
+  }
+
+  // Double-click for inline editing on recipe fields
+  cards.forEach((card, i) => {
+    const recipeEl = card.querySelector('.canvas-output__recipe');
+    if (!recipeEl) return;
+    const slide = (output.slides || [])[i];
+    if (!slide || !slide.recipe) return;
+
+    // Recipe name
+    const nameEl = recipeEl.querySelector('strong');
+    if (nameEl) {
+      nameEl.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        InlineEditor.activate(nameEl, {
+          required: true,
+          onCommit(text) {
+            slide.recipe.recipeName = text;
+            schedulePatch(postId, { slides: [{ slide_number: slide.slide_number, recipe: slide.recipe }] });
+          }
+        });
+      });
+    }
+
+    // Ingredients
+    const ingredientsEl = recipeEl.querySelector('.canvas-output__ingredients');
+    if (ingredientsEl) {
+      ingredientsEl.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        InlineEditor.activate(ingredientsEl, {
+          multiline: true,
+          onCommit(text) {
+            slide.recipe.ingredients = text.split('·').map(s => s.trim()).filter(Boolean);
+            ingredientsEl.textContent = slide.recipe.ingredients.join(' · ');
+            schedulePatch(postId, { slides: [{ slide_number: slide.slide_number, recipe: slide.recipe }] });
+          }
+        });
+      });
+    }
+
+    // Steps
+    const stepsEl = recipeEl.querySelector('.canvas-output__steps');
+    if (stepsEl) {
+      stepsEl.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        InlineEditor.activate(stepsEl, {
+          multiline: true,
+          onCommit(text) {
+            slide.recipe.steps = text.split(/\d+\.\s*/).filter(Boolean).map(s => s.trim());
+            stepsEl.innerHTML = slide.recipe.steps.map((s, j) => `<span>${j + 1}. ${s}</span>`).join(' ');
+            schedulePatch(postId, { slides: [{ slide_number: slide.slide_number, recipe: slide.recipe }] });
+          }
+        });
+      });
+    }
+
+    // Pro tip
+    const tipEl = recipeEl.querySelector('.canvas-output__tip');
+    if (tipEl) {
+      tipEl.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        InlineEditor.activate(tipEl, {
+          multiline: true,
+          onCommit(text) {
+            slide.recipe.proTip = text;
+            schedulePatch(postId, { slides: [{ slide_number: slide.slide_number, recipe: slide.recipe }] });
+          }
+        });
+      });
+    }
+  });
+
+  // Double-click on caption
+  const captionEl = strip.parentElement?.querySelector('.canvas-output__caption p');
+  if (captionEl) {
+    captionEl.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      InlineEditor.activate(captionEl, {
+        multiline: true,
+        onCommit(text) {
+          output.caption = text;
+          currentOutput.caption = text;
+          schedulePatch(postId, { caption: text });
+        }
+      });
+    });
+  }
+
+  // Double-click on hashtags
+  const hashtagsEl = strip.parentElement?.querySelector('.canvas-output__hashtags');
+  if (hashtagsEl) {
+    hashtagsEl.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      InlineEditor.activate(hashtagsEl, {
+        multiline: false,
+        onCommit(text) {
+          const tags = text.split(/\s+/).filter(Boolean);
+          output.hashtags = tags;
+          currentOutput.hashtags = tags;
+          hashtagsEl.textContent = tags.join(' ');
+          schedulePatch(postId, { hashtags: tags });
+        }
+      });
+    });
+  }
+
+  // Drag to reorder
+  DragReorderController.init(strip, {
+    onReorder() {
+      // Update slide numbers based on new DOM order
+      const reorderedCards = Array.from(strip.querySelectorAll('.canvas-output__card'));
+      const slides = output.slides || [];
+      reorderedCards.forEach((card, i) => {
+        if (slides[i]) {
+          slides[i].slide_number = i + 1;
+        }
+        // Update label
+        const label = card.querySelector('.canvas-output__label');
+        if (label && slides[i]) {
+          const role = slides[i].role || 'slide';
+          label.textContent = `${String(i + 1).padStart(2, '0')} — ${role.charAt(0).toUpperCase() + role.slice(1)}`;
+        }
+      });
+      schedulePatch(postId, { slides: slides.map(s => ({ slide_number: s.slide_number, role: s.role })) });
+    }
+  });
+
+  // Regeneration from detail panel
+  const refineForm = document.getElementById('studio-refine-form');
+  if (refineForm) {
+    // Remove old listener by cloning
+    const newForm = refineForm.cloneNode(true);
+    refineForm.parentNode.replaceChild(newForm, refineForm);
+    newForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (selectedCardIndex < 0) return;
+      const slide = (output.slides || [])[selectedCardIndex];
+      if (!slide) return;
+      const promptEl = newForm.querySelector('#studio-refine-prompt');
+      const submitBtn = newForm.querySelector('#studio-refine-submit');
+      const statusEl = newForm.querySelector('#studio-refine-status');
+      const prompt = promptEl?.value || slide.image_prompt || '';
+
+      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Regenerating…'; }
+      if (statusEl) { statusEl.classList.remove('hidden'); statusEl.textContent = 'Generating new image…'; }
+
+      try {
+        const result = await regenerateSlide(postId, slide.slide_number, prompt);
+        // Update in-memory
+        slide.asset_path = result.slide.asset_path;
+        slide.image_prompt = prompt;
+        // Update DOM
+        const card = cards[selectedCardIndex];
+        const img = card?.querySelector('img');
+        if (img && result.slide.asset_path) {
+          const filename = result.slide.asset_path.split('/').pop();
+          img.src = `/api/assets/${postId}/${filename}`;
+        }
+        if (statusEl) statusEl.textContent = 'Done — image updated.';
+        populateDetailPanel(selectedCardIndex, output);
+      } catch (err) {
+        if (statusEl) statusEl.textContent = err.message || 'Regeneration failed';
+      } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Regenerate'; }
+      }
+    });
+  }
+
+  // Download slide button in inspector
+  let dlBtn = document.querySelector('.inspector-download-btn');
+  if (dlBtn) {
+    const newDl = dlBtn.cloneNode(true);
+    dlBtn.parentNode.replaceChild(newDl, dlBtn);
+    newDl.addEventListener('click', async () => {
+      if (selectedCardIndex < 0) return;
+      const slide = (output.slides || [])[selectedCardIndex];
+      const card = cards[selectedCardIndex];
+      if (!card || !slide) return;
+      newDl.disabled = true;
+      newDl.textContent = 'Downloading…';
+      await downloadSlide(card, postId, slide.slide_number || selectedCardIndex + 1);
+      newDl.disabled = false;
+      newDl.textContent = 'Download Asset';
+    });
+  }
+
+  // Download All button
+  const dlAllBtn = document.getElementById('studio-download-all-btn');
+  if (dlAllBtn) {
+    const newDlAll = dlAllBtn.cloneNode(true);
+    dlAllBtn.parentNode.replaceChild(newDlAll, dlAllBtn);
+    newDlAll.addEventListener('click', async () => {
+      newDlAll.disabled = true;
+      newDlAll.textContent = 'Downloading…';
+      await downloadAllSlides(output);
+      newDlAll.disabled = false;
+      newDlAll.textContent = 'Download All';
+    });
+  }
+}
+
+// ── Keyboard navigation ───────────────────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  // Skip if inline editor is active (except Escape)
+  if (InlineEditor.isActive()) {
+    return; // InlineEditor handles its own Escape
+  }
+
+  // Skip if focused on input/textarea
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+  const stage = document.getElementById('studio-canvas-stage');
+  if (!stage) return;
+  const strip = stage.querySelector('.canvas-output__strip');
+  if (!strip) return;
+  const cards = Array.from(strip.querySelectorAll('.canvas-output__card'));
+  if (!cards.length) return;
+
+  if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    const next = Math.min(selectedCardIndex + 1, cards.length - 1);
+    if (next >= 0) selectCard(next, cards, currentOutput, getBrandVisualFromOutput(currentOutput));
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    const prev = Math.max(selectedCardIndex - 1, 0);
+    selectCard(prev, cards, currentOutput, getBrandVisualFromOutput(currentOutput));
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    deselectCard(cards);
+  }
+});
+
+function getBrandVisualFromOutput(output) {
+  if (!output) return { primaryColor: '#333' };
+  return output.brand_profile?.visual || { primaryColor: '#333' };
 }
 
 // ── Quick form ────────────────────────────────────────────────────────────────

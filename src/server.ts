@@ -517,6 +517,77 @@ async function handleRequest(req: Request): Promise<Response> {
     return json(await listOutputs());
   }
 
+  // PATCH /api/outputs/:postId — merge partial metadata
+  if (url.pathname.startsWith("/api/outputs/") && !url.pathname.includes("/slides/") && !url.pathname.endsWith("/text") && req.method === "PATCH") {
+    const postId = url.pathname.slice("/api/outputs/".length);
+    const existing = await readOutput(postId);
+    if (!existing) return json({ error: "Output not found" }, { status: 404 });
+    let patch: Record<string, unknown>;
+    try {
+      patch = await parseJsonBody(req);
+    } catch {
+      return json({ error: "Invalid JSON" }, { status: 400 });
+    }
+    // Deep merge: top-level fields overwrite, slides merge by slide_number
+    const merged: Record<string, unknown> = { ...existing, ...patch };
+    if (Array.isArray(patch.slides) && Array.isArray(existing.slides)) {
+      const mergedSlides = [...existing.slides];
+      for (const patchSlide of patch.slides as Array<Record<string, unknown>>) {
+        const idx = mergedSlides.findIndex((s: any) => s.slide_number === patchSlide.slide_number);
+        if (idx >= 0) {
+          mergedSlides[idx] = { ...mergedSlides[idx], ...patchSlide };
+        } else {
+          mergedSlides.push(patchSlide as any);
+        }
+      }
+      merged.slides = mergedSlides;
+    }
+    await fs.writeFile(path.join(OUTPUTS_ROOT, postId, "metadata.json"), JSON.stringify(merged, null, 2));
+    return json(merged);
+  }
+
+  // POST /api/outputs/:postId/slides/:slideNumber/regenerate — single slide regen
+  if (url.pathname.match(/^\/api\/outputs\/[^/]+\/slides\/\d+\/regenerate$/) && req.method === "POST") {
+    const parts = url.pathname.split("/");
+    const postId = parts[3];
+    const slideNumber = Number(parts[5]);
+    const existing = await readOutput(postId);
+    if (!existing) return json({ error: "Output not found" }, { status: 404 });
+    const slide = (existing.slides || []).find((s: any) => s.slide_number === slideNumber);
+    if (!slide) return json({ error: "Slide not found" }, { status: 404 });
+    let body: Record<string, unknown>;
+    try {
+      body = await parseJsonBody(req);
+    } catch {
+      return json({ error: "Invalid JSON" }, { status: 400 });
+    }
+    const imagePrompt = typeof body.image_prompt === "string" ? body.image_prompt : slide.image_prompt;
+    try {
+      const { generateImagesForSlides } = await import("./image-generator.ts");
+      const assetsDir = path.join(OUTPUTS_ROOT, postId, "assets", "generated");
+      const brandVisual = (existing as any).brand_profile?.visual || {};
+      const updatedSlides = await generateImagesForSlides(
+        [{ ...slide, image_prompt: imagePrompt }],
+        {
+          assetsDir,
+          falKey: process.env.FAL_KEY,
+          brandName: (existing as any).brand_profile?.name || "Brand",
+          brandColors: { primaryColor: brandVisual.primaryColor || "#f04d23", secondaryColor: brandVisual.secondaryColor || "#ffd9c8" }
+        }
+      );
+      const updatedSlide = updatedSlides[0];
+      // Update metadata
+      const slideIdx = existing.slides.findIndex((s: any) => s.slide_number === slideNumber);
+      if (slideIdx >= 0) {
+        existing.slides[slideIdx] = { ...existing.slides[slideIdx], asset_path: updatedSlide.asset_path, image_prompt: imagePrompt };
+      }
+      await fs.writeFile(path.join(OUTPUTS_ROOT, postId, "metadata.json"), JSON.stringify(existing, null, 2));
+      return json({ slide: existing.slides[slideIdx] });
+    } catch (err) {
+      return json({ error: err instanceof Error ? err.message : "Regeneration failed" }, { status: 500 });
+    }
+  }
+
   if (url.pathname.startsWith("/api/outputs/") && req.method === "GET") {
     const postId = url.pathname.slice("/api/outputs/".length);
     const output = await readOutput(postId);
@@ -797,7 +868,7 @@ const server = createServer(async (req, res) => {
     const host = req.headers.host ?? `localhost:${PORT}`;
     const url = new URL(req.url ?? "/", `${protocol}://${host}`);
 
-    const body = req.method === "POST"
+    const body = (req.method === "POST" || req.method === "PATCH" || req.method === "PUT" || req.method === "DELETE")
       ? await new Promise<Buffer>((resolve) => {
           const chunks: Buffer[] = [];
           req.on("data", (chunk: Buffer) => chunks.push(chunk));

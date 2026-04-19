@@ -3376,3 +3376,103 @@ details.brand-editor[open] > summary.brand-editor__summary::before {
   line-height: 1.45;
   margin-top: 6px;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INTERACTIVE CANVAS — Selection, Editing, Drag, Save indicators
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Selection ring ────────────────────────────────────────────────────── */
+
+.canvas-output__card--selected {
+  border: 3px solid var(--brand-strong, #333);
+  box-shadow: 0 0 0 4px rgba(50, 50, 50, 0.12), 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.canvas-output__card {
+  cursor: pointer;
+  border: 3px solid transparent;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.canvas-output__card:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Inline editing border ─────────────────────────────────────────────── */
+
+.canvas-output__card--editing {
+  outline: 2px solid var(--highlight, #e67e22);
+  outline-offset: 2px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.95);
+  min-height: 1.2em;
+  padding: 2px 4px;
+}
+
+[contenteditable="true"] {
+  cursor: text;
+}
+
+/* ── Drag reorder ──────────────────────────────────────────────────────── */
+
+.canvas-output__card--dragging {
+  opacity: 0.85;
+  transform: scale(1.03);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18), 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  cursor: grabbing;
+}
+
+.canvas-output__drop-indicator {
+  width: 3px;
+  min-height: 200px;
+  background: var(--brand-strong, #333);
+  border-radius: 2px;
+  flex-shrink: 0;
+  align-self: stretch;
+  opacity: 0.7;
+  animation: drop-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes drop-pulse {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+/* ── Save indicator ────────────────────────────────────────────────────── */
+
+.canvas-save-indicator {
+  position: fixed;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  z-index: 200;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
+.canvas-save-indicator:empty {
+  opacity: 0;
+}
+
+.canvas-save-indicator--saved {
+  background: #d4edda;
+  color: #155724;
+}
+
+.canvas-save-indicator--warning {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.canvas-save-indicator--error {
+  background: #f8d7da;
+  color: #721c24;
+}
