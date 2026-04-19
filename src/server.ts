@@ -180,38 +180,119 @@ async function readBrandProfile(brandId: string): Promise<BrandProfile | null> {
   return storage.getBrandProfile(brandId);
 }
 
-async function listOutputs(): Promise<Array<{ postId: string; createdAt: string; product: string; platform: string }>> {
+interface OutputSummary {
+  postId: string;
+  createdAt: string;
+  product: string;
+  platform: string;
+  caption: string;
+  slideCount: number;
+  workflowType: string;
+  firstAssetPath: string;
+  content_type_id: string;
+}
+
+function deriveFirstAssetPath(metadata: PostMetadata): string {
+  // Try artifacts first
+  if (metadata.artifacts?.length) {
+    for (const a of metadata.artifacts) {
+      if (a.asset_path && a.kind === "image") {
+        const filename = a.asset_path.split("/").pop() || "";
+        return `/api/assets/${metadata.post_id}/${filename}`;
+      }
+    }
+  }
+  // Fall back to slides
+  if (metadata.slides?.length) {
+    for (const s of metadata.slides) {
+      if (s.asset_path) {
+        const filename = s.asset_path.split("/").pop() || "";
+        return `/api/assets/${metadata.post_id}/${filename}`;
+      }
+    }
+  }
+  return "";
+}
+
+async function listOutputs(): Promise<OutputSummary[]> {
   try {
     const entries = await fs.readdir(OUTPUTS_ROOT, { withFileTypes: true });
-    const results: Array<{ postId: string; createdAt: string; product: string; platform: string }> = [];
+    const results: OutputSummary[] = [];
 
     for (const entry of entries) {
-      if (!entry.isDirectory()) {
-        continue;
-      }
+      if (!entry.isDirectory()) continue;
 
       try {
         const metadata = JSON.parse(await fs.readFile(path.join(OUTPUTS_ROOT, entry.name, "metadata.json"), "utf8")) as PostMetadata;
         results.push({
           postId: entry.name,
-          createdAt: metadata.created_at,
-          product: metadata.product,
-          platform: metadata.platform
+          createdAt: metadata.created_at || "",
+          product: metadata.product || "",
+          platform: metadata.platform || "",
+          caption: (metadata.caption || "").slice(0, 120),
+          slideCount: (metadata.slides?.length ?? 0) + (metadata.artifacts?.length ?? 0),
+          workflowType: metadata.workflow_type || "",
+          firstAssetPath: deriveFirstAssetPath(metadata),
+          content_type_id: metadata.content_type_id || ""
         });
       } catch {
         results.push({
           postId: entry.name,
           createdAt: "",
           product: "",
-          platform: ""
+          platform: "",
+          caption: "",
+          slideCount: 0,
+          workflowType: "",
+          firstAssetPath: "",
+          content_type_id: ""
         });
       }
     }
 
-    return results.sort((a, b) => b.postId.localeCompare(a.postId));
+    return results.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.postId.localeCompare(a.postId));
   } catch {
     return [];
   }
+}
+
+async function deleteOutput(postId: string): Promise<boolean> {
+  const dir = path.join(OUTPUTS_ROOT, postId);
+  try {
+    await fs.access(dir);
+  } catch {
+    return false;
+  }
+  await fs.rm(dir, { recursive: true, force: true });
+  return true;
+}
+
+const TOTAL_STORAGE_BYTES = 3 * 1024 * 1024 * 1024; // 3 GB from fly.toml mount
+
+async function getDirectorySize(dirPath: string): Promise<number> {
+  let total = 0;
+  try {
+    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        total += await getDirectorySize(fullPath);
+      } else if (entry.isFile()) {
+        const stat = await fs.stat(fullPath);
+        total += stat.size;
+      }
+    }
+  } catch {
+    // directory doesn't exist or not readable
+  }
+  return total;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
 async function readOutput(postId: string): Promise<PostMetadata | null> {
@@ -515,6 +596,28 @@ async function handleRequest(req: Request): Promise<Response> {
 
   if (url.pathname === "/api/outputs" && req.method === "GET") {
     return json(await listOutputs());
+  }
+
+  if (url.pathname === "/api/storage/usage" && req.method === "GET") {
+    try {
+      const usedBytes = await getDirectorySize(path.join(PROJECT_ROOT, "workspace", "outputs"));
+      return json({
+        usedBytes,
+        totalBytes: TOTAL_STORAGE_BYTES,
+        usedFormatted: formatBytes(usedBytes),
+        totalFormatted: formatBytes(TOTAL_STORAGE_BYTES)
+      });
+    } catch {
+      return json({ error: "Unable to calculate storage" }, { status: 500 });
+    }
+  }
+
+  // DELETE /api/outputs/:postId
+  if (url.pathname.startsWith("/api/outputs/") && req.method === "DELETE" && !url.pathname.includes("/slides/") && !url.pathname.includes("/mascot-refs/")) {
+    const postId = url.pathname.slice("/api/outputs/".length);
+    const deleted = await deleteOutput(postId);
+    if (!deleted) return json({ error: "Output not found" }, { status: 404 });
+    return new Response(null, { status: 204 });
   }
 
   // PATCH /api/outputs/:postId — merge partial metadata

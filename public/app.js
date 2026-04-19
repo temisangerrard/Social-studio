@@ -2051,25 +2051,6 @@ async function loadOutputIntoCanvas(postId) {
   switchView("studio");
 }
 
-els.libraryList.addEventListener("click", async (e) => {
-  const viewBtn = e.target.closest("[data-post-id]");
-  if (viewBtn) {
-    loadOutputIntoCanvas(viewBtn.dataset.postId);
-    return;
-  }
-  const dupBtn = e.target.closest("[data-duplicate-id]");
-  if (dupBtn) {
-    const res = await fetch(`/api/outputs/${dupBtn.dataset.duplicateId}`);
-    if (!res.ok) return;
-    const output = await res.json();
-    // Pre-fill studio with this output's idea
-    els.studioIdeaInput.value = output.caption || output.hooks?.[0] || "";
-    const brand = studioState.brands.find((b) => b.id === output.brand_profile?.id);
-    if (brand) els.studioProductSelect.value = brand.id;
-    switchView("studio");
-  }
-});
-
 // ── Brand editor ──────────────────────────────────────────────────────────────
 function renderBrandEditor(brandId) {
   const brand = getBrandById(brandId);
@@ -2500,51 +2481,290 @@ calEls.autoFill.addEventListener("click", async () => {
 
 // ── Library with filters ──────────────────────────────────────────────────────
 let libraryOutputs = [];
+let libraryStorageInfo = null;
+let librarySortMode = "date";
+let librarySelectedIds = new Set();
+let libraryVisibleCount = 20;
 
 async function loadLibrary() {
-  const res = await fetch("/api/outputs");
-  libraryOutputs = await res.json();
+  try {
+    const [outputsRes, storageRes] = await Promise.all([
+      fetch("/api/outputs"),
+      fetch("/api/storage/usage")
+    ]);
+    libraryOutputs = await outputsRes.json();
+    try {
+      libraryStorageInfo = await storageRes.json();
+    } catch {
+      libraryStorageInfo = null;
+    }
+  } catch {
+    libraryOutputs = [];
+    libraryStorageInfo = null;
+  }
+
+  // Populate brand filter from fetched outputs
+  const brands = [...new Set(libraryOutputs.map((o) => o.product).filter(Boolean))].sort();
+  const brandSelect = calEls.libraryBrandFilter;
+  if (brandSelect) {
+    const current = brandSelect.value;
+    brandSelect.innerHTML = `<option value="">All brands</option>` +
+      brands.map((b) => `<option value="${escapeHtml(b)}">${escapeHtml(titleCase(b))}</option>`).join("");
+    if (current && brands.includes(current)) brandSelect.value = current;
+  }
+
+  renderStorageIndicator();
   renderLibrary();
+}
+
+function renderStorageIndicator() {
+  let bar = document.getElementById("library-storage-bar");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "library-storage-bar";
+    bar.className = "storage-bar";
+    const header = document.querySelector(".library-header");
+    if (header) header.appendChild(bar);
+  }
+  if (!libraryStorageInfo || libraryStorageInfo.error) {
+    bar.innerHTML = `<span class="storage-bar__text">Storage info unavailable</span>`;
+    return;
+  }
+  const pct = Math.min(100, (libraryStorageInfo.usedBytes / libraryStorageInfo.totalBytes) * 100);
+  const warn = pct > 80;
+  bar.className = `storage-bar${warn ? " storage-bar--warning" : ""}`;
+  bar.innerHTML = `
+    <div class="storage-bar__track">
+      <div class="storage-bar__fill" style="width:${pct.toFixed(1)}%"></div>
+    </div>
+    <span class="storage-bar__text">${libraryStorageInfo.usedFormatted} / ${libraryStorageInfo.totalFormatted}</span>
+  `;
 }
 
 function renderLibrary() {
   const brandFilter = calEls.libraryBrandFilter?.value || "";
   const platformFilter = calEls.libraryPlatformFilter?.value || "";
   const search = (calEls.librarySearch?.value || "").toLowerCase().trim();
+  const sortSelect = document.getElementById("library-sort");
+  if (sortSelect) librarySortMode = sortSelect.value || "date";
 
   let filtered = libraryOutputs;
   if (brandFilter) filtered = filtered.filter((o) => o.product === brandFilter);
   if (platformFilter) filtered = filtered.filter((o) => o.platform === platformFilter);
   if (search) filtered = filtered.filter((o) =>
     (o.postId || "").toLowerCase().includes(search) ||
-    (o.product || "").toLowerCase().includes(search)
+    (o.product || "").toLowerCase().includes(search) ||
+    (o.caption || "").toLowerCase().includes(search)
   );
+
+  // Sort
+  filtered = [...filtered];
+  if (librarySortMode === "date") {
+    filtered.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  } else if (librarySortMode === "brand") {
+    filtered.sort((a, b) => (a.product || "").localeCompare(b.product || ""));
+  } else if (librarySortMode === "type") {
+    filtered.sort((a, b) => (a.workflowType || "").localeCompare(b.workflowType || ""));
+  }
 
   if (!filtered.length) {
     els.libraryList.innerHTML = `<p class="library-empty">${libraryOutputs.length ? "No results match your filters." : "No past generations yet. Go to Studio to make your first post."}</p>`;
+    renderBulkBar();
     return;
   }
 
-  els.libraryList.innerHTML = filtered.map((item) => {
+  // Pagination
+  const totalCount = filtered.length;
+  const visible = filtered.slice(0, libraryVisibleCount);
+
+  els.libraryList.innerHTML = "";
+  els.libraryList.className = "library-list";
+
+  const grid = document.createElement("div");
+  grid.className = "library-grid";
+
+  visible.forEach((item) => {
     const date = item.createdAt
       ? new Date(item.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
       : "—";
-    return `<div class="library-item">
-      <div class="library-item__meta">
-        <span class="library-item__id">${escapeHtml(item.postId)}</span>
-        <span class="library-item__detail">${escapeHtml(titleCase(item.product))} · ${escapeHtml(titleCase(item.platform))} · ${date}</span>
-      </div>
-      <div class="library-item__actions">
-        <button class="ghost-button" type="button" data-post-id="${escapeHtml(item.postId)}">View</button>
-        <button class="ghost-button" type="button" data-duplicate-id="${escapeHtml(item.postId)}">Duplicate</button>
-      </div>
-    </div>`;
-  }).join("");
+    const card = document.createElement("div");
+    card.className = "library-card" + (librarySelectedIds.has(item.postId) ? " library-card--selected" : "");
+    card.dataset.postId = item.postId;
+
+    // Checkbox for bulk selection
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.className = "library-card__checkbox";
+    checkbox.checked = librarySelectedIds.has(item.postId);
+    checkbox.title = "Select for bulk action";
+    checkbox.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (checkbox.checked) {
+        librarySelectedIds.add(item.postId);
+      } else {
+        librarySelectedIds.delete(item.postId);
+      }
+      card.classList.toggle("library-card--selected", checkbox.checked);
+      renderBulkBar();
+    });
+    card.appendChild(checkbox);
+
+    // Thumbnail
+    const thumbEl = document.createElement("div");
+    thumbEl.className = "library-card__thumb";
+    if (item.firstAssetPath) {
+      const img = document.createElement("img");
+      img.src = item.firstAssetPath;
+      img.alt = item.caption || item.postId;
+      img.loading = "lazy";
+      img.onerror = () => {
+        img.remove();
+        thumbEl.classList.add("library-card__thumb--placeholder");
+        thumbEl.innerHTML = `<span>${escapeHtml(titleCase(item.workflowType || "content"))}</span>`;
+      };
+      thumbEl.appendChild(img);
+    } else {
+      thumbEl.classList.add("library-card__thumb--placeholder");
+      thumbEl.innerHTML = `<span>${escapeHtml(titleCase(item.workflowType || "content"))}</span>`;
+    }
+    card.appendChild(thumbEl);
+
+    // Body
+    const body = document.createElement("div");
+    body.className = "library-card__body";
+    body.innerHTML = `
+      <span class="library-card__brand">${escapeHtml(titleCase(item.product || "Unknown"))}</span>
+      <span class="library-card__platform">${escapeHtml(titleCase(item.platform || ""))}</span>
+      <span class="library-card__type">${escapeHtml(titleCase(item.workflowType || ""))}</span>
+      <span class="library-card__date">${date}</span>
+      <span class="library-card__slides">${item.slideCount || 0} slides</span>
+      ${item.caption ? `<p class="library-card__caption">${escapeHtml(item.caption)}</p>` : ""}
+    `;
+    card.appendChild(body);
+
+    // Duplicate button
+    const dupBtn = document.createElement("button");
+    dupBtn.className = "library-card__duplicate";
+    dupBtn.type = "button";
+    dupBtn.title = "Duplicate";
+    dupBtn.textContent = "⧉";
+    dupBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      els.studioIdeaInput.value = item.caption || "";
+      const brandMatch = studioState.brands.find((b) => b.name === item.product || b.id === item.product);
+      if (brandMatch) els.studioProductSelect.value = brandMatch.id;
+      switchView("studio");
+    });
+    card.appendChild(dupBtn);
+
+    // Delete button
+    const delBtn = document.createElement("button");
+    delBtn.className = "library-card__delete";
+    delBtn.type = "button";
+    delBtn.title = "Delete";
+    delBtn.textContent = "✕";
+    delBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!confirm(`Delete "${item.postId}"? This cannot be undone.`)) return;
+      delBtn.disabled = true;
+      try {
+        const res = await fetch(`/api/outputs/${encodeURIComponent(item.postId)}`, { method: "DELETE" });
+        if (res.ok || res.status === 204) {
+          card.remove();
+          libraryOutputs = libraryOutputs.filter((o) => o.postId !== item.postId);
+          librarySelectedIds.delete(item.postId);
+          if (!libraryOutputs.length) renderLibrary();
+          renderBulkBar();
+          try {
+            const sr = await fetch("/api/storage/usage");
+            libraryStorageInfo = await sr.json();
+            renderStorageIndicator();
+          } catch {}
+        } else {
+          alert("Failed to delete output.");
+          delBtn.disabled = false;
+        }
+      } catch {
+        alert("Failed to delete output.");
+        delBtn.disabled = false;
+      }
+    });
+    card.appendChild(delBtn);
+
+    // Click card to load on canvas
+    card.addEventListener("click", () => {
+      loadOutputIntoCanvas(item.postId);
+    });
+
+    grid.appendChild(card);
+  });
+
+  els.libraryList.appendChild(grid);
+
+  // Load more button
+  if (totalCount > libraryVisibleCount) {
+    const loadMoreBtn = document.createElement("button");
+    loadMoreBtn.className = "ghost-button library-load-more";
+    loadMoreBtn.type = "button";
+    loadMoreBtn.textContent = `Load more (${totalCount - libraryVisibleCount} remaining)`;
+    loadMoreBtn.addEventListener("click", () => {
+      libraryVisibleCount += 20;
+      renderLibrary();
+    });
+    els.libraryList.appendChild(loadMoreBtn);
+  }
+
+  renderBulkBar();
 }
 
-calEls.libraryBrandFilter?.addEventListener("change", renderLibrary);
-calEls.libraryPlatformFilter?.addEventListener("change", renderLibrary);
-calEls.librarySearch?.addEventListener("input", renderLibrary);
+function renderBulkBar() {
+  let bar = document.getElementById("library-bulk-bar");
+  if (librarySelectedIds.size === 0) {
+    if (bar) bar.remove();
+    return;
+  }
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "library-bulk-bar";
+    bar.className = "library-bulk-bar";
+    const container = document.querySelector(".library-container");
+    if (container) container.appendChild(bar);
+  }
+  bar.innerHTML = `
+    <span class="library-bulk-bar__count">${librarySelectedIds.size} selected</span>
+    <button class="primary-button library-bulk-bar__delete" type="button">Delete selected (${librarySelectedIds.size})</button>
+    <button class="ghost-button library-bulk-bar__clear" type="button">Clear</button>
+  `;
+  bar.querySelector(".library-bulk-bar__delete").addEventListener("click", async () => {
+    const count = librarySelectedIds.size;
+    if (!confirm(`Delete ${count} item${count > 1 ? "s" : ""}? This cannot be undone.`)) return;
+    const ids = [...librarySelectedIds];
+    const deleteBtn = bar.querySelector(".library-bulk-bar__delete");
+    deleteBtn.disabled = true;
+    deleteBtn.textContent = "Deleting…";
+    await Promise.all(ids.map((id) =>
+      fetch(`/api/outputs/${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => {})
+    ));
+    librarySelectedIds.clear();
+    await loadLibrary();
+  });
+  bar.querySelector(".library-bulk-bar__clear").addEventListener("click", () => {
+    librarySelectedIds.clear();
+    renderLibrary();
+  });
+}
+
+// Reset pagination on filter/sort change
+function onFilterOrSortChange() {
+  libraryVisibleCount = 20;
+  librarySelectedIds.clear();
+  renderLibrary();
+}
+
+calEls.libraryBrandFilter?.addEventListener("change", onFilterOrSortChange);
+calEls.libraryPlatformFilter?.addEventListener("change", onFilterOrSortChange);
+calEls.librarySearch?.addEventListener("input", onFilterOrSortChange);
+document.getElementById("library-sort")?.addEventListener("change", onFilterOrSortChange);
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 async function bootstrap() {
