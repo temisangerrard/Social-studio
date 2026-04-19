@@ -11,90 +11,58 @@ function escapeHtml(value: string): string {
 
 export function renderRecipeCardTemplate(input: CarouselTemplateInput): string {
   const { slide, brandVisual, imageDataUrl, slideCount } = input;
-  const { primaryColor, secondaryColor, accentColor, surfaceColor } = brandVisual;
+  const { primaryColor, secondaryColor } = brandVisual;
   const font = brandVisual.fontFamily ?? "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
-  const textColor = brandVisual.textColor ?? "#1D1B19";
-  const textSecondary = brandVisual.textSecondary ?? "#5C5450";
   const recipe = slide.recipe;
 
   const recipeName = escapeHtml(recipe?.recipeName ?? "Recipe");
-  const ingredients = recipe?.ingredients ?? [];
-  const steps = recipe?.steps ?? [];
-  const cookTime = escapeHtml(recipe?.cookTime ?? "");
-  const serves = escapeHtml(recipe?.serves ?? "");
-  const cost = escapeHtml(recipe?.cost ?? "");
+  const cookTime = recipe?.cookTime ? escapeHtml(recipe.cookTime) : "";
+  const cost = recipe?.cost ? escapeHtml(recipe.cost) : "";
+
+  // Subtext — one short line about what makes it appealing
   const proTip = recipe?.proTip ? escapeHtml(recipe.proTip) : "";
 
-  const imgSection = imageDataUrl
-    ? `<img src="${imageDataUrl}" alt="" style="width:100%;height:400px;object-fit:cover;display:block;border-radius:32px 32px 0 0;" />`
-    : `<div style="width:100%;height:400px;background:${secondaryColor};display:flex;align-items:center;justify-content:center;border-radius:32px 32px 0 0;">
-        <span style="font-size:100px;">🍽️</span>
-      </div>`;
+  // Full-bleed food image
+  const bgImage = imageDataUrl
+    ? `<img src="${imageDataUrl}" alt="" style="position:absolute;top:0;left:0;width:1080px;height:1080px;object-fit:cover;z-index:0;" />`
+    : `<div style="position:absolute;top:0;left:0;width:1080px;height:1080px;background:${secondaryColor};z-index:0;"></div>`;
 
-  // Badges
-  const badges: string[] = [];
-  if (cookTime) badges.push(`⏱️ ${cookTime}`);
-  if (serves) badges.push(`👤 ${serves}`);
-  if (cost) badges.push(`💰 ${cost}`);
-  const badgesHtml = badges.length > 0
-    ? `<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
-        ${badges.map((b) => `<span style="background:${secondaryColor};color:${primaryColor};font-size:20px;font-weight:700;padding:6px 14px;border-radius:16px;">${b}</span>`).join("\n        ")}
-      </div>`
-    : "";
-
-  // Ingredients
-  const ingredientsHtml = ingredients.length > 0
-    ? `<div style="margin-bottom:12px;">
-        <div style="font-size:18px;font-weight:800;color:${primaryColor};margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase;">Ingredients</div>
-        <div style="display:flex;flex-wrap:wrap;gap:2px 20px;">
-          ${ingredients.map((ing) => `<div style="font-size:19px;color:${textColor};line-height:1.5;width:calc(50% - 10px);">• ${escapeHtml(ing)}</div>`).join("\n          ")}
-        </div>
-      </div>`
-    : "";
-
-  // Steps
-  const stepsHtml = steps.length > 0
-    ? `<div style="margin-bottom:10px;">
-        <div style="font-size:18px;font-weight:800;color:${primaryColor};margin-bottom:6px;letter-spacing:0.08em;text-transform:uppercase;">Method</div>
-        ${steps.map((step, i) => `<div style="font-size:19px;color:${textColor};line-height:1.5;margin-bottom:3px;"><span style="font-weight:800;color:${primaryColor};">${i + 1}.</span> ${escapeHtml(step)}</div>`).join("\n        ")}
-      </div>`
-    : "";
-
-  const proTipHtml = proTip
-    ? `<div style="background:${secondaryColor};border-radius:12px;padding:10px 16px;margin-top:6px;font-size:18px;color:${primaryColor};font-weight:600;">💡 ${proTip}</div>`
+  // Small metadata footer
+  const metaParts: string[] = [];
+  if (cookTime) metaParts.push(cookTime);
+  if (cost) metaParts.push(cost);
+  const metaLine = metaParts.length > 0
+    ? `<div style="font-size:20px;color:rgba(255,255,255,0.7);font-weight:500;margin-top:10px;letter-spacing:0.03em;">${metaParts.join("  /  ")}</div>`
     : "";
 
   const dots = Array.from({ length: slideCount }, (_, i) =>
-    `<div style="width:10px;height:10px;border-radius:50%;background:${i === slide.slide_number - 1 ? primaryColor : secondaryColor};"></div>`
-  ).join("\n          ");
+    `<div style="width:8px;height:8px;border-radius:50%;background:${i === slide.slide_number - 1 ? '#fff' : 'rgba(255,255,255,0.35)'};"></div>`
+  ).join("");
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8" /></head>
-<body style="margin:0;padding:0;width:1080px;height:1080px;overflow:hidden;font-family:${font};position:relative;background:${accentColor};">
-  <!-- Card -->
-  <div style="position:absolute;top:40px;left:40px;right:40px;bottom:40px;background:${surfaceColor};border-radius:32px;box-shadow:0 8px 40px rgba(0,0,0,0.08);overflow:hidden;display:flex;flex-direction:column;">
-    <!-- Food image -->
-    ${imgSection}
+<body style="margin:0;padding:0;width:1080px;height:1080px;overflow:hidden;font-family:${font};position:relative;background:#000;">
+  <!-- Full-bleed food image -->
+  ${bgImage}
 
-    <!-- Recipe name -->
-    <div style="padding:14px 36px;background:${primaryColor};">
-      <div style="font-size:26px;font-weight:800;color:${surfaceColor};letter-spacing:-0.01em;">${escapeHtml(slide.text ?? recipeName)}</div>
-    </div>
+  <!-- Gradient mask at bottom for text readability -->
+  <div style="position:absolute;bottom:0;left:0;width:1080px;height:420px;background:linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.55) 50%, rgba(0,0,0,0.8) 100%);z-index:1;"></div>
 
-    <!-- Content -->
-    <div style="padding:14px 36px 20px 36px;flex:1;overflow:hidden;">
-      ${badgesHtml}
-      ${ingredientsHtml}
-      ${stepsHtml}
-      ${proTipHtml}
-    </div>
+  <!-- Text overlay — minimal, on the image -->
+  <div style="position:absolute;bottom:44px;left:48px;right:48px;z-index:2;">
+    <!-- Dish name -->
+    <div style="font-size:44px;font-weight:800;color:#ffffff;letter-spacing:-0.02em;line-height:1.1;text-shadow:0 2px 16px rgba(0,0,0,0.3);">${recipeName}</div>
+
+    <!-- Short descriptor -->
+    ${proTip ? `<div style="font-size:22px;color:rgba(255,255,255,0.85);font-weight:500;margin-top:8px;line-height:1.4;">${proTip}</div>` : ""}
+
+    <!-- Metadata -->
+    ${metaLine}
   </div>
 
   <!-- Dots -->
-  <div style="position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:10px;">
-          ${dots}
-  </div>
+  <div style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:2;">${dots}</div>
 </body>
 </html>`;
 }

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1440" viewBox="0 0 1080 1440">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FFDBC9"/>
+      <stop offset="100%" stop-color="#893516"/>
+    </linearGradient>
+  </defs>
+  <rect width="1080" height="1440" fill="url(#bg)" rx="48"/>
+  <circle cx="820" cy="280" r="220" fill="#ffffff" fill-opacity="0.15"/>
+  <circle cx="260" cy="1160" r="250" fill="#111111" fill-opacity="0.08"/>
+  <g>
+    <rect x="88" y="88" width="904" height="1264" rx="40" fill="#ffffff" fill-opacity="0.56" stroke="#ffffff" stroke-opacity="0.7"/>
+    <text x="140" y="240" font-size="128" font-family="Inter, Arial, sans-serif">✦</text>
+    <text x="140" y="360" font-size="42" font-weight="700" fill="#111111" font-family="Inter, Arial, sans-serif">Peppera Placeholder</text>
+    <text x="140" y="458" font-size="34" fill="#3f2b22" font-family="Inter, Arial, sans-serif">Mock visual 5</text>
+    <foreignObject x="140" y="520" width="780" height="560">
+      <div xmlns="http://www.w3.org/1999/xhtml" style="font-family: Inter, Arial, sans-serif; font-size: 32px; line-height: 1.35; color: #3f2b22;">
+        Professional food photography, Cheese &amp; Egg Strata made with 4 slices b...
+      </div>
+    </foreignObject>
+  </g>
+</svg>

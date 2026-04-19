@@ -1,0 +1,398 @@
+{
+  "post_id": "peppera_ig_0012",
+  "product": "Peppera",
+  "platform": "instagram",
+  "format": "carousel",
+  "workflow_type": "slideshow",
+  "delivery_targets": "instagram",
+  "caption": "Don't let a bare cupboard stress you out! With just eggs and bread, you can create a week's worth of tasty meals. We've put together 5 simple recipes that UK home cooks can whip up with minimal ingredients. Remember, Peppera can help you turn what you have into what's for dinner!",
+  "hooks": [
+    "Transform eggs and bread into 5 delicious meals!",
+    "Stuck with only eggs and bread? Here's what you can make!",
+    "Simple ingredients, incredible meals. Let's get cooking!"
+  ],
+  "hashtags": [
+    "#EasyMeals",
+    "#BudgetCooking",
+    "#PantryRecipes",
+    "#EggRecipes",
+    "#UKHomeCooks",
+    "#PepperaApp",
+    "#MealPlanning",
+    "#SimpleIngredients"
+  ],
+  "platform_notes": "Instagram carousel post - ensure the carousel flow is smooth with text-only hook and CTA slides. Use warm, appetizing food photography for recipe slides.",
+  "brief": {
+    "product": "Peppera",
+    "platform": "instagram",
+    "format": "carousel",
+    "pillar": "canvas-planning",
+    "audience": "busy home cooks",
+    "tone": "warm, calm, personal, lightly premium",
+    "goal": "installs",
+    "idea": "5 meals from eggs and bread",
+    "ingredients": []
+  },
+  "brand_profile": {
+    "id": "peppera",
+    "name": "Peppera",
+    "description": "A meal-planning assistant that turns rough ingredients into practical dinner ideas.",
+    "tone": "warm, calm, personal, lightly premium",
+    "audience": "busy home cooks",
+    "cta": "Download Peppera",
+    "logoPath": null,
+    "visual": {
+      "primaryColor": "#893516",
+      "secondaryColor": "#FFDBC9",
+      "accentColor": "#FEF8F3",
+      "surfaceColor": "#FFFFFF",
+      "textColor": "#1D1B19",
+      "textSecondary": "#5C5450",
+      "fontFamily": "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+    },
+    "defaults": {
+      "platformTargets": [
+        "tiktok",
+        "instagram"
+      ],
+      "goal": "installs",
+      "hashtags": [
+        "#mealideas",
+        "#easydinners",
+        "#cooksmarter"
+      ]
+    },
+    "providers": {
+      "plannerModel": "glm-4.5",
+      "imageModel": "fal-ai/flux-pro/v1.1"
+    },
+    "mascot": {
+      "name": "Peppera",
+      "description": "A cute anthropomorphic green bell pepper character with a round bulbous body narrowing at the top, bright lime-green skin with subtle darker green vertical ridges, large expressive oval eyes with white sclera and small black pupils, thin curved black eyebrows, a small open-mouth smile showing warmth. Wears a red bandana tied around the top of the head with the knot visible on the right side. Has simple thin black-stroke arms and legs with small rounded hands and feet. The overall style is flat 2D cartoon illustration with bold outlines, vibrant saturated colors, and no shading or gradients.",
+      "role": "The recurring face of Peppera's TikTok and Instagram content — the main character in every visual story.",
+      "visualPrompt": "A cute anthropomorphic green bell pepper character named Peppera. Round bulbous body narrowing at the top, bright lime-green skin with subtle darker green vertical ridges. Large expressive oval eyes with white sclera and small black pupils, thin curved black eyebrows, small open-mouth smile. Wears a red bandana tied around the top of the head with the knot visible on the right side. Simple thin black-stroke arms and legs with small rounded hands and feet. Flat 2D cartoon illustration style with bold outlines, vibrant saturated colors, no shading or gradients. Solid color background.",
+      "usageRules": [
+        "Always include the mascot in mascot-led slides: hook, problem, escalation, reaction, discovery, cta.",
+        "Never include the mascot in meal_reveal or benefit slides — those are food-only.",
+        "The mascot must always have the red bandana, green pepper body, and same face shape.",
+        "Vary only the pose and expression to match the slide role — never vary the core design.",
+        "Never add accessories not in the spec (no chef hat, no utensils unless the slide prompt explicitly calls for them)."
+      ],
+      "referenceImages": [
+        "https://raw.githubusercontent.com/temisangerrard/Social-studio/main/assets/mascot/peppera-hero.png",
+        "https://raw.githubusercontent.com/temisangerrard/Social-studio/main/assets/mascot/peppera-confused.png",
+        "https://raw.githubusercontent.com/temisangerrard/Social-studio/main/assets/mascot/peppera-chef-happy.png",
+        "https://raw.githubusercontent.com/temisangerrard/Social-studio/main/assets/mascot/peppera-standing.png"
+      ]
+    }
+  },
+  "generation_request": {
+    "brandProfileId": "peppera",
+    "rawIdea": "5 meals from eggs and bread",
+    "notes": "Pillar: pantry chaos. Ingredients: eggs, bread.",
+    "cards": [
+      {
+        "id": "brief-idea",
+        "type": "idea",
+        "text": "5 meals from eggs and bread",
+        "x": 80,
+        "y": 80,
+        "width": 280,
+        "height": 180,
+        "tags": [
+          "idea"
+        ]
+      },
+      {
+        "id": "brief-audience",
+        "type": "audience",
+        "text": "UK home cooks",
+        "x": 420,
+        "y": 80,
+        "width": 240,
+        "height": 160,
+        "tags": [
+          "audience"
+        ]
+      }
+    ],
+    "references": [],
+    "referenceAssets": [],
+    "platformTargets": [
+      "instagram"
+    ],
+    "goal": "installs",
+    "workflowType": "slideshow",
+    "visualMode": "mascot-led",
+    "deliveryTargets": "instagram"
+  },
+  "slides": [
+    {
+      "slide_number": 1,
+      "role": "hook",
+      "type": "text_only",
+      "text": "5 Meals From Just Eggs and Bread\nWhen your fridge is giving... minimal",
+      "image_prompt": null,
+      "visual_goal": "Bold title card with brand colours",
+      "layout": "hook_cover",
+      "asset_path": null
+    },
+    {
+      "slide_number": 2,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 1: CLASSIC FRENCH TOAST",
+      "image_prompt": "Professional food photography, Recipe 1 made with eggs and bread, beautifully plated, on a ceramic plate, natural soft window lighting with warm tones, slight depth of field, appetising textures and high detail, styled on a rustic wooden table with subtle props like cutlery and a linen napkin in the background, 45-degree dining angle, full frame composition filling the entire image with no empty white space, editorial food magazine quality --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 1",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0012/assets/generated/slide-02-recipe.jpg",
+      "recipe": {
+        "recipeName": "Classic French Toast",
+        "ingredients": [
+          "4 thick slices of bread",
+          "2 large eggs",
+          "120ml milk",
+          "1 tsp cinnamon",
+          "1 tsp vanilla extract",
+          "Butter for frying",
+          "Maple syrup and berries to serve"
+        ],
+        "cookTime": "15 mins",
+        "steps": [
+          "Whisk eggs, milk, cinnamon, and vanilla in a bowl.",
+          "Dip each bread slice into the mixture, coating both sides.",
+          "Fry in butter over medium heat until golden brown on both sides.",
+          "Serve with maple syrup and fresh berries."
+        ],
+        "proTip": "Stale bread works best as it absorbs the egg mixture without falling apart.",
+        "cost": "~£2.50",
+        "serves": "2"
+      }
+    },
+    {
+      "slide_number": 3,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 2: CLASSIC BREAD PUDDING",
+      "image_prompt": "Professional food photography, Recipe 2 made with eggs and bread, beautifully plated, on a ceramic plate, natural soft window lighting with warm tones, slight depth of field, appetising textures and high detail, styled on a rustic wooden table with subtle props like cutlery and a linen napkin in the background, 45-degree dining angle, full frame composition filling the entire image with no empty white space, editorial food magazine quality --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 2",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0012/assets/generated/slide-03-recipe.jpg",
+      "recipe": {
+        "recipeName": "Classic Bread Pudding",
+        "ingredients": [
+          "4 slices of stale bread, cubed",
+          "2 large eggs",
+          "300ml milk",
+          "2 tbsp sugar",
+          "1 tsp cinnamon",
+          "50g raisins or sultanas",
+          "Butter for greasing"
+        ],
+        "cookTime": "40 mins",
+        "steps": [
+          "Preheat oven to 180°C. Grease a baking dish.",
+          "Place bread cubes in dish, sprinkle with raisins.",
+          "Whisk eggs, milk, sugar, and cinnamon together.",
+          "Pour egg mixture over bread and bake for 30-35 mins until golden."
+        ],
+        "proTip": "Let the bread soak in the egg mixture for at least 15 minutes before baking for best results.",
+        "cost": "~£2.00",
+        "serves": "4"
+      }
+    },
+    {
+      "slide_number": 4,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 3: EGG FRIED RICE WITH BREAD CROUTONS",
+      "image_prompt": "Professional food photography, Recipe 3 made with eggs and bread, beautifully plated, on a ceramic plate, natural soft window lighting with warm tones, slight depth of field, appetising textures and high detail, styled on a rustic wooden table with subtle props like cutlery and a linen napkin in the background, 45-degree dining angle, full frame composition filling the entire image with no empty white space, editorial food magazine quality --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 3",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0012/assets/generated/slide-04-recipe.jpg",
+      "recipe": {
+        "recipeName": "Egg Fried Rice with Bread Croutons",
+        "ingredients": [
+          "2 cups cooked rice",
+          "2 large eggs",
+          "2 slices of bread, cut into cubes",
+          "1 tbsp vegetable oil",
+          "2 tbsp soy sauce",
+          "1 spring onion, sliced",
+          "1 clove garlic, minced"
+        ],
+        "cookTime": "20 mins",
+        "steps": [
+          "Toss bread cubes in 1/2 tbsp oil and bake at 180°C for 10 mins until golden.",
+          "Heat remaining oil in a wok, scramble the eggs and set aside.",
+          "Add garlic and rice, stir-fry for 2-3 minutes.",
+          "Add egg, soy sauce, spring onion and bread croutons. Toss to combine."
+        ],
+        "proTip": "Using cold leftover rice prevents the dish from becoming mushy.",
+        "cost": "~£1.80",
+        "serves": "2"
+      }
+    },
+    {
+      "slide_number": 5,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 4: BAKED EGGS WITH BREAD SOLDIERS",
+      "image_prompt": "Professional food photography, Recipe 4 made with eggs and bread, beautifully plated, on a ceramic plate, natural soft window lighting with warm tones, slight depth of field, appetising textures and high detail, styled on a rustic wooden table with subtle props like cutlery and a linen napkin in the background, 45-degree dining angle, full frame composition filling the entire image with no empty white space, editorial food magazine quality --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 4",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0012/assets/generated/slide-05-recipe.jpg",
+      "recipe": {
+        "recipeName": "Baked Eggs with Bread Soldiers",
+        "ingredients": [
+          "2 large eggs",
+          "2 slices of bread",
+          "1 tbsp butter",
+          "2 tbsp double cream",
+          "1 tbsp grated cheese",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "15 mins",
+        "steps": [
+          "Preheat oven to 190°C. Butter small ramekins.",
+          "Crack an egg into each ramekin, add cream and season.",
+          "Place ramekins in a baking dish with hot water coming halfway up.",
+          "Bake for 10-12 mins until eggs are set but still runny. Serve with toasted bread fingers."
+        ],
+        "proTip": "The water bath prevents the eggs from overcooking and keeps them creamy.",
+        "cost": "~£1.50",
+        "serves": "1"
+      }
+    },
+    {
+      "slide_number": 6,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 5: BREAKFAST STRATA",
+      "image_prompt": "Professional food photography, Recipe 5 made with eggs and bread, beautifully plated, on a ceramic plate, natural soft window lighting with warm tones, slight depth of field, appetising textures and high detail, styled on a rustic wooden table with subtle props like cutlery and a linen napkin in the background, 45-degree dining angle, full frame composition filling the entire image with no empty white space, editorial food magazine quality --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 5",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0012/assets/generated/slide-06-recipe.jpg",
+      "recipe": {
+        "recipeName": "Breakfast Strata",
+        "ingredients": [
+          "4 slices of bread, cubed",
+          "6 large eggs",
+          "300ml milk",
+          "100g grated cheese",
+          "1/2 onion, finely chopped",
+          "2 tbsp butter",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "50 mins",
+        "steps": [
+          "Sauté onion in butter until soft. Layer half the bread in a baking dish.",
+          "Add half the onion, cheese, then repeat layers.",
+          "Whisk eggs, milk, salt and pepper. Pour over bread.",
+          "Let stand 15 mins, then bake at 180°C for 35-40 mins until golden."
+        ],
+        "proTip": "Assemble the strata the night before and refrigerate for an easy weekend breakfast.",
+        "cost": "~£3.50",
+        "serves": "4"
+      }
+    },
+    {
+      "slide_number": 7,
+      "role": "cta",
+      "type": "text_only",
+      "text": "10,000+ more recipes from whatever you have\nDownload Peppera\nWhich recipe are you trying first? Comment 1-5 below",
+      "image_prompt": null,
+      "visual_goal": "CTA card with brand colours and engagement question",
+      "layout": "cta_banner",
+      "asset_path": null
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "slide-01",
+      "kind": "image",
+      "role": "hook",
+      "title": "5 Meals From Just Eggs and Bread\nWhen your fridge is giving... minimal",
+      "prompt": "5 Meals From Just Eggs and Bread\nWhen your fridge is giving... minimal",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-02",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 1: CLASSIC FRENCH TOAST",
+      "prompt": "Professional food photography, Recipe 1 made with eggs and bread, beautifully plated, on a ceramic plate, natural soft window lighting with warm tones, slight depth of field, appetising textures and high detail, styled on a rustic wooden table with subtle props like cutlery and a linen napkin in the background, 45-degree dining angle, full frame composition filling the entire image with no empty white space, editorial food magazine quality --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0012/assets/generated/slide-02-recipe.jpg",
+      "preview_path": "test-output/peppera_ig_0012/assets/generated/slide-02-recipe.jpg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-03",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 2: CLASSIC BREAD PUDDING",
+      "prompt": "Professional food photography, Recipe 2 made with eggs and bread, beautifully plated, on a ceramic plate, natural soft window lighting with warm tones, slight depth of field, appetising textures and high detail, styled on a rustic wooden table with subtle props like cutlery and a linen napkin in the background, 45-degree dining angle, full frame composition filling the entire image with no empty white space, editorial food magazine quality --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0012/assets/generated/slide-03-recipe.jpg",
+      "preview_path": "test-output/peppera_ig_0012/assets/generated/slide-03-recipe.jpg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-04",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 3: EGG FRIED RICE WITH BREAD CROUTONS",
+      "prompt": "Professional food photography, Recipe 3 made with eggs and bread, beautifully plated, on a ceramic plate, natural soft window lighting with warm tones, slight depth of field, appetising textures and high detail, styled on a rustic wooden table with subtle props like cutlery and a linen napkin in the background, 45-degree dining angle, full frame composition filling the entire image with no empty white space, editorial food magazine quality --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0012/assets/generated/slide-04-recipe.jpg",
+      "preview_path": "test-output/peppera_ig_0012/assets/generated/slide-04-recipe.jpg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-05",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 4: BAKED EGGS WITH BREAD SOLDIERS",
+      "prompt": "Professional food photography, Recipe 4 made with eggs and bread, beautifully plated, on a ceramic plate, natural soft window lighting with warm tones, slight depth of field, appetising textures and high detail, styled on a rustic wooden table with subtle props like cutlery and a linen napkin in the background, 45-degree dining angle, full frame composition filling the entire image with no empty white space, editorial food magazine quality --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0012/assets/generated/slide-05-recipe.jpg",
+      "preview_path": "test-output/peppera_ig_0012/assets/generated/slide-05-recipe.jpg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-06",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 5: BREAKFAST STRATA",
+      "prompt": "Professional food photography, Recipe 5 made with eggs and bread, beautifully plated, on a ceramic plate, natural soft window lighting with warm tones, slight depth of field, appetising textures and high detail, styled on a rustic wooden table with subtle props like cutlery and a linen napkin in the background, 45-degree dining angle, full frame composition filling the entire image with no empty white space, editorial food magazine quality --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0012/assets/generated/slide-06-recipe.jpg",
+      "preview_path": "test-output/peppera_ig_0012/assets/generated/slide-06-recipe.jpg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-07",
+      "kind": "image",
+      "role": "cta",
+      "title": "10,000+ more recipes from whatever you have\nDownload Peppera\nWhich recipe are you trying first? Comment 1-5 below",
+      "prompt": "10,000+ more recipes from whatever you have\nDownload Peppera\nWhich recipe are you trying first? Comment 1-5 below",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    }
+  ],
+  "reel_package": null,
+  "output_dir": "test-output/peppera_ig_0012",
+  "assets_dir": "test-output/peppera_ig_0012/assets/generated",
+  "slides_dir": "test-output/peppera_ig_0012/slides",
+  "created_at": "2026-04-19T05:44:28.896Z",
+  "planner_provider": "glm",
+  "image_provider": "fal",
+  "render_status": "complete",
+  "render_error": null
+}

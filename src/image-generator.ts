@@ -73,7 +73,7 @@ async function writeMockImage(
   await fs.writeFile(filePath, mockSvg(prompt, slideNumber, brandName, colors), "utf8");
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 8000): Promise<Response> {
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 30000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -99,20 +99,31 @@ async function generateWithFal(prompt: string, falKey: string, model: string, re
   };
 
   const isNanoBanana = model.includes("nano-banana");
-  const input: Record<string, unknown> = isNanoBanana
-    ? {
-        prompt,
-        aspect_ratio: aspectRatio ?? "9:16",
-        num_images: 1,
-      }
-    : {
-        prompt,
-        negative_prompt: "text, watermark, blurry, low quality, deformed, ugly, extra limbs, bad anatomy, cropped, out of frame",
-        image_size: aspectRatio === "1:1" ? "square" : "portrait_16_9",
-        num_inference_steps: 28,
-        seed: Math.floor(Math.random() * 2147483647),
-        ...(referenceImageUrls && referenceImageUrls.length > 0 ? { image_urls: referenceImageUrls } : {})
-      };
+  const isFlux = model.includes("flux");
+
+  let input: Record<string, unknown>;
+  if (isNanoBanana) {
+    input = {
+      prompt,
+      aspect_ratio: aspectRatio ?? "1:1",
+      num_images: 1,
+    };
+  } else if (isFlux) {
+    // FLUX Pro / Schnell — uses image_size enum, no num_inference_steps
+    const sizeMap: Record<string, string> = { "1:1": "square_hd", "4:5": "portrait_4_3", "9:16": "portrait_16_9" };
+    input = {
+      prompt,
+      image_size: sizeMap[aspectRatio ?? "1:1"] ?? "square_hd",
+      num_images: 1,
+    };
+  } else {
+    input = {
+      prompt,
+      image_size: aspectRatio === "1:1" ? "square" : "portrait_16_9",
+      num_images: 1,
+      seed: Math.floor(Math.random() * 2147483647),
+    };
+  }
 
   const submitResponse = await fetchWithTimeout(`https://queue.fal.run/${model}`, {
     method: "POST",

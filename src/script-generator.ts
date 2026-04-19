@@ -105,14 +105,28 @@ export function buildMascotSlidePrompt(
 }
 
 /**
- * Builds a 2D cartoon food illustration prompt — no photorealistic terms.
+ * Builds a realistic food photography prompt optimised for social media.
+ * Full-bleed, appetising, natural lighting, styled scene.
+ * Each dish gets a specific visual description for accuracy.
  */
 export function buildCartoonFoodPrompt(
   recipeName: string,
   ingredients: string[]
 ): string {
-  const ingredientList = joinIngredients(ingredients);
-  return `Delicious ${recipeName} illustration, a beautifully plated dish made with ${ingredientList}, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1`;
+  // Dish-specific visual descriptions for accuracy
+  const dishDescriptions: Record<string, string> = {
+    "classic french toast": "thick slices of golden brown French toast dusted with powdered sugar, topped with a pat of melting butter and drizzle of maple syrup, fresh berries on the side",
+    "egg-in-a-hole": "a slice of toasted bread with a perfectly fried egg cooked in a cut-out hole in the centre, runny golden yolk visible, crispy golden bread edges, served on a wooden cutting board",
+    "savoury bread pudding": "a golden-topped savoury bread pudding in a ceramic baking dish, cubed bread pieces visible in egg custard, melted cheese bubbling on top, garnished with fresh herbs",
+    "eggy bread": "a golden pan-fried slice of eggy bread on a plate, crispy edges from the egg coating, served with a small dish of dipping sauce on the side",
+    "faux croque madame": "a croque madame sandwich on a plate, toasted bread with melted cheese and ham visible between layers, topped with a fried egg with runny yolk, side salad of mixed greens",
+  };
+
+  const lowerName = recipeName.toLowerCase();
+  const specificDesc = dishDescriptions[lowerName];
+  const foodDesc = specificDesc ?? `${recipeName} made with ${joinIngredients(ingredients)}, beautifully plated`;
+
+  return `Professional food photography, ${foodDesc}, on a ceramic plate, natural soft window lighting with warm tones, slight depth of field, appetising textures and high detail, styled on a rustic wooden table with subtle props like cutlery and a linen napkin in the background, 45-degree dining angle, full frame composition filling the entire image with no empty white space, editorial food magazine quality --ar 1:1`;
 }
 
 /**
@@ -134,7 +148,7 @@ export function generatePepperaCarousel(
     slide_number: 1,
     role: "hook",
     type: "text_only",
-    text: `5 Meals From JUST ${ingredientLabel} 🍳\nWhen your fridge is giving... minimal`,
+    text: `5 Meals From Just ${ingredientLabel}\nWhen your fridge is giving... minimal`,
     image_prompt: null,
     visual_goal: "Bold title card with brand colours",
     layout: "hook_cover",
@@ -157,7 +171,7 @@ export function generatePepperaCarousel(
       slide_number: i + 2,
       role: "recipe",
       type: "generated_image",
-      text: `🍳 RECIPE ${i + 1}: ${recipe.recipeName.toUpperCase()}`,
+      text: recipe.recipeName,
       image_prompt: buildCartoonFoodPrompt(recipe.recipeName, recipe.ingredients),
       visual_goal: `Food illustration for ${recipe.recipeName}`,
       layout: "recipe_card",
@@ -172,7 +186,7 @@ export function generatePepperaCarousel(
     slide_number: 7,
     role: "cta",
     type: "text_only",
-    text: `Want 10,000+ MORE recipes like these?\n📱 ${ctaText} FREE\nWhich recipe are you trying first? Comment 1-5 below! 👇`,
+    text: `10,000+ more recipes from whatever you have\n${ctaText}\nWhich recipe are you trying first? Comment 1-5 below`,
     image_prompt: null,
     visual_goal: "CTA card with brand colours and engagement question",
     layout: "cta_banner",

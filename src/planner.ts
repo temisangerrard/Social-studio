@@ -1,4 +1,4 @@
-import { generateScript, generatePepperaCarousel } from "./script-generator.ts";
+import { generateScript, generatePepperaCarousel, buildCartoonFoodPrompt } from "./script-generator.ts";
 import type { BrandProfile, GenerationRequest, PlannedPackage, Slide, StructuredRecipe } from "./types.ts";
 
 interface PlannerContext {
@@ -23,7 +23,7 @@ const RECIPE_LOOKUP: ReadonlyMap<string, RecipeEntry[]> = new Map([
         ingredients: ["2 eggs", "2 slices bread", "splash of milk", "butter", "toppings of choice"],
         cookTime: "10 mins",
         steps: ["Whisk eggs with milk", "Dip bread slices", "Fry in butter until golden", "Add toppings and serve"],
-        proTip: "Use day-old bread for better absorption",
+        proTip: "Golden, buttery, dusted with sugar",
         cost: "~£0.80",
         serves: "1",
       },
@@ -32,25 +32,25 @@ const RECIPE_LOOKUP: ReadonlyMap<string, RecipeEntry[]> = new Map([
         ingredients: ["1 egg", "1 thick slice bread", "butter", "salt & pepper"],
         cookTime: "8 mins",
         steps: ["Cut a hole in the bread centre", "Fry bread in butter, crack egg into hole", "Cook until egg sets, flip once"],
-        proTip: "Toast the cut-out circle as a dipper",
+        proTip: "Crispy edges, runny yolk centre",
         cost: "~£0.60",
         serves: "1",
       },
       {
-        recipeName: "Cheat's Savory Bread Pudding",
+        recipeName: "Savoury Bread Pudding",
         ingredients: ["2 eggs", "2 slices bread (cubed)", "milk", "cheese", "herbs"],
         cookTime: "25 mins",
-        steps: ["Cube bread into a baking dish", "Whisk eggs with milk and pour over", "Top with cheese and herbs", "Bake at 180°C until golden"],
-        proTip: "Add leftover veg for extra flavour",
+        steps: ["Cube bread into a baking dish", "Whisk eggs with milk and pour over", "Top with cheese and herbs", "Bake at 180C until golden"],
+        proTip: "Warm, cheesy, straight from the oven",
         cost: "~£1.00",
         serves: "1-2",
       },
       {
-        recipeName: "Eggy Bread (The Lazy Legend)",
+        recipeName: "Eggy Bread",
         ingredients: ["1 egg", "1 slice bread", "butter or oil", "salt", "dipping sauce"],
         cookTime: "5 mins",
         steps: ["Beat egg with salt", "Dip bread in egg", "Fry until golden on both sides"],
-        proTip: "Serve with ketchup or hot sauce",
+        proTip: "The 5-minute comfort classic",
         cost: "~£0.50",
         serves: "1",
       },
@@ -59,7 +59,7 @@ const RECIPE_LOOKUP: ReadonlyMap<string, RecipeEntry[]> = new Map([
         ingredients: ["2 eggs", "2 slices bread", "cheese", "ham or bacon", "butter"],
         cookTime: "15 mins",
         steps: ["Assemble cheese and ham between bread", "Fry sandwich in butter until crispy", "Top with a fried egg", "Season and serve"],
-        proTip: "Use gruyère for an authentic touch",
+        proTip: "Melted cheese, crispy bread, fried egg on top",
         cost: "~£1.50",
         serves: "1",
       },
@@ -572,7 +572,9 @@ function fallbackPlanPepperaCarousel({ brand, request }: PlannerContext): Planne
     if (slide.role === "recipe" && recipeIndex < recipes.length) {
       const recipe = recipes[recipeIndex];
       slide.recipe = recipe;
-      slide.text = `🍳 RECIPE ${recipeIndex + 1}: ${recipe.recipeName.toUpperCase()}`;
+      slide.text = recipe.recipeName;
+      // Rebuild image prompt to match the actual recipe name
+      slide.image_prompt = buildCartoonFoodPrompt(recipe.recipeName, recipe.ingredients);
       recipeIndex++;
     }
   }
@@ -688,7 +690,8 @@ export async function planSocialPackage(
       for (const slide of structuredSlides) {
         if (slide.role === "recipe" && recipeIdx < glmRecipes.length) {
           slide.recipe = glmRecipes[recipeIdx];
-          slide.text = `🍳 RECIPE ${recipeIdx + 1}: ${glmRecipes[recipeIdx].recipeName.toUpperCase()}`;
+          slide.text = glmRecipes[recipeIdx].recipeName;
+          slide.image_prompt = buildCartoonFoodPrompt(glmRecipes[recipeIdx].recipeName, glmRecipes[recipeIdx].ingredients);
           recipeIdx++;
         }
       }
@@ -700,7 +703,8 @@ export async function planSocialPackage(
           if (slide.role === "recipe" && (!slide.recipe || !slide.recipe.recipeName)) {
             if (recipeIdx < fallbackRecipes.length) {
               slide.recipe = fallbackRecipes[recipeIdx];
-              slide.text = `🍳 RECIPE ${recipeIdx + 1}: ${fallbackRecipes[recipeIdx].recipeName.toUpperCase()}`;
+              slide.text = fallbackRecipes[recipeIdx].recipeName;
+              slide.image_prompt = buildCartoonFoodPrompt(fallbackRecipes[recipeIdx].recipeName, fallbackRecipes[recipeIdx].ingredients);
             }
             recipeIdx++;
           }
