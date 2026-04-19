@@ -1494,6 +1494,7 @@ textarea {
     padding: 14px 20px;
     font-size: 0.78rem;
     width: 100%;
+    min-height: 44px;
   }
 
   .gen-form__footer {
@@ -1504,6 +1505,7 @@ textarea {
   .ghost-button {
     padding: 12px 14px;
     font-size: 0.7rem;
+    min-height: 44px;
   }
 
   /* ── Modals ── */
@@ -1526,6 +1528,52 @@ textarea {
   /* ── Misc ── */
   .workflow-section--assistant {
     display: none;
+  }
+
+  /* ── Studio view ── */
+  .view--studio {
+    height: auto;
+    overflow: visible;
+    min-height: calc(100vh - var(--topbar-h));
+  }
+
+  .studio-shell {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .studio-sidebar {
+    height: auto;
+    overflow-y: visible;
+    padding: 16px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(175, 179, 170, 0.2);
+  }
+
+  .studio-settings-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .studio-main {
+    height: auto;
+  }
+
+  .studio-canvas-stage {
+    height: 340px;
+    min-height: 0;
+    flex: none;
+  }
+
+  .studio-inspector {
+    height: auto;
+    overflow-y: visible;
+    padding: 16px;
+    border-left: 0;
+    border-top: 1px solid rgba(175, 179, 170, 0.2);
+  }
+
+  .chat-toggle-btn {
+    min-height: 44px;
   }
 }
 
@@ -2382,5 +2430,33 @@ details.brand-editor[open] > summary.brand-editor__summary::before {
   }
   .library-filters {
     flex-direction: column;
+  }
+}
+
+/* ─── Touch optimisations ────────────────────────────────────────────────── */
+
+button,
+a,
+label,
+select,
+input[type="checkbox"],
+input[type="radio"],
+input[type="file"] {
+  touch-action: manipulation;
+}
+
+/* ─── Small phones (≤ 480px): hide wordmark to keep nav usable ──────────── */
+
+@media (max-width: 480px) {
+  .wordmark {
+    display: none;
+  }
+
+  .topbar__left {
+    gap: 0;
+  }
+
+  .topnav {
+    gap: 12px;
   }
 }
