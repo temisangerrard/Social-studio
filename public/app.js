@@ -868,11 +868,13 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
 });
 
 // ── Chat toggle ───────────────────────────────────────────────────────────────
-els.chatToggle.addEventListener("click", () => {
-  const open = !els.chatPanel.classList.contains("hidden");
-  els.chatPanel.classList.toggle("hidden", open);
-  els.chatToggle.classList.toggle("is-active", !open);
-});
+if (els.chatToggle) {
+  els.chatToggle.addEventListener("click", () => {
+    const open = !els.chatPanel.classList.contains("hidden");
+    els.chatPanel.classList.toggle("hidden", open);
+    els.chatToggle.classList.toggle("is-active", !open);
+  });
+}
 
 // ── Chat submit ───────────────────────────────────────────────────────────────
 function inferWorkflow(text) {
@@ -958,7 +960,7 @@ async function submitChatAnswer(text) {
   }
 }
 
-els.studioChatForm.addEventListener("submit", async (e) => {
+if (els.studioChatForm) els.studioChatForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const text = els.studioChatInput.value.trim();
   if (!text || !studioState.session) return;
@@ -1227,7 +1229,7 @@ function renderBrandEditor(brandId) {
   }).join("");
 }
 
-els.brandMascotReferences.addEventListener("click", async (e) => {
+if (els.brandMascotReferences) els.brandMascotReferences.addEventListener("click", async (e) => {
   const previewBtn = e.target.closest("[data-brand-asset-url]");
   if (previewBtn) {
     openAssetPreview(previewBtn.dataset.brandAssetUrl, previewBtn.dataset.brandAssetTitle || "Mascot reference");
@@ -1240,7 +1242,7 @@ els.brandMascotReferences.addEventListener("click", async (e) => {
   renderBrandEditor(els.studioProductSelect.value);
 });
 
-els.brandEditorSave.addEventListener("click", async () => {
+if (els.brandEditorSave) els.brandEditorSave.addEventListener("click", async () => {
   const brandId = els.studioProductSelect.value;
   const res = await fetch(`/api/brands/${brandId}`);
   const existing = await res.json();
@@ -1264,7 +1266,7 @@ els.brandEditorSave.addEventListener("click", async () => {
   setTimeout(() => els.brandEditorStatus.classList.add("hidden"), 1500);
 });
 
-els.brandMascotRefFiles.addEventListener("change", async () => {
+if (els.brandMascotRefFiles) els.brandMascotRefFiles.addEventListener("change", async () => {
   const brandId = els.studioProductSelect.value;
   const files = Array.from(els.brandMascotRefFiles.files);
   if (!files.length) return;
@@ -1742,18 +1744,6 @@ async function bootstrap() {
   if (drawerToggle && drawer) {
     drawerToggle.addEventListener("click", () => drawer.classList.toggle("hidden"));
     if (drawerClose) drawerClose.addEventListener("click", () => drawer.classList.add("hidden"));
-  }
-
-  // Toolbar generate button — triggers the same flow as the old form submit
-  const toolbarSubmit = document.getElementById("studio-submit");
-  if (toolbarSubmit) {
-    toolbarSubmit.addEventListener("click", (e) => {
-      e.preventDefault();
-      // Trigger the existing quick form submit handler
-      if (els.studioQuickForm) {
-        els.studioQuickForm.dispatchEvent(new Event("submit", { bubbles: true }));
-      }
-    });
   }
 
   // Inspector close button
