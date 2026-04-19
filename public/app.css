@@ -3256,3 +3256,123 @@ details.brand-editor[open] > summary.brand-editor__summary::before {
     padding: 16px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BRANDED TEXT CARDS — Hook & CTA slides
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Hook card ─────────────────────────────────────────────────────────── */
+
+.hook-card {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  border-radius: 0;
+}
+
+.hook-card__inner {
+  width: 100%;
+  max-width: 280px;
+  padding: 28px 24px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hook-card__wordmark {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.hook-card__divider {
+  width: 32px;
+  height: 2px;
+  border-radius: 1px;
+}
+
+.hook-card__title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-top: 4px;
+}
+
+.hook-card__subtitle {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.hook-card__hint {
+  font-size: 0.72rem;
+  color: rgba(0, 0, 0, 0.35);
+  margin-top: 8px;
+  letter-spacing: 0.02em;
+}
+
+/* ── CTA card ──────────────────────────────────────────────────────────── */
+
+.cta-card {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  border-radius: 0;
+}
+
+.cta-card__inner {
+  width: 100%;
+  max-width: 280px;
+  padding: 28px 24px;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+}
+
+.cta-card__headline {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.cta-card__subtitle {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.cta-card__divider {
+  width: 32px;
+  height: 2px;
+  border-radius: 1px;
+  margin: 4px 0;
+}
+
+.cta-card__pill {
+  display: inline-block;
+  padding: 10px 24px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-top: 4px;
+}
+
+.cta-card__question {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  margin-top: 6px;
+}

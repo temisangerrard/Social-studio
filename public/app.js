@@ -626,6 +626,144 @@ function finishGeneration(output) {
   loadOutputToEngine(output);
 }
 
+// ── Branded text card helpers ──────────────────────────────────────────────
+
+/**
+ * Parse hook slide text into title + subtitle.
+ * First non-empty line = title, remaining lines joined = subtitle.
+ * Falls back to brandName if text is empty/whitespace.
+ */
+function parseHookText(text, brandName) {
+  const lines = (text || '').split('\n').filter(l => l.trim());
+  return {
+    title: lines[0] || brandName,
+    subtitle: lines.slice(1).join('\n') || ''
+  };
+}
+
+/**
+ * Build a branded hook card DOM element.
+ */
+function renderHookCard(slide, brandVisual, brandName) {
+  const primary = brandVisual.primaryColor || '#333';
+  const surface = brandVisual.surfaceColor || '#fff';
+  const accent = brandVisual.accentColor || '#f5f5f5';
+  const textColor = brandVisual.textColor || '#1a1a1a';
+  const textSecondary = brandVisual.textSecondary || '#666';
+  const fontFamily = brandVisual.fontFamily || "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
+
+  const { title, subtitle } = parseHookText(slide.text, brandName);
+
+  const card = document.createElement('div');
+  card.className = 'canvas-output__card canvas-output__card--hook';
+
+  const outer = document.createElement('div');
+  outer.className = 'hook-card';
+  outer.style.background = accent;
+  outer.style.fontFamily = fontFamily;
+
+  const inner = document.createElement('div');
+  inner.className = 'hook-card__inner';
+  inner.style.background = surface;
+
+  const wordmark = document.createElement('div');
+  wordmark.className = 'hook-card__wordmark';
+  wordmark.style.color = primary;
+  wordmark.textContent = brandName.toUpperCase();
+
+  const divider = document.createElement('div');
+  divider.className = 'hook-card__divider';
+  divider.style.background = primary;
+
+  const titleEl = document.createElement('div');
+  titleEl.className = 'hook-card__title';
+  titleEl.style.color = textColor;
+  titleEl.textContent = title;
+
+  const subtitleEl = document.createElement('div');
+  subtitleEl.className = 'hook-card__subtitle';
+  subtitleEl.style.color = textSecondary;
+  subtitleEl.textContent = subtitle;
+
+  const hint = document.createElement('div');
+  hint.className = 'hook-card__hint';
+  hint.textContent = 'Swipe for recipes →';
+
+  inner.appendChild(wordmark);
+  inner.appendChild(divider);
+  inner.appendChild(titleEl);
+  inner.appendChild(subtitleEl);
+  inner.appendChild(hint);
+  outer.appendChild(inner);
+  card.appendChild(outer);
+
+  return card;
+}
+
+/**
+ * Build a branded CTA card DOM element.
+ */
+function renderCtaCard(slide, brandVisual, brandCta) {
+  const primary = brandVisual.primaryColor || '#333';
+  const surface = brandVisual.surfaceColor || '#fff';
+  const accent = brandVisual.accentColor || '#f5f5f5';
+  const textColor = brandVisual.textColor || '#1a1a1a';
+  const textSecondary = brandVisual.textSecondary || '#666';
+  const fontFamily = brandVisual.fontFamily || "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
+
+  const lines = (slide.text || '').split('\n').filter(l => l.trim());
+  const headline = lines[0] || '';
+  const subtitle = lines.slice(1).join('\n') || '';
+  const ctaText = brandCta || 'Learn more';
+
+  const card = document.createElement('div');
+  card.className = 'canvas-output__card canvas-output__card--cta';
+
+  const outer = document.createElement('div');
+  outer.className = 'cta-card';
+  outer.style.background = accent;
+  outer.style.fontFamily = fontFamily;
+
+  const inner = document.createElement('div');
+  inner.className = 'cta-card__inner';
+  inner.style.background = surface;
+
+  const headlineEl = document.createElement('div');
+  headlineEl.className = 'cta-card__headline';
+  headlineEl.style.color = textColor;
+  headlineEl.textContent = headline;
+
+  const subtitleEl = document.createElement('div');
+  subtitleEl.className = 'cta-card__subtitle';
+  subtitleEl.style.color = textSecondary;
+  subtitleEl.textContent = subtitle;
+
+  const divider = document.createElement('div');
+  divider.className = 'cta-card__divider';
+  divider.style.background = primary;
+
+  const pill = document.createElement('div');
+  pill.className = 'cta-card__pill';
+  pill.style.background = primary;
+  pill.style.color = surface;
+  pill.textContent = ctaText;
+
+  const question = document.createElement('div');
+  question.className = 'cta-card__question';
+  question.style.color = textSecondary;
+  question.textContent = 'Which recipe are you trying first?';
+
+  inner.appendChild(headlineEl);
+  inner.appendChild(subtitleEl);
+  inner.appendChild(divider);
+  inner.appendChild(pill);
+  inner.appendChild(question);
+  outer.appendChild(inner);
+  card.appendChild(outer);
+
+  return card;
+}
+
 /**
  * Load output into the CanvasEngine (infinite canvas).
  * Falls back to old renderCanvas() if engine not available.
@@ -656,7 +794,46 @@ function loadOutputToEngine(output) {
   const items = (output.artifacts && output.artifacts.length) ? output.artifacts : (output.slides || []);
   const postId = output.post_id || "";
 
+  // Extract brand settings with neutral fallbacks
+  const brandProfile = output.brand_profile || {};
+  const brandVisual = brandProfile.visual || {
+    primaryColor: '#333',
+    secondaryColor: '#ccc',
+    accentColor: '#f5f5f5',
+    surfaceColor: '#fff',
+    textColor: '#1a1a1a',
+    textSecondary: '#666',
+    fontFamily: "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
+  };
+  const brandName = brandProfile.name || 'Brand';
+  const brandCta = brandProfile.cta || '';
+
   items.forEach((item, i) => {
+    // Branded hook card (no asset_path)
+    if (item.role === 'hook' && !item.asset_path) {
+      const hookCard = renderHookCard(item, brandVisual, brandName);
+      // Add label
+      const label = document.createElement("div");
+      label.className = "canvas-output__label";
+      label.textContent = `${String(i + 1).padStart(2, "0")} — Hook`;
+      hookCard.appendChild(label);
+      strip.appendChild(hookCard);
+      return;
+    }
+
+    // Branded CTA card (no asset_path)
+    if (item.role === 'cta' && !item.asset_path) {
+      const ctaCard = renderCtaCard(item, brandVisual, brandCta);
+      // Add label
+      const label = document.createElement("div");
+      label.className = "canvas-output__label";
+      label.textContent = `${String(i + 1).padStart(2, "0")} — Cta`;
+      ctaCard.appendChild(label);
+      strip.appendChild(ctaCard);
+      return;
+    }
+
+    // Default card (recipe cards with images, or any other slide)
     const card = document.createElement("div");
     card.className = "canvas-output__card";
 
