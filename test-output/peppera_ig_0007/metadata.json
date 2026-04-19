@@ -1,0 +1,391 @@
+{
+  "post_id": "peppera_ig_0007",
+  "product": "Peppera",
+  "platform": "instagram",
+  "format": "carousel",
+  "workflow_type": "slideshow",
+  "delivery_targets": "instagram",
+  "caption": "Pantry chaos? Don't worry! We've transformed the humble eggs and bread into 5 mouth-watering meals that'll save your day. Swipe to discover these simple yet delicious recipes! 🍳🍞 #PantryHeroes",
+  "hooks": [
+    "Running out of meal ideas? We've got you covered!",
+    "Turn your eggs and bread into 5 delicious meals!"
+  ],
+  "hashtags": [
+    "#EggAndBreadMeals",
+    "#PantryCooking",
+    "#SimpleMeals",
+    "#FoodHacks",
+    "#UKHomeCooks",
+    "#BudgetMeals",
+    "#PepperaApp"
+  ],
+  "platform_notes": "Instagram carousel post. Engage with comments asking which recipe they'll try first. Use relevant food and cooking emojis in comments.",
+  "brief": {
+    "product": "Peppera",
+    "platform": "instagram",
+    "format": "carousel",
+    "pillar": "canvas-planning",
+    "audience": "UK home cooks",
+    "tone": "funny, useful, relatable",
+    "goal": "installs",
+    "idea": "5 meals from eggs and bread",
+    "ingredients": []
+  },
+  "brand_profile": {
+    "id": "peppera",
+    "name": "Peppera",
+    "description": "Peppera social profile",
+    "tone": "funny, useful, relatable",
+    "audience": "UK home cooks",
+    "cta": "Download Peppera",
+    "logoPath": null,
+    "visual": {
+      "primaryColor": "#f04d23",
+      "secondaryColor": "#ffd9c8",
+      "accentColor": "#7a2413",
+      "surfaceColor": "#fff7f0"
+    },
+    "defaults": {
+      "platformTargets": [
+        "instagram"
+      ],
+      "goal": "installs",
+      "hashtags": [
+        "#peppera",
+        "#socialcontent"
+      ]
+    },
+    "providers": {
+      "plannerModel": "glm-4.5-air",
+      "imageModel": "fal-ai/flux/schnell"
+    }
+  },
+  "generation_request": {
+    "brandProfileId": "peppera",
+    "rawIdea": "5 meals from eggs and bread",
+    "notes": "Pillar: pantry chaos. Ingredients: eggs, bread.",
+    "cards": [
+      {
+        "id": "brief-idea",
+        "type": "idea",
+        "text": "5 meals from eggs and bread",
+        "x": 80,
+        "y": 80,
+        "width": 280,
+        "height": 180,
+        "tags": [
+          "idea"
+        ]
+      },
+      {
+        "id": "brief-audience",
+        "type": "audience",
+        "text": "UK home cooks",
+        "x": 420,
+        "y": 80,
+        "width": 240,
+        "height": 160,
+        "tags": [
+          "audience"
+        ]
+      }
+    ],
+    "references": [],
+    "referenceAssets": [],
+    "platformTargets": [
+      "instagram"
+    ],
+    "goal": "installs",
+    "workflowType": "slideshow",
+    "visualMode": "mascot-led",
+    "deliveryTargets": "instagram"
+  },
+  "slides": [
+    {
+      "slide_number": 1,
+      "role": "hook",
+      "type": "generated_image",
+      "text": "5 Meals From JUST Eggs and Bread\nWhen your fridge is giving... minimal",
+      "image_prompt": ", standing in center frame holding up Eggs and Bread in hands, looking excited and surprised with wide eyes and big smile, white plain background, bold text space at top for title overlay, modern minimalist layout, food blog aesthetic, 2D flat vector illustration style, bright cheerful colors, clean simple shapes, professional social media content design, centered composition, high-quality illustration --ar 1:1",
+      "visual_goal": "Mascot holding ingredients, excited — hook cover",
+      "layout": "hook_cover",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-01-hook.svg"
+    },
+    {
+      "slide_number": 2,
+      "role": "problem",
+      "type": "generated_image",
+      "text": "It's 8pm. You're hungry.\nYour fridge is giving... minimalist vibes 😅\nBut wait! You have EGGS AND BREAD",
+      "image_prompt": ", standing in front of open empty refrigerator, one hand on chin in thinking pose, other hand gesturing at empty fridge shelves, looking confused and slightly worried, expressive face showing concern and determination, interior kitchen scene with warm lighting, fridge interior visible with just eggs and bread on otherwise empty shelf, relatable humor mood, soft pastel colors, cozy home kitchen atmosphere, 2D flat vector illustration style, bright cheerful colors, clean simple shapes, professional social media content design, centered composition, high-quality illustration --ar 1:1",
+      "visual_goal": "Mascot confused at empty fridge — problem setup",
+      "layout": "problem_setup",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-02-problem.svg"
+    },
+    {
+      "slide_number": 3,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 1: FRENCH TOAST",
+      "image_prompt": "Delicious Recipe 1 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 1",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-03-recipe.svg",
+      "recipe": {
+        "recipeName": "French Toast",
+        "ingredients": [
+          "2 large eggs",
+          "4 slices of bread",
+          "1/4 cup milk",
+          "1 tsp vanilla extract",
+          "1 tbsp butter",
+          "Pinch of cinnamon",
+          "2 tbsp powdered sugar"
+        ],
+        "cookTime": "15 mins",
+        "steps": [
+          "Whisk eggs, milk, and vanilla in a shallow dish",
+          "Dip bread slices in egg mixture, coating both sides",
+          "Melt butter in a pan over medium heat",
+          "Cook bread for 2-3 minutes on each side until golden brown"
+        ],
+        "proTip": "Use slightly stale bread for better absorption of the egg mixture",
+        "cost": "~£1.20",
+        "serves": "2"
+      }
+    },
+    {
+      "slide_number": 4,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 2: EGG-IN-A-HOLE",
+      "image_prompt": "Delicious Recipe 2 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 2",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-04-recipe.svg",
+      "recipe": {
+        "recipeName": "Egg-in-a-Hole",
+        "ingredients": [
+          "2 slices of bread",
+          "2 large eggs",
+          "1 tbsp butter",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "10 mins",
+        "steps": [
+          "Cut a circle in the center of each bread slice",
+          "Melt butter in a pan over medium heat",
+          "Place bread in pan, crack an egg into each hole",
+          "Cook until egg is set and bread is golden brown, about 2-3 minutes per side"
+        ],
+        "proTip": "Use a cookie cutter or glass to make perfect circles in the bread",
+        "cost": "~£0.80",
+        "serves": "1"
+      }
+    },
+    {
+      "slide_number": 5,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 3: BREAD PUDDING",
+      "image_prompt": "Delicious Recipe 3 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 3",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-05-recipe.svg",
+      "recipe": {
+        "recipeName": "Bread Pudding",
+        "ingredients": [
+          "4 slices of stale bread, cubed",
+          "3 large eggs",
+          "2 cups milk",
+          "1/4 cup sugar",
+          "1 tsp vanilla extract",
+          "1/2 tsp cinnamon",
+          "2 tbsp butter, melted"
+        ],
+        "cookTime": "45 mins",
+        "steps": [
+          "Preheat oven to 350°F (175°C)",
+          "Beat eggs, milk, sugar, and vanilla together",
+          "Add bread cubes and let soak for 10 minutes",
+          "Pour into buttered dish, bake for 35-40 minutes until set"
+        ],
+        "proTip": "Day-old bread works best as it absorbs the custard better",
+        "cost": "~£1.50",
+        "serves": "4"
+      }
+    },
+    {
+      "slide_number": 6,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 4: CHEESY STRATA",
+      "image_prompt": "Delicious Recipe 4 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 4",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-06-recipe.svg",
+      "recipe": {
+        "recipeName": "Cheesy Strata",
+        "ingredients": [
+          "6 slices of bread, cubed",
+          "4 large eggs",
+          "2 cups milk",
+          "1 cup shredded cheese",
+          "1/2 onion, diced",
+          "1 tbsp butter",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "1 hour",
+        "steps": [
+          "Grease a baking dish and layer half the bread cubes",
+          "Sauté onions in butter until soft, sprinkle over bread",
+          "Add half the cheese, then repeat layers",
+          "Whisk eggs, milk, salt, and pepper, pour over bread, let soak 30 minutes, then bake at 350°F for 45 minutes"
+        ],
+        "proTip": "Prepare the night before and bake in the morning for an easy breakfast",
+        "cost": "~£2.50",
+        "serves": "6"
+      }
+    },
+    {
+      "slide_number": 7,
+      "role": "recipe",
+      "type": "generated_image",
+      "text": "🍳 RECIPE 5: BREAD FRITTATA",
+      "image_prompt": "Delicious Recipe 5 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "visual_goal": "Food illustration for Recipe 5",
+      "layout": "recipe_card",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-07-recipe.svg",
+      "recipe": {
+        "recipeName": "Bread Frittata",
+        "ingredients": [
+          "4 large eggs",
+          "2 slices of bread, torn into pieces",
+          "1/4 cup milk",
+          "1 cup any vegetables (optional)",
+          "1/2 cup cheese",
+          "1 tbsp olive oil",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "25 mins",
+        "steps": [
+          "Preheat oven to 375°F (190°C)",
+          "Sauté vegetables in olive oil until soft",
+          "Beat eggs with milk, salt, and pepper",
+          "Mix in bread pieces, vegetables, and cheese, pour into oven-safe pan and bake for 20 minutes until set"
+        ],
+        "proTip": "This is a great way to use up leftover vegetables and bread",
+        "cost": "~£2.00",
+        "serves": "2-3"
+      }
+    },
+    {
+      "slide_number": 8,
+      "role": "cta",
+      "type": "generated_image",
+      "text": "Want 10,000+ MORE recipes like these?\n📱 Download Peppera FREE\nWhich recipe are you trying first? Comment 1-5 below! 👇",
+      "image_prompt": ", waving happily at camera with one hand while holding smartphone displaying app interface in other hand, big friendly smile, rosy cheeks, excited enthusiastic expression, presenting phone screen to viewer, call-to-action pose suggesting download or sign-up, clean white background, brand colors green and orange prominent, professional mascot marketing pose, full body view, welcoming and engaging body language, 2D flat vector illustration style, bright cheerful colors, clean simple shapes, professional social media content design, centered composition, high-quality illustration --ar 1:1",
+      "visual_goal": "Mascot with phone, waving — CTA banner",
+      "layout": "cta_banner",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-08-cta.svg"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "slide-01",
+      "kind": "image",
+      "role": "hook",
+      "title": "5 Meals From JUST Eggs and Bread\nWhen your fridge is giving... minimal",
+      "prompt": ", standing in center frame holding up Eggs and Bread in hands, looking excited and surprised with wide eyes and big smile, white plain background, bold text space at top for title overlay, modern minimalist layout, food blog aesthetic, 2D flat vector illustration style, bright cheerful colors, clean simple shapes, professional social media content design, centered composition, high-quality illustration --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-01-hook.svg",
+      "preview_path": "test-output/peppera_ig_0007/assets/generated/slide-01-hook.svg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-02",
+      "kind": "image",
+      "role": "problem",
+      "title": "It's 8pm. You're hungry.\nYour fridge is giving... minimalist vibes 😅\nBut wait! You have EGGS AND BREAD",
+      "prompt": ", standing in front of open empty refrigerator, one hand on chin in thinking pose, other hand gesturing at empty fridge shelves, looking confused and slightly worried, expressive face showing concern and determination, interior kitchen scene with warm lighting, fridge interior visible with just eggs and bread on otherwise empty shelf, relatable humor mood, soft pastel colors, cozy home kitchen atmosphere, 2D flat vector illustration style, bright cheerful colors, clean simple shapes, professional social media content design, centered composition, high-quality illustration --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-02-problem.svg",
+      "preview_path": "test-output/peppera_ig_0007/assets/generated/slide-02-problem.svg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-03",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 1: FRENCH TOAST",
+      "prompt": "Delicious Recipe 1 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-03-recipe.svg",
+      "preview_path": "test-output/peppera_ig_0007/assets/generated/slide-03-recipe.svg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-04",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 2: EGG-IN-A-HOLE",
+      "prompt": "Delicious Recipe 2 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-04-recipe.svg",
+      "preview_path": "test-output/peppera_ig_0007/assets/generated/slide-04-recipe.svg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-05",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 3: BREAD PUDDING",
+      "prompt": "Delicious Recipe 3 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-05-recipe.svg",
+      "preview_path": "test-output/peppera_ig_0007/assets/generated/slide-05-recipe.svg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-06",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 4: CHEESY STRATA",
+      "prompt": "Delicious Recipe 4 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-06-recipe.svg",
+      "preview_path": "test-output/peppera_ig_0007/assets/generated/slide-06-recipe.svg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-07",
+      "kind": "image",
+      "role": "recipe",
+      "title": "🍳 RECIPE 5: BREAD FRITTATA",
+      "prompt": "Delicious Recipe 5 illustration, a beautifully plated dish made with eggs and bread, served on a white ceramic plate, appetizing presentation with vibrant garnishes, warm inviting lighting with soft shadows, 2D cartoon illustration aesthetic, bright vibrant colors, bold outlines, clean simple background with subtle texture, professional food art quality, appetizing and inviting presentation, top-down flat lay view slightly angled, plate centered in frame --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-07-recipe.svg",
+      "preview_path": "test-output/peppera_ig_0007/assets/generated/slide-07-recipe.svg",
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-08",
+      "kind": "image",
+      "role": "cta",
+      "title": "Want 10,000+ MORE recipes like these?\n📱 Download Peppera FREE\nWhich recipe are you trying first? Comment 1-5 below! 👇",
+      "prompt": ", waving happily at camera with one hand while holding smartphone displaying app interface in other hand, big friendly smile, rosy cheeks, excited enthusiastic expression, presenting phone screen to viewer, call-to-action pose suggesting download or sign-up, clean white background, brand colors green and orange prominent, professional mascot marketing pose, full body view, welcoming and engaging body language, 2D flat vector illustration style, bright cheerful colors, clean simple shapes, professional social media content design, centered composition, high-quality illustration --ar 1:1",
+      "asset_path": "test-output/peppera_ig_0007/assets/generated/slide-08-cta.svg",
+      "preview_path": "test-output/peppera_ig_0007/assets/generated/slide-08-cta.svg",
+      "source_asset_id": null,
+      "variant_group": null
+    }
+  ],
+  "reel_package": null,
+  "output_dir": "test-output/peppera_ig_0007",
+  "assets_dir": "test-output/peppera_ig_0007/assets/generated",
+  "slides_dir": "test-output/peppera_ig_0007/slides",
+  "created_at": "2026-04-19T04:02:13.713Z",
+  "planner_provider": "glm",
+  "image_provider": "fal",
+  "render_status": "complete",
+  "render_error": null
+}

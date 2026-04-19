@@ -1,0 +1,346 @@
+{
+  "post_id": "peppera_ig_0001",
+  "product": "Peppera",
+  "platform": "instagram",
+  "format": "carousel",
+  "workflow_type": "slideshow",
+  "delivery_targets": "instagram",
+  "caption": "Stuck with just eggs and bread? We've all been there! 🙋‍♀️ Transform these humble ingredients into 5 delicious meals that'll save your dinner (and your sanity). No fancy ingredients needed, just pantry magic! ✨\n\nSwipe through for recipes that'll make you the hero of your kitchen. 👑\n\nWant more meal-saving magic? Download Peppera now for hundreds of simple, tasty recipes using what you already have! Link in bio.",
+  "hooks": [
+    "Staring at eggs and bread? Don't panic! 🥚🍞",
+    "Your boring eggs & bread are about to get a major glow-up!",
+    "When your pantry says 'eggs & bread' but your stomach says 'FEED ME!'"
+  ],
+  "hashtags": [
+    "#PantryChaos",
+    "#EggAndBreadRecipes",
+    "#SimpleMeals",
+    "#UKHomeCook",
+    "#BudgetCooking",
+    "#EasyRecipes",
+    "#DownloadPeppera"
+  ],
+  "platform_notes": "Instagram: Optimize for carousel post. Each slide should be visually engaging with 2D cartoon illustrations. First 3 slides are most critical for engagement. Include call-to-action on last slide directing to download Peppera.",
+  "brief": {
+    "product": "Peppera",
+    "platform": "instagram",
+    "format": "carousel",
+    "pillar": "canvas-planning",
+    "audience": "UK home cooks",
+    "tone": "funny, useful, relatable",
+    "goal": "installs",
+    "idea": "5 meals from eggs and bread",
+    "ingredients": []
+  },
+  "brand_profile": {
+    "id": "peppera",
+    "name": "Peppera",
+    "description": "Peppera social profile",
+    "tone": "funny, useful, relatable",
+    "audience": "UK home cooks",
+    "cta": "Download Peppera",
+    "logoPath": null,
+    "visual": {
+      "primaryColor": "#f04d23",
+      "secondaryColor": "#ffd9c8",
+      "accentColor": "#7a2413",
+      "surfaceColor": "#fff7f0"
+    },
+    "defaults": {
+      "platformTargets": [
+        "instagram"
+      ],
+      "goal": "installs",
+      "hashtags": [
+        "#peppera",
+        "#socialcontent"
+      ]
+    },
+    "providers": {
+      "plannerModel": "glm-4.5-air",
+      "imageModel": "fal-ai/flux/schnell"
+    }
+  },
+  "generation_request": {
+    "brandProfileId": "peppera",
+    "rawIdea": "5 meals from eggs and bread",
+    "notes": "Pillar: pantry chaos. Ingredients: eggs, bread.",
+    "cards": [
+      {
+        "id": "brief-idea",
+        "type": "idea",
+        "text": "5 meals from eggs and bread",
+        "x": 80,
+        "y": 80,
+        "width": 280,
+        "height": 180,
+        "tags": [
+          "idea"
+        ]
+      },
+      {
+        "id": "brief-audience",
+        "type": "audience",
+        "text": "UK home cooks",
+        "x": 420,
+        "y": 80,
+        "width": 240,
+        "height": 160,
+        "tags": [
+          "audience"
+        ]
+      }
+    ],
+    "references": [],
+    "referenceAssets": [],
+    "platformTargets": [
+      "instagram"
+    ],
+    "goal": "installs",
+    "workflowType": "slideshow",
+    "visualMode": "mascot-led",
+    "deliveryTargets": "instagram"
+  },
+  "slides": [
+    {
+      "role": "hook",
+      "image_prompt": "A cheerful round red pepper cartoon character with arms, legs, and a friendly face, holding eggs and bread, looking excited, surrounded by question marks, 2D cartoon illustration style",
+      "text": "5 AMAZING MEALS FROM JUST EGGS & BREAD!",
+      "asset_path": null
+    },
+    {
+      "role": "problem",
+      "image_prompt": "A worried round red pepper cartoon character with arms, legs, and a friendly face, staring into a nearly empty pantry with only eggs and bread visible, 2D cartoon illustration style",
+      "text": "When your fridge is bare but your stomach's rumbling...",
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "recipe": {
+        "recipeName": "Classic French Toast",
+        "ingredients": [
+          "4 slices of bread",
+          "2 large eggs",
+          "120ml milk",
+          "1 tbsp sugar",
+          "1/2 tsp cinnamon",
+          "Butter for frying"
+        ],
+        "cookTime": "15 mins",
+        "steps": [
+          "Beat eggs, milk, sugar, and cinnamon in a bowl",
+          "Dip bread slices in mixture, coating both sides",
+          "Fry in buttered pan until golden brown on both sides",
+          "Serve with syrup or sugar"
+        ],
+        "proTip": "Slightly stale bread works best as it absorbs the egg mixture without falling apart",
+        "cost": "~£1.50",
+        "serves": "2"
+      },
+      "image_prompt": "Cartoon pepper mascot flipping French toast in a pan with a big smile, 2D cartoon illustration style",
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "recipe": {
+        "recipeName": "Egg-in-a-Basket",
+        "ingredients": [
+          "2 slices of bread",
+          "2 large eggs",
+          "2 tbsp butter",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "10 mins",
+        "steps": [
+          "Cut a hole in the middle of each bread slice",
+          "Butter both sides of bread and place in pan",
+          "Crack an egg into each hole",
+          "Fry until egg is cooked to your liking"
+        ],
+        "proTip": "Use the bread circles to make mini toast soldiers for dipping!",
+        "cost": "~£0.80",
+        "serves": "1"
+      },
+      "image_prompt": "Cartoon pepper mascot cooking an egg-in-a-basket with a satisfied expression, 2D cartoon illustration style",
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "recipe": {
+        "recipeName": "Bread and Butter Pudding",
+        "ingredients": [
+          "6 slices of stale bread",
+          "3 large eggs",
+          "500ml milk",
+          "2 tbsp sugar",
+          "1 tsp vanilla extract",
+          "Butter for greasing"
+        ],
+        "cookTime": "45 mins",
+        "steps": [
+          "Butter bread and cut into triangles, then layer in dish",
+          "Beat eggs, milk, sugar and vanilla together",
+          "Pour egg mixture over bread and let soak for 15 mins",
+          "Bake at 180°C for 30-35 mins until golden and set"
+        ],
+        "proTip": "Sprinkle with nutmeg or cinnamon before baking for extra flavour",
+        "cost": "~£1.20",
+        "serves": "4"
+      },
+      "image_prompt": "Cartoon pepper mascot proudly presenting a golden bread and butter pudding, 2D cartoon illustration style",
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "recipe": {
+        "recipeName": "Cheese and Egg Strata",
+        "ingredients": [
+          "6 slices of bread, cubed",
+          "4 large eggs",
+          "300ml milk",
+          "1 cup grated cheese",
+          "1/2 tsp mustard powder",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "50 mins",
+        "steps": [
+          "Grease a baking dish and layer half the bread cubes",
+          "Sprinkle with half the cheese and seasonings",
+          "Repeat layers, then beat eggs and milk and pour over",
+          "Bake at 180°C for 40-45 mins until set and golden"
+        ],
+        "proTip": "Make this the night before and refrigerate - perfect for breakfast!",
+        "cost": "~£2.00",
+        "serves": "4"
+      },
+      "image_prompt": "Cartoon pepper mascot slicing a golden, bubbly cheese and egg strata with a knife, 2D cartoon illustration style",
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "recipe": {
+        "recipeName": "Bread Crumb Frittata",
+        "ingredients": [
+          "2 slices of bread, blitzed to crumbs",
+          "6 large eggs",
+          "1/2 cup milk",
+          "1 cup mixed vegetables",
+          "1/2 cup cheese",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "25 mins",
+        "steps": [
+          "Whisk eggs, milk, and seasonings in a bowl",
+          "Stir in bread crumbs, vegetables and most of cheese",
+          "Pour into ovenproof pan and top with remaining cheese",
+          "Bake at 200°C for 20 mins until set and golden"
+        ],
+        "proTip": "Bread crumbs make it extra fluffy and help use up slightly stale bread!",
+        "cost": "~£1.80",
+        "serves": "3"
+      },
+      "image_prompt": "Cartoon pepper mascot lifting a perfectly golden frittata from the oven, 2D cartoon illustration style",
+      "asset_path": null
+    },
+    {
+      "role": "cta",
+      "image_prompt": "A cheerful round red pepper cartoon character with arms, legs, and a friendly face, holding a phone with the Peppera app open, surrounded by food icons, giving a thumbs up, 2D cartoon illustration style",
+      "text": "Download Peppera for 100s more recipes using what you have in your pantry!",
+      "asset_path": null
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "hook",
+      "title": "5 AMAZING MEALS FROM JUST EGGS & BREAD!",
+      "prompt": "A cheerful round red pepper cartoon character with arms, legs, and a friendly face, holding eggs and bread, looking excited, surrounded by question marks, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "problem",
+      "title": "When your fridge is bare but your stomach's rumbling...",
+      "prompt": "A worried round red pepper cartoon character with arms, legs, and a friendly face, staring into a nearly empty pantry with only eggs and bread visible, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "Cartoon pepper mascot flipping French toast in a pan with a big smile, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "Cartoon pepper mascot cooking an egg-in-a-basket with a satisfied expression, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "Cartoon pepper mascot proudly presenting a golden bread and butter pudding, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "Cartoon pepper mascot slicing a golden, bubbly cheese and egg strata with a knife, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "Cartoon pepper mascot lifting a perfectly golden frittata from the oven, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "cta",
+      "title": "Download Peppera for 100s more recipes using what you have in your pantry!",
+      "prompt": "A cheerful round red pepper cartoon character with arms, legs, and a friendly face, holding a phone with the Peppera app open, surrounded by food icons, giving a thumbs up, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    }
+  ],
+  "reel_package": null,
+  "output_dir": "test-output/peppera_ig_0001",
+  "assets_dir": "test-output/peppera_ig_0001/assets/generated",
+  "slides_dir": "test-output/peppera_ig_0001/slides",
+  "created_at": "2026-04-19T03:20:15.059Z",
+  "planner_provider": "glm",
+  "image_provider": "fal",
+  "render_status": "skipped",
+  "render_error": "browserType.launch: Executable doesn't exist at /Users/temisan/Library/Caches/ms-playwright/chromium_headless_shell-1217/chrome-headless-shell-mac-arm64/chrome-headless-shell\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝"
+}

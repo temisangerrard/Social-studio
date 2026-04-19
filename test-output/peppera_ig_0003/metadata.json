@@ -1,0 +1,353 @@
+{
+  "post_id": "peppera_ig_0003",
+  "product": "Peppera",
+  "platform": "instagram",
+  "format": "carousel",
+  "workflow_type": "slideshow",
+  "delivery_targets": "instagram",
+  "caption": "Ever look in your fridge and see nothing but eggs and bread? 😅 Don't panic! We've rounded up 5 delicious meals you can make with just these two pantry staples. From classic French toast to savory bread strata, you'll be amazed at what you can create! 👨‍🍳 Want more recipe ideas that save you money and time? Download Peppera today and transform your cooking game! #DownloadPeppera",
+  "hooks": [
+    "Running low on groceries? We've got you covered!",
+    "When your fridge is empty but your stomach isn't...",
+    "Pantry crisis? More like pantry opportunity!"
+  ],
+  "hashtags": [
+    "#PantryChaos",
+    "#EggAndBread",
+    "#EasyMeals",
+    "#BudgetCooking",
+    "#UKHomeCook",
+    "#QuickRecipes",
+    "#DownloadPeppera"
+  ],
+  "platform_notes": "Use carousel format for the 8 slides with engaging 2D cartoon illustrations. Ensure text is large and clear for mobile viewing. Consider adding polls in Stories to engage with audience about their favorite egg and bread combinations.",
+  "brief": {
+    "product": "Peppera",
+    "platform": "instagram",
+    "format": "carousel",
+    "pillar": "canvas-planning",
+    "audience": "UK home cooks",
+    "tone": "funny, useful, relatable",
+    "goal": "installs",
+    "idea": "5 meals from eggs and bread",
+    "ingredients": []
+  },
+  "brand_profile": {
+    "id": "peppera",
+    "name": "Peppera",
+    "description": "Peppera social profile",
+    "tone": "funny, useful, relatable",
+    "audience": "UK home cooks",
+    "cta": "Download Peppera",
+    "logoPath": null,
+    "visual": {
+      "primaryColor": "#f04d23",
+      "secondaryColor": "#ffd9c8",
+      "accentColor": "#7a2413",
+      "surfaceColor": "#fff7f0"
+    },
+    "defaults": {
+      "platformTargets": [
+        "instagram"
+      ],
+      "goal": "installs",
+      "hashtags": [
+        "#peppera",
+        "#socialcontent"
+      ]
+    },
+    "providers": {
+      "plannerModel": "glm-4.5-air",
+      "imageModel": "fal-ai/flux/schnell"
+    }
+  },
+  "generation_request": {
+    "brandProfileId": "peppera",
+    "rawIdea": "5 meals from eggs and bread",
+    "notes": "Pillar: pantry chaos. Ingredients: eggs, bread.",
+    "cards": [
+      {
+        "id": "brief-idea",
+        "type": "idea",
+        "text": "5 meals from eggs and bread",
+        "x": 80,
+        "y": 80,
+        "width": 280,
+        "height": 180,
+        "tags": [
+          "idea"
+        ]
+      },
+      {
+        "id": "brief-audience",
+        "type": "audience",
+        "text": "UK home cooks",
+        "x": 420,
+        "y": 80,
+        "width": 240,
+        "height": 160,
+        "tags": [
+          "audience"
+        ]
+      }
+    ],
+    "references": [],
+    "referenceAssets": [],
+    "platformTargets": [
+      "instagram"
+    ],
+    "goal": "installs",
+    "workflowType": "slideshow",
+    "visualMode": "mascot-led",
+    "deliveryTargets": "instagram"
+  },
+  "slides": [
+    {
+      "role": "hook",
+      "title": "5 Meals From Just Eggs & Bread",
+      "image_prompt": "A friendly cartoon pepper character with a chef's hat and apron, holding a cooking utensil, animated expression, looking excited, pointing to eggs and bread on a kitchen counter, 2D cartoon illustration style, bright colors",
+      "asset_path": null
+    },
+    {
+      "role": "problem",
+      "title": "When Your Pantry Looks Empty",
+      "image_prompt": "A friendly cartoon pepper character with a chef's hat and apron, holding a cooking utensil, animated expression, looking worried at nearly empty kitchen shelves with only eggs and bread visible, 2D cartoon illustration style",
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "title": "Classic French Toast",
+      "image_prompt": "Cartoon illustration of French toast with maple syrup on a plate, with ingredients (eggs, bread) visible, 2D cartoon illustration style",
+      "recipe": {
+        "recipeName": "Classic French Toast",
+        "ingredients": [
+          "2 large eggs",
+          "4 slices of bread",
+          "1/4 cup milk",
+          "1 tsp vanilla extract",
+          "1 tsp cinnamon",
+          "2 tbsp butter",
+          "Maple syrup or sugar for serving"
+        ],
+        "cookTime": "15 mins",
+        "steps": [
+          "Whisk eggs, milk, vanilla, and cinnamon in a bowl",
+          "Dip each bread slice in the mixture",
+          "Melt butter in pan over medium heat",
+          "Cook each slice for 2-3 minutes per side until golden"
+        ],
+        "proTip": "Day-old bread works best as it absorbs the egg mixture better",
+        "cost": "~£1.20",
+        "serves": "2"
+      },
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "title": "Simple Bread Pudding",
+      "image_prompt": "Cartoon illustration of bread pudding with a spoon, showing a baked dish with bread cubes in egg mixture, 2D cartoon illustration style",
+      "recipe": {
+        "recipeName": "Simple Bread Pudding",
+        "ingredients": [
+          "3 large eggs",
+          "4 cups bread cubes",
+          "2 cups milk",
+          "1/4 cup sugar",
+          "1 tsp vanilla extract",
+          "1/2 tsp cinnamon",
+          "Pinch of salt",
+          "2 tbsp melted butter"
+        ],
+        "cookTime": "45 mins",
+        "steps": [
+          "Preheat oven to 180°C",
+          "Mix eggs, milk, sugar, vanilla, cinnamon, and salt",
+          "Add bread cubes and let soak for 10 minutes",
+          "Pour into buttered dish and bake for 35-40 minutes until set"
+        ],
+        "proTip": "Stale bread makes the best bread pudding as it absorbs the custard better",
+        "cost": "~£1.50",
+        "serves": "4"
+      },
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "title": "Egg-in-a-Hole",
+      "image_prompt": "Cartoon illustration of egg-in-a-hole (toad in a hole) on a frying pan, with eggs frying inside bread circles, 2D cartoon illustration style",
+      "recipe": {
+        "recipeName": "Egg-in-a-Hole",
+        "ingredients": [
+          "2 large eggs",
+          "2 slices of bread",
+          "2 tbsp butter",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "10 mins",
+        "steps": [
+          "Cut a hole in the center of each bread slice",
+          "Melt butter in pan over medium heat",
+          "Place bread in pan and crack egg into each hole",
+          "Cook for 2-3 minutes, then flip and cook until done to your liking"
+        ],
+        "proTip": "Use a cookie cutter or glass to make perfect circles in the bread",
+        "cost": "~£0.80",
+        "serves": "1-2"
+      },
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "title": "Savoury Bread Strata",
+      "image_prompt": "Cartoon illustration of a savory bread strata in a baking dish, with visible layers of bread, cheese, and egg mixture, 2D cartoon illustration style",
+      "recipe": {
+        "recipeName": "Savoury Bread Strata",
+        "ingredients": [
+          "6 large eggs",
+          "6 cups bread cubes",
+          "2 cups milk",
+          "1 cup shredded cheese",
+          "1/2 cup diced onions",
+          "1/2 tsp salt",
+          "1/4 tsp pepper",
+          "2 tbsp melted butter"
+        ],
+        "cookTime": "50 mins",
+        "steps": [
+          "Grease a baking dish",
+          "Layer bread cubes, cheese, and onions",
+          "Whisk eggs, milk, salt, and pepper",
+          "Pour over bread mixture and bake at 180°C for 45 minutes"
+        ],
+        "proTip": "Let it sit for 10 minutes after baking before cutting for cleaner slices",
+        "cost": "~£2.50",
+        "serves": "4-6"
+      },
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "title": "Quick Bread Omelette",
+      "image_prompt": "Cartoon illustration of a bread omelette on a plate, showing a folded omelette with visible bread pieces and cheese, 2D cartoon illustration style",
+      "recipe": {
+        "recipeName": "Quick Bread Omelette",
+        "ingredients": [
+          "3 large eggs",
+          "2 slices of bread",
+          "1 tbsp milk",
+          "1/4 cup shredded cheese",
+          "Salt and pepper to taste",
+          "1 tbsp butter or oil"
+        ],
+        "cookTime": "12 mins",
+        "steps": [
+          "Tear bread into small pieces",
+          "Whisk eggs with milk, salt, and pepper",
+          "Melt butter in pan, add bread pieces and sauté for 2 minutes",
+          "Pour egg mixture over bread and cook until almost set, then add cheese and fold"
+        ],
+        "proTip": "For extra protein, add leftover cooked meat or vegetables if available",
+        "cost": "~£1.30",
+        "serves": "1-2"
+      },
+      "asset_path": null
+    },
+    {
+      "role": "cta",
+      "title": "Download Peppera for More Genius Recipes!",
+      "image_prompt": "A friendly cartoon pepper character with a chef's hat and apron, holding a cooking utensil, animated expression, holding a smartphone showing the Peppera app, with download icons, 2D cartoon illustration style",
+      "asset_path": null
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "hook",
+      "prompt": "A friendly cartoon pepper character with a chef's hat and apron, holding a cooking utensil, animated expression, looking excited, pointing to eggs and bread on a kitchen counter, 2D cartoon illustration style, bright colors",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "problem",
+      "prompt": "A friendly cartoon pepper character with a chef's hat and apron, holding a cooking utensil, animated expression, looking worried at nearly empty kitchen shelves with only eggs and bread visible, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "Cartoon illustration of French toast with maple syrup on a plate, with ingredients (eggs, bread) visible, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "Cartoon illustration of bread pudding with a spoon, showing a baked dish with bread cubes in egg mixture, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "Cartoon illustration of egg-in-a-hole (toad in a hole) on a frying pan, with eggs frying inside bread circles, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "Cartoon illustration of a savory bread strata in a baking dish, with visible layers of bread, cheese, and egg mixture, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "Cartoon illustration of a bread omelette on a plate, showing a folded omelette with visible bread pieces and cheese, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "cta",
+      "prompt": "A friendly cartoon pepper character with a chef's hat and apron, holding a cooking utensil, animated expression, holding a smartphone showing the Peppera app, with download icons, 2D cartoon illustration style",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    }
+  ],
+  "reel_package": null,
+  "output_dir": "test-output/peppera_ig_0003",
+  "assets_dir": "test-output/peppera_ig_0003/assets/generated",
+  "slides_dir": "test-output/peppera_ig_0003/slides",
+  "created_at": "2026-04-19T03:37:19.113Z",
+  "planner_provider": "glm",
+  "image_provider": "fal",
+  "render_status": "complete",
+  "render_error": null
+}

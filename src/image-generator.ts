@@ -92,7 +92,7 @@ async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 8000
   }
 }
 
-async function generateWithFal(prompt: string, falKey: string, model: string, referenceImageUrls?: string[]): Promise<Buffer> {
+async function generateWithFal(prompt: string, falKey: string, model: string, referenceImageUrls?: string[], aspectRatio?: string): Promise<Buffer> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Authorization: `Key ${falKey}`
@@ -102,14 +102,13 @@ async function generateWithFal(prompt: string, falKey: string, model: string, re
   const input: Record<string, unknown> = isNanoBanana
     ? {
         prompt,
-        aspect_ratio: "9:16",
+        aspect_ratio: aspectRatio ?? "9:16",
         num_images: 1,
-        ...(referenceImageUrls && referenceImageUrls.length > 0 ? { image_urls: referenceImageUrls } : {})
       }
     : {
         prompt,
         negative_prompt: "text, watermark, blurry, low quality, deformed, ugly, extra limbs, bad anatomy, cropped, out of frame",
-        image_size: "portrait_16_9",
+        image_size: aspectRatio === "1:1" ? "square" : "portrait_16_9",
         num_inference_steps: 28,
         seed: Math.floor(Math.random() * 2147483647),
         ...(referenceImageUrls && referenceImageUrls.length > 0 ? { image_urls: referenceImageUrls } : {})
@@ -149,7 +148,8 @@ async function generateWithFal(prompt: string, falKey: string, model: string, re
 
     const resultResponse = await fetchWithTimeout(submitPayload.response_url, { headers });
     if (!resultResponse.ok) {
-      throw new Error(`fal.ai result fetch failed (${resultResponse.status})`);
+      const errBody = await resultResponse.text().catch(() => "");
+      throw new Error(`fal.ai result fetch failed (${resultResponse.status}): ${errBody.slice(0, 200)}`);
     }
 
     const resultPayload = (await resultResponse.json()) as {
@@ -202,7 +202,15 @@ export async function generateImagesForSlides(
 
     try {
       if (falKey) {
-        const imageBuffer = await generateWithFal(slide.image_prompt, falKey, falModel, mascotReferenceImages);
+        // Determine aspect ratio from slide layout
+        const isCarouselSlide = slide.layout === "hook_cover" || slide.layout === "problem_setup" || slide.layout === "recipe_card" || slide.layout === "cta_banner";
+        const aspectRatio = isCarouselSlide ? "1:1" : "9:16";
+
+        // Only send mascot reference images for mascot-inclusive slides (not food-only recipe slides)
+        const isMascotSlide = slide.role === "hook" || slide.role === "problem" || slide.role === "cta";
+        const refs = isMascotSlide ? mascotReferenceImages : [];
+
+        const imageBuffer = await generateWithFal(slide.image_prompt, falKey, falModel, refs, aspectRatio);
         await fs.writeFile(filePath, imageBuffer);
         slide.asset_path = filePath;
       } else {

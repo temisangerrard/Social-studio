@@ -659,8 +659,67 @@ export async function planSocialPackage(
       throw new Error("GLM response did not include message content");
     }
 
+    const glmPlan = parsePlannerResponse(content);
+
+    // For Peppera carousels, merge GLM's recipe data onto our structured carousel
+    if (isPepperaCarouselBrief(context.brand, context.request)) {
+      const ingredients = extractIngredients(context.request);
+      const brief: import("./types.ts").ContentBrief = {
+        product: context.brand.name,
+        platform: context.request.platformTargets[0] ?? "instagram",
+        format: "carousel",
+        pillar: "pantry chaos",
+        audience: context.brand.audience,
+        tone: context.brand.tone,
+        ingredients,
+        goal: context.request.goal,
+        idea: context.request.rawIdea,
+      };
+      const structuredSlides = generatePepperaCarousel(brief, context.brand);
+
+      // Extract recipes from GLM response
+      const glmRecipes = glmPlan.slides
+        .map((s) => s.recipe)
+        .filter((r): r is StructuredRecipe => r !== undefined && r !== null);
+
+      // Merge GLM recipes onto our structured recipe slides
+      let recipeIdx = 0;
+      for (const slide of structuredSlides) {
+        if (slide.role === "recipe" && recipeIdx < glmRecipes.length) {
+          slide.recipe = glmRecipes[recipeIdx];
+          slide.text = `🍳 RECIPE ${recipeIdx + 1}: ${glmRecipes[recipeIdx].recipeName.toUpperCase()}`;
+          recipeIdx++;
+        }
+      }
+
+      // If GLM didn't return enough recipes, fill from fallback
+      if (recipeIdx < 5) {
+        const fallbackRecipes = generateFallbackRecipes(ingredients);
+        for (const slide of structuredSlides) {
+          if (slide.role === "recipe" && (!slide.recipe || !slide.recipe.recipeName)) {
+            if (recipeIdx < fallbackRecipes.length) {
+              slide.recipe = fallbackRecipes[recipeIdx];
+              slide.text = `🍳 RECIPE ${recipeIdx + 1}: ${fallbackRecipes[recipeIdx].recipeName.toUpperCase()}`;
+            }
+            recipeIdx++;
+          }
+        }
+      }
+
+      return {
+        plan: {
+          hooks: glmPlan.hooks.length > 0 ? glmPlan.hooks : [`5 Meals From ${ingredients.join(" + ")}`],
+          caption: glmPlan.caption,
+          hashtags: glmPlan.hashtags,
+          platformNotes: glmPlan.platformNotes,
+          slides: structuredSlides,
+        },
+        provider: "glm"
+      };
+    }
+
     return {
-      plan: parsePlannerResponse(content),
+      plan: glmPlan,
       provider: "glm"
     };
   } catch (error) {

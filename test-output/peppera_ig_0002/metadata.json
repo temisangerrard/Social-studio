@@ -1,0 +1,349 @@
+{
+  "post_id": "peppera_ig_0002",
+  "product": "Peppera",
+  "platform": "instagram",
+  "format": "carousel",
+  "workflow_type": "slideshow",
+  "delivery_targets": "instagram",
+  "caption": "We've all been there - staring into a nearly empty pantry wondering what to make. But before you reach for that takeaway menu, remember that eggs and bread are a match made in culinary heaven! Swipe through to discover 5 delicious meals you can make with just these two simple ingredients. No need to dash to the shops! Want more pantry-saving ideas? Download Peppera for hundreds of recipes that work with what you already have. #PantryChaos",
+  "hooks": [
+    "Got eggs and bread? You've got 5 incredible meals!",
+    "Pantry feeling empty? These eggs & bread combos will save dinner!",
+    "When your fridge is bare except for eggs and bread..."
+  ],
+  "hashtags": [
+    "#EggRecipes",
+    "#BreadRecipes",
+    "#PantryMeals",
+    "#EasyCooking",
+    "#UKFoodies",
+    "#BudgetMeals",
+    "#StudentCooking",
+    "#QuickMeals",
+    "#PantryChaos",
+    "#PepperaApp"
+  ],
+  "platform_notes": "Instagram carousel post with 8 slides. Use a friendly, slightly humorous tone throughout. Make sure each recipe slide is clearly visualized with 2D cartoon illustrations showing the finished dish.",
+  "brief": {
+    "product": "Peppera",
+    "platform": "instagram",
+    "format": "carousel",
+    "pillar": "canvas-planning",
+    "audience": "UK home cooks",
+    "tone": "funny, useful, relatable",
+    "goal": "installs",
+    "idea": "5 meals from eggs and bread",
+    "ingredients": []
+  },
+  "brand_profile": {
+    "id": "peppera",
+    "name": "Peppera",
+    "description": "Peppera social profile",
+    "tone": "funny, useful, relatable",
+    "audience": "UK home cooks",
+    "cta": "Download Peppera",
+    "logoPath": null,
+    "visual": {
+      "primaryColor": "#f04d23",
+      "secondaryColor": "#ffd9c8",
+      "accentColor": "#7a2413",
+      "surfaceColor": "#fff7f0"
+    },
+    "defaults": {
+      "platformTargets": [
+        "instagram"
+      ],
+      "goal": "installs",
+      "hashtags": [
+        "#peppera",
+        "#socialcontent"
+      ]
+    },
+    "providers": {
+      "plannerModel": "glm-4.5-air",
+      "imageModel": "fal-ai/flux/schnell"
+    }
+  },
+  "generation_request": {
+    "brandProfileId": "peppera",
+    "rawIdea": "5 meals from eggs and bread",
+    "notes": "Pillar: pantry chaos. Ingredients: eggs, bread.",
+    "cards": [
+      {
+        "id": "brief-idea",
+        "type": "idea",
+        "text": "5 meals from eggs and bread",
+        "x": 80,
+        "y": 80,
+        "width": 280,
+        "height": 180,
+        "tags": [
+          "idea"
+        ]
+      },
+      {
+        "id": "brief-audience",
+        "type": "audience",
+        "text": "UK home cooks",
+        "x": 420,
+        "y": 80,
+        "width": 240,
+        "height": 160,
+        "tags": [
+          "audience"
+        ]
+      }
+    ],
+    "references": [],
+    "referenceAssets": [],
+    "platformTargets": [
+      "instagram"
+    ],
+    "goal": "installs",
+    "workflowType": "slideshow",
+    "visualMode": "mascot-led",
+    "deliveryTargets": "instagram"
+  },
+  "slides": [
+    {
+      "role": "hook",
+      "image_prompt": "2D cartoon style: A cheerful cartoon mascot holding eggs and bread with a surprised/excited expression. Background shows an empty pantry. Whimsical cooking elements floating around.",
+      "text": "5 MESS-FREE MEALS USING JUST EGGS & BREAD!",
+      "asset_path": null
+    },
+    {
+      "role": "problem",
+      "image_prompt": "2D cartoon style: The same cartoon mascot looking worried in front of an empty fridge, except for eggs and bread on a shelf. Bubble thought showing food delivery apps with high prices.",
+      "text": "PANTRY CHAOS: When you're hungry but the fridge is nearly empty...",
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "image_prompt": "2D cartoon style: Golden brown French toast slices on a plate with a dollop of butter and maple syrup dripping down. Mascot peeking from the side giving a thumbs up.",
+      "recipe": {
+        "recipeName": "Classic French Toast",
+        "ingredients": [
+          "2 thick slices of bread",
+          "1 large egg",
+          "2 tbsp milk",
+          "1/2 tsp cinnamon",
+          "1 tsp butter",
+          "Maple syrup to serve"
+        ],
+        "cookTime": "10 mins",
+        "steps": [
+          "Whisk egg, milk, and cinnamon in a bowl",
+          "Dip bread slices in mixture, coating both sides",
+          "Melt butter in pan over medium heat",
+          "Cook bread for 2-3 minutes each side until golden"
+        ],
+        "proTip": "Use stale bread for best results - it soaks up the egg mixture better!",
+        "cost": "~£1.20",
+        "serves": "1"
+      },
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "image_prompt": "2D cartoon style: A slice of toast with a perfectly round fried egg in the center, sunny side up. Mascot holding the toast with both hands looking delighted.",
+      "recipe": {
+        "recipeName": "Egg in a Basket",
+        "ingredients": [
+          "1 slice of bread",
+          "1 large egg",
+          "1 tsp butter",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "5 mins",
+        "steps": [
+          "Cut a 3-inch circle in the middle of the bread",
+          "Butter both sides of the bread",
+          "Place bread in pan over medium heat, crack egg into the hole",
+          "Cook for 2-3 minutes, then flip and cook until egg reaches desired doneness"
+        ],
+        "proTip": "Fry the cut-out circle too for a mini toast to dip in your egg yolk!",
+        "cost": "~£0.50",
+        "serves": "1"
+      },
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "image_prompt": "2D cartoon style: A flat, round bread omelette with visible egg and bread pieces mixed together, golden brown. Mascot sprinkling cheese on top with a grin.",
+      "recipe": {
+        "recipeName": "Cheesy Bread Omelette",
+        "ingredients": [
+          "2 slices of bread, torn into pieces",
+          "3 large eggs",
+          "2 tbsp milk",
+          "1/4 cup grated cheese",
+          "1 tsp butter",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "15 mins",
+        "steps": [
+          "Beat eggs with milk, salt, and pepper",
+          "Stir in bread pieces and half the cheese",
+          "Melt butter in pan, pour in mixture",
+          "Cook until set, then sprinkle remaining cheese on top and fold"
+        ],
+        "proTip": "Let the bread soak in the egg mixture for 5 minutes before cooking for extra fluffiness!",
+        "cost": "~£1.50",
+        "serves": "2"
+      },
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "image_prompt": "2D cartoon style: A small savory bread pudding in a ramekin, golden brown with a slightly puffed top. Mascot holding a fork and about to take a bite.",
+      "recipe": {
+        "recipeName": "Savoury Bread Pudding",
+        "ingredients": [
+          "2 cups bread cubes",
+          "3 large eggs",
+          "1 cup milk",
+          "1/2 cup grated cheese",
+          "2 green onions, chopped",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "40 mins",
+        "steps": [
+          "Preheat oven to 180°C",
+          "Beat eggs, milk, salt, and pepper in a bowl",
+          "Mix bread cubes, cheese, and onions in a baking dish",
+          "Pour egg mixture over bread, let sit for 10 minutes, then bake for 30 minutes until golden"
+        ],
+        "proTip": "Day-old bread works best for this recipe!",
+        "cost": "~£2.00",
+        "serves": "2"
+      },
+      "asset_path": null
+    },
+    {
+      "role": "recipe",
+      "image_prompt": "2D cartoon style: A layered strata in a glass dish showing distinct layers of bread and egg mixture, baked to perfection with cheese on top. Mascot slicing a portion with a knife.",
+      "recipe": {
+        "recipeName": "Bread and Egg Strata",
+        "ingredients": [
+          "4 slices of bread, cubed",
+          "4 large eggs",
+          "1 1/2 cups milk",
+          "1 cup cheese, grated",
+          "2 tbsp butter, melted",
+          "Salt and pepper to taste"
+        ],
+        "cookTime": "50 mins",
+        "steps": [
+          "Grease a baking dish and layer half the bread cubes",
+          "Sprinkle with half the cheese and season with salt and pepper",
+          "Repeat layers with remaining bread and cheese",
+          "Whisk eggs and milk, pour over layers, drizzle with melted butter, then bake at 180°C for 40-45 minutes until set"
+        ],
+        "proTip": "Prepare this the night before and refrigerate - the flavors will be even better!",
+        "cost": "~£2.50",
+        "serves": "4"
+      },
+      "asset_path": null
+    },
+    {
+      "role": "cta",
+      "image_prompt": "2D cartoon style: The mascot holding a phone showing the Peppera app, surrounded by all 5 egg and bread dishes in a circle around them. Mascot is pointing to the download button on the screen.",
+      "text": "Hungry for more meal-saving ideas? Download Peppera now to discover hundreds of recipes that use what's already in your pantry!",
+      "asset_path": null
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "hook",
+      "title": "5 MESS-FREE MEALS USING JUST EGGS & BREAD!",
+      "prompt": "2D cartoon style: A cheerful cartoon mascot holding eggs and bread with a surprised/excited expression. Background shows an empty pantry. Whimsical cooking elements floating around.",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "problem",
+      "title": "PANTRY CHAOS: When you're hungry but the fridge is nearly empty...",
+      "prompt": "2D cartoon style: The same cartoon mascot looking worried in front of an empty fridge, except for eggs and bread on a shelf. Bubble thought showing food delivery apps with high prices.",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "2D cartoon style: Golden brown French toast slices on a plate with a dollop of butter and maple syrup dripping down. Mascot peeking from the side giving a thumbs up.",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "2D cartoon style: A slice of toast with a perfectly round fried egg in the center, sunny side up. Mascot holding the toast with both hands looking delighted.",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "2D cartoon style: A flat, round bread omelette with visible egg and bread pieces mixed together, golden brown. Mascot sprinkling cheese on top with a grin.",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "2D cartoon style: A small savory bread pudding in a ramekin, golden brown with a slightly puffed top. Mascot holding a fork and about to take a bite.",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "recipe",
+      "prompt": "2D cartoon style: A layered strata in a glass dish showing distinct layers of bread and egg mixture, baked to perfection with cheese on top. Mascot slicing a portion with a knife.",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    },
+    {
+      "id": "slide-undefined",
+      "kind": "image",
+      "role": "cta",
+      "title": "Hungry for more meal-saving ideas? Download Peppera now to discover hundreds of recipes that use what's already in your pantry!",
+      "prompt": "2D cartoon style: The mascot holding a phone showing the Peppera app, surrounded by all 5 egg and bread dishes in a circle around them. Mascot is pointing to the download button on the screen.",
+      "asset_path": null,
+      "preview_path": null,
+      "source_asset_id": null,
+      "variant_group": null
+    }
+  ],
+  "reel_package": null,
+  "output_dir": "test-output/peppera_ig_0002",
+  "assets_dir": "test-output/peppera_ig_0002/assets/generated",
+  "slides_dir": "test-output/peppera_ig_0002/slides",
+  "created_at": "2026-04-19T03:31:58.871Z",
+  "planner_provider": "glm",
+  "image_provider": "fal",
+  "render_status": "complete",
+  "render_error": null
+}
