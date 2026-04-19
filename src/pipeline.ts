@@ -405,8 +405,7 @@ export async function runPipelineFromRequest(
   const deliveryTargets = resolveDeliveryTargets(request);
 
   const isPepperaCarousel =
-    (brandProfile.id === "peppera" || brandProfile.name === "Peppera") &&
-    request.platformTargets.includes("instagram");
+    (brandProfile.id === "peppera" || brandProfile.name === "Peppera");
 
   const brief: ContentBrief = {
     product: brandProfile.name,

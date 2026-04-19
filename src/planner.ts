@@ -450,8 +450,7 @@ function topCardsByType(request: GenerationRequest, type: string): string[] {
 }
 
 function isPepperaCarouselBrief(brand: BrandProfile, request: GenerationRequest): boolean {
-  return (brand.id === "peppera" || brand.name === "Peppera") &&
-    (request.platformTargets.includes("instagram") || request.workflowType === "linkedin-carousel");
+  return (brand.id === "peppera" || brand.name === "Peppera");
 }
 
 function extractIngredients(request: GenerationRequest): string[] {
