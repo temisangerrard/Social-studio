@@ -2167,6 +2167,9 @@ els.studioContentTypeSelect?.addEventListener("change", () => {
 els.studioUploadTrigger?.addEventListener("click", () => {
   els.studioReferenceFiles.click();
 });
+document.getElementById("toolbar-upload-btn")?.addEventListener("click", () => {
+  els.studioReferenceFiles.click();
+});
 
 els.studioReferenceFiles.addEventListener("change", async () => {
   showStatus("Uploading references…");
