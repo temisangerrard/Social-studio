@@ -4,6 +4,9 @@ export type PostFormat = "slideshow" | "carousel" | "text-only";
 export type WorkflowType = "slideshow" | "mascot-variants" | "reference-edit" | "video-clip" | "reel-package" | "linkedin-carousel" | "linkedin-text";
 export type VisualMode = "mascot-led" | "food-led" | "mixed";
 export type ConsistencyMode = "prompt-led" | "mascot-consistent";
+export type AssetType = "food_photo" | "product_photo" | "person_photo" | "screenshot" | "logo" | "document" | "unknown";
+export type ContentRouteFamily = "carousel" | "edited-image" | "recipe" | "flyer" | "linkedin-post" | "infographic";
+export type ContentHint = ContentRouteFamily;
 export type SlideRole =
   | "hook"
   | "problem"
@@ -43,6 +46,20 @@ export interface ContentTypeDefinition {
   slideBlueprint: SlideBlueprintEntry[];
   imageStyle: string;
   platformTargets: Platform[];
+}
+
+export interface ContentRecipeDefinition {
+  id: string;
+  name: string;
+  routeFamily: ContentRouteFamily;
+  workflowType: WorkflowType;
+  platformTargets: Platform[];
+  defaultPriority: number;
+  preferredAssetTypes?: AssetType[];
+  requiredAssetTypes?: AssetType[];
+  contentTypeId?: string;
+  copyStyleHint?: string;
+  visualStyleHint?: string;
 }
 
 export type BoardCardType =
@@ -113,6 +130,7 @@ export interface BrandProfile {
   mascot?: BrandMascot;
   contentTypes?: ContentTypeDefinition[];
   defaultContentType?: string;
+  contentRecipes?: ContentRecipeDefinition[];
 }
 
 export interface BoardCard {
@@ -140,6 +158,68 @@ export interface ReferenceAsset {
   url: string;
   source: "brand" | "run" | "asset";
   kind: "image";
+}
+
+export interface UserAssetAnnotation {
+  label?: string;
+  notes?: string;
+}
+
+export interface UploadedAsset extends UserAssetAnnotation {
+  id: string;
+  url: string;
+  mimeType: string;
+  filename: string;
+}
+
+export interface AssetAnalysis {
+  assetId: string;
+  assetType: AssetType;
+  subjectSummary: string;
+  contentHints: ContentHint[];
+  channelHints: Platform[];
+  confidence: number;
+  needsUserConfirmation: boolean;
+  source: "glm" | "fallback";
+}
+
+export interface GenerationIntent {
+  platform: Platform;
+  prompt: string;
+  assetTypes: AssetType[];
+  contentHints: ContentHint[];
+  channelHints: Platform[];
+  requiresConfirmation: boolean;
+}
+
+export interface RoutingCandidate {
+  recipeId: string;
+  routeFamily: ContentRouteFamily;
+  workflowType: WorkflowType;
+  score: number;
+  status: "selected" | "rejected";
+  reasons: string[];
+}
+
+export interface RoutingDecision {
+  recipeId: string;
+  routeFamily: ContentRouteFamily;
+  workflowType: WorkflowType;
+  platformTargets: Platform[];
+  deliveryTargets: DeliveryTarget;
+  contentTypeId?: string;
+  selectedBy: "router" | "override";
+  reasonSummary: string;
+  requiresConfirmation: boolean;
+  candidates: RoutingCandidate[];
+}
+
+export interface RoutingTrace {
+  decision: RoutingDecision;
+  intent: GenerationIntent;
+  assetAnalyses: AssetAnalysis[];
+  treeVersion: string;
+  traceLines: string[];
 }
 
 export interface VideoOptions {
@@ -226,11 +306,21 @@ export interface GenerationRequest {
   visualMode?: VisualMode;
   workflowType?: WorkflowType;
   referenceAssets?: ReferenceAsset[];
+  uploadedAssets?: UploadedAsset[];
+  assetAnalyses?: AssetAnalysis[];
+  routingOverride?: {
+    recipeId?: string;
+    workflowType?: WorkflowType;
+    routeFamily?: ContentRouteFamily;
+    contentTypeId?: string;
+  };
   targetAssetId?: string;
   videoOptions?: VideoOptions;
   variantCount?: number;
   deliveryTargets?: DeliveryTarget;
   contentTypeId?: string;
+  routingDecision?: RoutingDecision;
+  routingTrace?: RoutingTrace;
 }
 
 export interface StructuredRecipe {
@@ -302,6 +392,7 @@ export interface PostMetadata {
   workflow_type?: WorkflowType;
   delivery_targets?: DeliveryTarget;
   content_type_id?: string;
+  content_recipe_id?: string;
   caption: string;
   hooks: string[];
   hashtags: string[];
@@ -309,6 +400,10 @@ export interface PostMetadata {
   brief: ContentBrief;
   brand_profile: BrandProfile;
   generation_request: GenerationRequest;
+  uploaded_assets?: UploadedAsset[];
+  asset_analyses?: AssetAnalysis[];
+  routing_decision?: RoutingDecision;
+  routing_trace?: RoutingTrace;
   slides: Slide[];
   artifacts?: GeneratedArtifact[];
   reel_package?: ReelPackageDraft | null;

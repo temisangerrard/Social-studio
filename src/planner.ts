@@ -356,6 +356,10 @@ export function buildPlannerPrompt({ brand, request, contentType }: PlannerConte
     `Platforms: ${request.platformTargets.join(", ")}`,
     `Raw idea: ${request.rawIdea}`,
     `Notes: ${request.notes ?? "none"}`,
+    `Selected route family: ${request.routingDecision?.routeFamily ?? "none"}`,
+    `Selected workflow: ${request.routingDecision?.workflowType ?? request.workflowType ?? "slideshow"}`,
+    `Selected recipe ID: ${request.routingDecision?.recipeId ?? "none"}`,
+    `Uploaded asset summaries: ${(request.assetAnalyses ?? []).map((asset) => `${asset.assetType}: ${asset.subjectSummary}`).join(" | ") || "none"}`,
     "Canvas cards:",
     cardSummary(request),
   ];

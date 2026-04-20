@@ -4,11 +4,13 @@ import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
 import { createInitialAssistantSession, generateAssistantReply } from "./assistant.ts";
+import { explainRoutingTree, buildRoutingTrace, routeGenerationRequest } from "./routing.ts";
 import type { AssistantMessage } from "./types.ts";
+import { analyzeUploadedAsset, filePathToDataUrl } from "./upload-intake.ts";
 import { runPipelineFromBrief, runPipelineFromRequest } from "./pipeline.ts";
 import { defaultProductRegistry, registerBrandDescription, resolveProductContext } from "./product-context.ts";
 import { createStorage } from "./storage.ts";
-import type { AssistantSession, BatchGenerationRequest, BoardDocument, BrandProfile, CalendarSlot, ContentPillar, GenerationRequest, PostMetadata } from "./types.ts";
+import type { AssistantSession, BatchGenerationRequest, BoardDocument, BrandProfile, CalendarSlot, ContentPillar, GenerationRequest, PostMetadata, UploadedAsset, AssetAnalysis } from "./types.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..");
@@ -159,12 +161,46 @@ async function seedBrandProfiles(): Promise<void> {
       .filter((f) => f.endsWith(".json") && !f.startsWith("default-"))
       .map(async (file) => {
         const id = file.replace(".json", "");
-        const existing = await storage.getBrandProfile(id);
-        if (existing) return;
         try {
           const raw = await fs.readFile(path.join(configBrandsDir, file), "utf8");
-          await storage.saveBrandProfile(JSON.parse(raw) as BrandProfile);
-          console.log(`[startup] Seeded brand profile: ${id}`);
+          const configProfile = JSON.parse(raw) as BrandProfile;
+          const existing = await storage.getBrandProfile(id);
+          if (!existing) {
+            await storage.saveBrandProfile(configProfile);
+            console.log(`[startup] Seeded brand profile: ${id}`);
+            return;
+          }
+
+          const mergedProfile: BrandProfile = {
+            ...configProfile,
+            ...existing,
+            contentTypes: existing.contentTypes ?? configProfile.contentTypes,
+            contentRecipes: existing.contentRecipes ?? configProfile.contentRecipes,
+            defaultContentType: existing.defaultContentType ?? configProfile.defaultContentType,
+            mascot: existing.mascot ?? configProfile.mascot,
+            visual: {
+              ...configProfile.visual,
+              ...existing.visual
+            },
+            defaults: {
+              ...configProfile.defaults,
+              ...existing.defaults
+            },
+            providers: {
+              ...configProfile.providers,
+              ...existing.providers
+            }
+          };
+
+          const needsBackfill =
+            JSON.stringify(existing.contentRecipes ?? null) !== JSON.stringify(mergedProfile.contentRecipes ?? null) ||
+            JSON.stringify(existing.contentTypes ?? null) !== JSON.stringify(mergedProfile.contentTypes ?? null) ||
+            existing.defaultContentType !== mergedProfile.defaultContentType;
+
+          if (needsBackfill) {
+            await storage.saveBrandProfile(mergedProfile);
+            console.log(`[startup] Backfilled brand profile capabilities: ${id}`);
+          }
         } catch {
           // skip malformed files
         }
@@ -190,6 +226,8 @@ interface OutputSummary {
   workflowType: string;
   firstAssetPath: string;
   content_type_id: string;
+  content_recipe_id: string;
+  routeSummary: string;
 }
 
 function deriveFirstAssetPath(metadata: PostMetadata): string {
@@ -233,7 +271,9 @@ async function listOutputs(): Promise<OutputSummary[]> {
           slideCount: (metadata.slides?.length ?? 0) + (metadata.artifacts?.length ?? 0),
           workflowType: metadata.workflow_type || "",
           firstAssetPath: deriveFirstAssetPath(metadata),
-          content_type_id: metadata.content_type_id || ""
+          content_type_id: metadata.content_type_id || "",
+          content_recipe_id: metadata.content_recipe_id || "",
+          routeSummary: metadata.routing_decision?.reasonSummary || ""
         });
       } catch {
         results.push({
@@ -245,7 +285,9 @@ async function listOutputs(): Promise<OutputSummary[]> {
           slideCount: 0,
           workflowType: "",
           firstAssetPath: "",
-          content_type_id: ""
+          content_type_id: "",
+          content_recipe_id: "",
+          routeSummary: ""
         });
       }
     }
@@ -345,6 +387,31 @@ async function serveFile(filePath: string): Promise<Response> {
 async function parseJsonBody(req: Request): Promise<Record<string, unknown>> {
   const payload = await req.json();
   return asRecord(payload);
+}
+
+function uploadedAssetFromBody(storedName: string, mimeType: string, body: Record<string, unknown>): UploadedAsset {
+  return {
+    id: typeof body.id === "string" && body.id.trim() ? body.id : makeId("asset"),
+    filename: storedName,
+    mimeType,
+    url: `/api/uploads/${storedName}`,
+    label: typeof body.label === "string" ? body.label.trim() : undefined,
+    notes: typeof body.notes === "string" ? body.notes.trim() : undefined
+  };
+}
+
+function uploadFilePathFromAsset(asset: UploadedAsset): string | null {
+  if (!asset.url.startsWith("/api/uploads/")) {
+    return null;
+  }
+  const filename = path.basename(asset.url.slice("/api/uploads/".length));
+  return path.join(UPLOADS_ROOT, filename);
+}
+
+async function analyzeAssetRecord(asset: UploadedAsset, brand: BrandProfile, prompt: string): Promise<AssetAnalysis> {
+  const uploadPath = uploadFilePathFromAsset(asset);
+  const assetDataUrl = uploadPath ? await filePathToDataUrl(uploadPath, asset.mimeType) : undefined;
+  return analyzeUploadedAsset(asset, brand, prompt, { assetDataUrl });
 }
 
 function normalizeBoard(input: Record<string, unknown>): BoardDocument {
@@ -576,10 +643,61 @@ async function handleRequest(req: Request): Promise<Response> {
     const storedName = `${stem}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}${extension}`;
     await fs.mkdir(UPLOADS_ROOT, { recursive: true });
     await fs.writeFile(path.join(UPLOADS_ROOT, storedName), buffer);
+    return json(uploadedAssetFromBody(storedName, mimeType, body));
+  }
+
+  if (url.pathname === "/api/uploads/analyze" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    const brand = await storage.getBrandProfile(brandId);
+    if (!brand) {
+      return json({ error: `Brand profile not found: ${brandId}` }, { status: 404 });
+    }
+
+    const asset = (body.asset ?? body) as UploadedAsset;
+    if (!asset || typeof asset !== "object" || typeof asset.id !== "string" || typeof asset.url !== "string") {
+      return json({ error: "asset is required" }, { status: 400 });
+    }
+
+    const prompt = typeof body.prompt === "string" ? body.prompt : "";
+    const analysis = await analyzeAssetRecord(asset, brand, prompt);
+    return json(analysis);
+  }
+
+  if (url.pathname === "/api/routes/preview" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    const brand = await storage.getBrandProfile(brandId);
+    if (!brand) {
+      return json({ error: `Brand profile not found: ${brandId}` }, { status: 404 });
+    }
+
+    const request: GenerationRequest = {
+      brandProfileId: brandId,
+      rawIdea: typeof body.rawIdea === "string" ? body.rawIdea : "",
+      notes: typeof body.notes === "string" ? body.notes : "",
+      cards: Array.isArray(body.cards) ? (body.cards as GenerationRequest["cards"]) : [],
+      references: [],
+      platformTargets: Array.isArray(body.platformTargets) && body.platformTargets.length > 0
+        ? (body.platformTargets as GenerationRequest["platformTargets"])
+        : [body.platform === "linkedin" ? "linkedin" : "instagram"],
+      goal: typeof body.goal === "string" ? body.goal : brand.defaults.goal,
+      uploadedAssets: Array.isArray(body.uploadedAssets) ? (body.uploadedAssets as UploadedAsset[]) : [],
+      assetAnalyses: Array.isArray(body.assetAnalyses) ? (body.assetAnalyses as AssetAnalysis[]) : [],
+      deliveryTargets: body.deliveryTargets as GenerationRequest["deliveryTargets"] | undefined,
+      routingOverride: body.routingOverride as GenerationRequest["routingOverride"] | undefined
+    };
+
+    const assetAnalyses = request.assetAnalyses && request.assetAnalyses.length > 0
+      ? request.assetAnalyses
+      : await Promise.all((request.uploadedAssets ?? []).map((asset) => analyzeAssetRecord(asset, brand, request.rawIdea)));
+
+    const decision = routeGenerationRequest({ brand, request, assetAnalyses });
+    const trace = buildRoutingTrace({ brand, request, assetAnalyses });
     return json({
-      filename: storedName,
-      url: `/api/uploads/${storedName}`,
-      mimeType
+      decision,
+      trace,
+      assetAnalyses
     });
   }
 
@@ -596,6 +714,10 @@ async function handleRequest(req: Request): Promise<Response> {
 
   if (url.pathname === "/api/outputs" && req.method === "GET") {
     return json(await listOutputs());
+  }
+
+  if (url.pathname === "/api/admin/routing-tree" && req.method === "GET") {
+    return json({ tree: explainRoutingTree() });
   }
 
   if (url.pathname === "/api/storage/usage" && req.method === "GET") {
@@ -689,6 +811,15 @@ async function handleRequest(req: Request): Promise<Response> {
     } catch (err) {
       return json({ error: err instanceof Error ? err.message : "Regeneration failed" }, { status: 500 });
     }
+  }
+
+  if (url.pathname.match(/^\/api\/outputs\/[^/]+\/routing-trace$/) && req.method === "GET") {
+    const postId = url.pathname.split("/")[3];
+    const output = await readOutput(postId);
+    if (!output?.routing_trace) {
+      return json({ error: "Routing trace not found" }, { status: 404 });
+    }
+    return json(output.routing_trace);
   }
 
   if (url.pathname.startsWith("/api/outputs/") && req.method === "GET") {
