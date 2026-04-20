@@ -38,7 +38,17 @@ export function resolveVideoOptions(request: GenerationRequest): VideoOptions {
 }
 
 export function buildWorkflowReferenceAssets(request: GenerationRequest, brand: BrandProfile): ReferenceAsset[] {
-  const references = [...(request.referenceAssets ?? [])];
+  const uploadedAssetReferences = (request.uploadedAssets ?? [])
+    .filter((asset) => asset.mimeType.startsWith("image/"))
+    .map((asset) => ({
+      id: asset.id,
+      label: asset.label || asset.filename,
+      url: asset.url,
+      source: "asset" as const,
+      kind: "image" as const
+    }));
+
+  const references = [...uploadedAssetReferences, ...(request.referenceAssets ?? [])];
 
   if (brand.mascot) {
     const mascotReferences = (brand.mascot.referenceImages ?? []).map((url, index) => ({
@@ -163,4 +173,3 @@ export function createReelPackageDraft(
     subtitleDraft: clipBriefs.map((clip) => clip.title).join("\n")
   };
 }
-

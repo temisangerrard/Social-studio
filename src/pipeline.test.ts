@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { brandProfileFromBrief, resolveContentType, runPipelineFromRequest, validateContentTypes } from "./pipeline.ts";
-import type { BrandProfile, ContentTypeDefinition, GenerationRequest, PlannedPackage, Slide } from "./types.ts";
+import type { AssetAnalysis, BrandProfile, ContentRecipeDefinition, ContentTypeDefinition, GenerationRequest, PlannedPackage, Slide, UploadedAsset } from "./types.ts";
 
 function makeRequest(): GenerationRequest {
   return {
@@ -15,6 +15,29 @@ function makeRequest(): GenerationRequest {
     references: [],
     platformTargets: ["tiktok"],
     goal: "Get more installs"
+  };
+}
+
+function makeUploadedAsset(): UploadedAsset {
+  return {
+    id: "asset-1",
+    filename: "leftover-pasta.jpg",
+    mimeType: "image/jpeg",
+    url: "/api/uploads/leftover-pasta.jpg",
+    label: "Leftover pasta"
+  };
+}
+
+function makeAssetAnalysis(): AssetAnalysis {
+  return {
+    assetId: "asset-1",
+    assetType: "food_photo",
+    subjectSummary: "A bowl of pasta",
+    contentHints: ["recipe", "carousel"],
+    channelHints: ["instagram"],
+    confidence: 0.92,
+    needsUserConfirmation: false,
+    source: "fallback"
   };
 }
 
@@ -30,6 +53,39 @@ function makeBrand(): BrandProfile {
     idea: "Leftovers to dinner in minutes",
     ingredients: []
   });
+}
+
+function makeBrandWithRecipes(): BrandProfile {
+  const brand = makeBrand();
+  const contentRecipes: ContentRecipeDefinition[] = [
+    {
+      id: "recipe",
+      name: "Recipe",
+      routeFamily: "recipe",
+      workflowType: "slideshow",
+      platformTargets: ["instagram", "tiktok"],
+      defaultPriority: 100,
+      preferredAssetTypes: ["food_photo"],
+      contentTypeId: "recipe-carousel"
+    }
+  ];
+  return {
+    ...brand,
+    contentRecipes,
+    contentTypes: [
+      {
+        id: "recipe-carousel",
+        name: "Recipe Carousel",
+        imageStyle: "food photography",
+        platformTargets: ["instagram", "tiktok"],
+        slideBlueprint: [
+          { role: "hook", type: "text_only", textFields: ["title"], imagePromptTemplate: null, layout: "hook_cover" },
+          { role: "recipe", type: "generated_image", textFields: ["recipeName"], imagePromptTemplate: "Food photo of {recipeName}", layout: "recipe_card" },
+          { role: "cta", type: "text_only", textFields: ["headline"], imagePromptTemplate: null, layout: "cta_banner" }
+        ]
+      }
+    ]
+  };
 }
 
 function makeSlides(): Slide[] {
@@ -89,6 +145,95 @@ test("pipeline still writes metadata when slide rendering fails", async () => {
   assert.match(savedMetadata.render_error, /Renderer unavailable/);
   assert.match(caption, /Peppera/);
   assert.match(hooks, /leftovers/i);
+});
+
+test("pipeline metadata includes routing decision and trace", async () => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "social-studio-routing-"));
+  const assetPath = path.join(outputRoot, "placeholder.svg");
+  await fs.writeFile(assetPath, "<svg xmlns='http://www.w3.org/2000/svg'></svg>", "utf8");
+
+  const metadata = await runPipelineFromRequest(
+    {
+      ...makeRequest(),
+      platformTargets: ["instagram"],
+      uploadedAssets: [makeUploadedAsset()],
+      assetAnalyses: [makeAssetAnalysis()],
+      rawIdea: "Turn this food photo into a recipe carousel"
+    },
+    makeBrandWithRecipes(),
+    outputRoot,
+    {
+      planPackage: async () => ({
+        provider: "fallback",
+        plan: {
+          hooks: ["Turn leftovers into dinner"],
+          caption: "Recipe caption",
+          hashtags: ["#recipe"],
+          platformNotes: { instagram: "keep it clear" },
+          slides: makeSlides()
+        }
+      }),
+      generateSlideImages: async (inputSlides) => inputSlides.map((slide) => ({ ...slide, asset_path: assetPath })),
+      renderPackageSlides: async () => []
+    }
+  );
+
+  assert.equal(metadata.content_recipe_id, "recipe");
+  assert.equal(metadata.routing_decision?.routeFamily, "recipe");
+  assert.equal(metadata.routing_trace?.decision.recipeId, "recipe");
+  assert.equal(metadata.asset_analyses?.[0].assetType, "food_photo");
+});
+
+test("pipeline uses li post-id prefix for linkedin generations", async () => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "social-studio-linkedin-"));
+  const metadata = await runPipelineFromRequest(
+    {
+      ...makeRequest(),
+      platformTargets: ["linkedin"],
+      rawIdea: "Write a LinkedIn post from this screenshot",
+      uploadedAssets: [makeUploadedAsset()],
+      assetAnalyses: [
+        {
+          ...makeAssetAnalysis(),
+          assetType: "screenshot",
+          contentHints: ["linkedin-post"],
+          channelHints: ["linkedin"]
+        }
+      ]
+    },
+    {
+      ...makeBrandWithRecipes(),
+      contentRecipes: [
+        {
+          id: "linkedin-post",
+          name: "LinkedIn Post",
+          routeFamily: "linkedin-post",
+          workflowType: "linkedin-text",
+          platformTargets: ["linkedin"],
+          defaultPriority: 120,
+          preferredAssetTypes: ["screenshot"]
+        }
+      ]
+    },
+    outputRoot,
+    {
+      planPackage: async () => ({
+        provider: "fallback",
+        plan: {
+          hooks: ["LinkedIn hook"],
+          caption: "LinkedIn caption",
+          hashtags: ["#linkedin"],
+          platformNotes: { linkedin: "text only" },
+          slides: []
+        }
+      }),
+      generateSlideImages: async () => [],
+      renderPackageSlides: async () => []
+    }
+  );
+
+  assert.match(metadata.post_id, /_li_/);
+  assert.equal(metadata.workflow_type, "linkedin-text");
 });
 
 

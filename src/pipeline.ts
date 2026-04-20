@@ -4,6 +4,7 @@ import { generateFalImageAsset, generateFalVideoAsset } from "./fal-media.ts";
 import { generateImagesForSlides } from "./image-generator.ts";
 import { planSocialPackage } from "./planner.ts";
 import { renderSlides } from "./renderer.ts";
+import { buildRoutingTrace, routeGenerationRequest } from "./routing.ts";
 import {
   buildWorkflowRecipe,
   buildWorkflowReferenceAssets,
@@ -21,7 +22,9 @@ import type {
   GeneratedArtifact,
   PipelineOptions,
   Platform,
-  PostMetadata
+  PostMetadata,
+  UploadedAsset,
+  AssetAnalysis
 } from "./types.ts";
 
 interface PipelineDependencies {
@@ -262,6 +265,8 @@ function normalizeRequest(input: unknown): GenerationRequest {
     cards: request.cards as GenerationRequest["cards"],
     references: Array.isArray(request.references) ? (request.references as GenerationRequest["references"]) : [],
     referenceAssets: Array.isArray(request.referenceAssets) ? (request.referenceAssets as GenerationRequest["referenceAssets"]) : [],
+    uploadedAssets: Array.isArray(request.uploadedAssets) ? (request.uploadedAssets as UploadedAsset[]) : [],
+    assetAnalyses: Array.isArray(request.assetAnalyses) ? (request.assetAnalyses as AssetAnalysis[]) : [],
     platformTargets: request.platformTargets as Platform[],
     goal: typeof request.goal === "string" ? request.goal : "awareness",
     workflowType:
@@ -269,7 +274,9 @@ function normalizeRequest(input: unknown): GenerationRequest {
       request.workflowType === "mascot-variants" ||
       request.workflowType === "reference-edit" ||
       request.workflowType === "video-clip" ||
-      request.workflowType === "reel-package"
+      request.workflowType === "reel-package" ||
+      request.workflowType === "linkedin-carousel" ||
+      request.workflowType === "linkedin-text"
         ? request.workflowType
         : "slideshow",
     visualMode:
@@ -291,10 +298,22 @@ function normalizeRequest(input: unknown): GenerationRequest {
         : undefined,
     variantCount: typeof request.variantCount === "number" ? request.variantCount : undefined,
     deliveryTargets:
-      request.deliveryTargets === "tiktok" || request.deliveryTargets === "instagram" || request.deliveryTargets === "both"
+      request.deliveryTargets === "tiktok" || request.deliveryTargets === "instagram" || request.deliveryTargets === "both" || request.deliveryTargets === "linkedin" || request.deliveryTargets === "all"
         ? request.deliveryTargets
         : "both",
-    contentTypeId: typeof request.contentTypeId === "string" ? request.contentTypeId : undefined
+    contentTypeId: typeof request.contentTypeId === "string" ? request.contentTypeId : undefined,
+    routingOverride:
+      request.routingOverride && typeof request.routingOverride === "object"
+        ? (request.routingOverride as GenerationRequest["routingOverride"])
+        : undefined,
+    routingDecision:
+      request.routingDecision && typeof request.routingDecision === "object"
+        ? (request.routingDecision as GenerationRequest["routingDecision"])
+        : undefined,
+    routingTrace:
+      request.routingTrace && typeof request.routingTrace === "object"
+        ? (request.routingTrace as GenerationRequest["routingTrace"])
+        : undefined
   };
 }
 
@@ -306,7 +325,13 @@ async function readBrief(briefPath: string): Promise<ContentBrief> {
 async function nextPostId(outputRoot: string, product: string, platform: string): Promise<string> {
   await fs.mkdir(outputRoot, { recursive: true });
   const entries = await fs.readdir(outputRoot, { withFileTypes: true });
-  const platformCode = platform.toLowerCase() === "tiktok" ? "tt" : "ig";
+  const normalizedPlatform = platform.toLowerCase();
+  const platformCode =
+    normalizedPlatform === "tiktok"
+      ? "tt"
+      : normalizedPlatform === "linkedin"
+        ? "li"
+        : "ig";
   const prefix = `${slugify(product)}_${platformCode}_`;
   const numbers = entries
     .filter((entry) => entry.isDirectory() && entry.name.startsWith(prefix))
@@ -467,19 +492,40 @@ export async function runPipelineFromRequest(
   const imageGenerator = dependencies?.generateSlideImages ?? generateImagesForSlides;
   const renderer = dependencies?.renderPackageSlides ?? renderSlides;
 
+  const assetAnalyses = request.assetAnalyses ?? [];
+  const routingDecision = request.routingDecision ?? routeGenerationRequest({
+    brand: brandProfile,
+    request,
+    assetAnalyses
+  });
+  const routingTrace = request.routingTrace ?? buildRoutingTrace({
+    brand: brandProfile,
+    request,
+    assetAnalyses
+  });
+
+  const shouldPreferRouting = assetAnalyses.length > 0 || (request.uploadedAssets?.length ?? 0) > 0 || !!request.routingOverride;
+  const effectiveContentTypeId = shouldPreferRouting ? (routingDecision.contentTypeId ?? request.contentTypeId) : request.contentTypeId;
+
   // Resolve content type from brand config
-  const contentType = resolveContentType(brandProfile, request.contentTypeId);
+  const contentType = resolveContentType(brandProfile, effectiveContentTypeId);
 
   const { plan, provider } = await planner({
     brand: brandProfile,
-    request,
+    request: {
+      ...request,
+      contentTypeId: effectiveContentTypeId,
+      routingDecision,
+      routingTrace
+    },
     contentType: contentType ?? undefined
   });
-  const workflowType = resolveWorkflowType(request);
-  const deliveryTargets = resolveDeliveryTargets(request);
+  const workflowType = shouldPreferRouting ? routingDecision.workflowType : resolveWorkflowType(request);
+  const deliveryTargets = shouldPreferRouting ? routingDecision.deliveryTargets : resolveDeliveryTargets(request);
 
   const isPepperaCarousel =
-    (brandProfile.id === "peppera" || brandProfile.name === "Peppera");
+    routingDecision.routeFamily === "recipe" ||
+    ((brandProfile.id === "peppera" || brandProfile.name === "Peppera") && workflowType === "slideshow");
 
   const brief: ContentBrief = {
     product: brandProfile.name,
@@ -501,13 +547,23 @@ export async function runPipelineFromRequest(
     workflow_type: workflowType,
     delivery_targets: deliveryTargets,
     content_type_id: contentType?.id,
+    content_recipe_id: routingDecision.recipeId,
     caption: plan.caption,
     hooks: plan.hooks,
     hashtags: plan.hashtags,
     platform_notes: plan.platformNotes,
     brief,
     brand_profile: brandProfile,
-    generation_request: request,
+    generation_request: {
+      ...request,
+      contentTypeId: effectiveContentTypeId,
+      routingDecision,
+      routingTrace
+    },
+    uploaded_assets: request.uploadedAssets ?? [],
+    asset_analyses: assetAnalyses,
+    routing_decision: routingDecision,
+    routing_trace: routingTrace,
     slides: [],
     artifacts: [],
     reel_package: null,
@@ -521,7 +577,7 @@ export async function runPipelineFromRequest(
     render_error: null
   };
 
-  if (workflowType === "slideshow") {
+  if (workflowType === "slideshow" || workflowType === "linkedin-carousel") {
     const slidesWithAssets = await imageGenerator(plan.slides, {
       assetsDir,
       falKey: process.env.FAL_KEY,
@@ -552,6 +608,8 @@ export async function runPipelineFromRequest(
       metadata.render_status = "skipped";
       metadata.render_error = error instanceof Error ? error.message : String(error);
     }
+  } else if (workflowType === "linkedin-text") {
+    metadata.render_status = "skipped";
   } else if (workflowType === "mascot-variants") {
     const count = resolveVariantCount(request);
     const variantAngles = ["hero framing", "playful kitchen pose", "product showcase", "reaction moment", "overhead layout", "close-up expression", "editorial composition", "social cover composition"];

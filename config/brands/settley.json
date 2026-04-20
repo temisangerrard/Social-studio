@@ -21,6 +21,38 @@
     "plannerModel": "glm-4.5",
     "imageModel": "fal-ai/flux/schnell"
   },
+  "contentRecipes": [
+    {
+      "id": "property-showcase",
+      "name": "Property Showcase",
+      "routeFamily": "carousel",
+      "workflowType": "slideshow",
+      "platformTargets": ["instagram", "tiktok"],
+      "defaultPriority": 80,
+      "preferredAssetTypes": ["product_photo"],
+      "contentTypeId": "property-showcase"
+    },
+    {
+      "id": "market-insight",
+      "name": "Market Insight",
+      "routeFamily": "infographic",
+      "workflowType": "slideshow",
+      "platformTargets": ["instagram", "linkedin"],
+      "defaultPriority": 100,
+      "preferredAssetTypes": ["screenshot", "document", "product_photo"],
+      "contentTypeId": "market-insight"
+    },
+    {
+      "id": "settley-flyer",
+      "name": "Settley Flyer",
+      "routeFamily": "flyer",
+      "workflowType": "reference-edit",
+      "platformTargets": ["instagram", "linkedin"],
+      "defaultPriority": 115,
+      "preferredAssetTypes": ["logo", "product_photo", "document"],
+      "visualStyleHint": "premium trust-building flyer with CTA and logo lockup"
+    }
+  ],
   "defaultContentType": "property-showcase",
   "contentTypes": [
     {
