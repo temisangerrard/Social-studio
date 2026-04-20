@@ -21,6 +21,48 @@
     "plannerModel": "glm-4.5",
     "imageModel": "fal-ai/flux/schnell"
   },
+  "contentRecipes": [
+    {
+      "id": "linkedin-post",
+      "name": "LinkedIn Post",
+      "routeFamily": "linkedin-post",
+      "workflowType": "linkedin-text",
+      "platformTargets": ["linkedin"],
+      "defaultPriority": 130,
+      "preferredAssetTypes": ["screenshot", "person_photo", "product_photo"],
+      "copyStyleHint": "direct thought-leadership, builder-first, technical but accessible"
+    },
+    {
+      "id": "thought-leadership",
+      "name": "Thought Leadership",
+      "routeFamily": "carousel",
+      "workflowType": "slideshow",
+      "platformTargets": ["linkedin", "instagram"],
+      "defaultPriority": 90,
+      "preferredAssetTypes": ["person_photo", "product_photo"],
+      "contentTypeId": "thought-leadership"
+    },
+    {
+      "id": "thread-carousel",
+      "name": "Thread Carousel",
+      "routeFamily": "carousel",
+      "workflowType": "slideshow",
+      "platformTargets": ["linkedin", "instagram"],
+      "defaultPriority": 100,
+      "preferredAssetTypes": ["screenshot", "document", "product_photo"],
+      "contentTypeId": "thread-carousel"
+    },
+    {
+      "id": "tg-infographic",
+      "name": "Systems Infographic",
+      "routeFamily": "infographic",
+      "workflowType": "slideshow",
+      "platformTargets": ["linkedin", "instagram"],
+      "defaultPriority": 95,
+      "preferredAssetTypes": ["screenshot", "document"],
+      "contentTypeId": "thread-carousel"
+    }
+  ],
   "defaultContentType": "thought-leadership",
   "contentTypes": [
     {

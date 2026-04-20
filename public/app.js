@@ -25,6 +25,9 @@ const studioState = {
   canvasCards: [],
   generatedOutput: null,
   selectedAsset: null,
+  uploadedAssets: [],
+  assetAnalyses: [],
+  routePreview: null,
   workflowType: "slideshow",
   canvasLoadingStage: null,
   downloading: false,
@@ -37,7 +40,8 @@ const els = {
   views: {
     studio: document.getElementById("view-studio"),
     calendar: document.getElementById("view-calendar"),
-    library: document.getElementById("view-library")
+    library: document.getElementById("view-library"),
+    admin: document.getElementById("view-admin")
   },
 
   studioProductSelect: document.getElementById("studio-product-select"),
@@ -55,6 +59,9 @@ const els = {
   studioReferenceInput: document.getElementById("studio-reference-input"),
   studioReferenceFiles: document.getElementById("studio-reference-files"),
   studioReferenceChipset: document.getElementById("studio-reference-chipset"),
+  studioUploadTrigger: document.getElementById("studio-upload-trigger"),
+  studioUploadedAssets: document.getElementById("studio-uploaded-assets"),
+  studioRoutePreview: document.getElementById("studio-route-preview"),
   studioStatus: document.getElementById("studio-status"),
   studioSubmit: document.getElementById("studio-submit"),
 
@@ -113,6 +120,12 @@ const els = {
   assetModalOpen: document.getElementById("asset-modal-open"),
   assetModalDownload: document.getElementById("asset-modal-download"),
   assetModalClose: document.getElementById("asset-modal-close")
+};
+
+const adminEls = {
+  traceSelect: document.getElementById("admin-trace-select"),
+  routingTree: document.getElementById("admin-routing-tree"),
+  routingTrace: document.getElementById("admin-routing-trace")
 };
 
 // ── Calendar element refs ─────────────────────────────────────────────────────
@@ -264,6 +277,7 @@ function switchView(name) {
   });
   if (name === "library") loadLibrary();
   if (name === "calendar") loadCalendar();
+  if (name === "admin") loadAdmin();
 }
 
 els.navLinks.forEach((link) => {
@@ -408,10 +422,19 @@ function buildBrandReferenceAssets(brandId, visualMode) {
 function buildReferenceAssets({ brandId, visualMode, inputValue, selectedAsset } = {}) {
   const brandRefs = buildBrandReferenceAssets(brandId, visualMode);
   const runRefs = parseReferenceLines(inputValue);
+  const uploadedRefs = (studioState.uploadedAssets || [])
+    .filter((asset) => asset.mimeType?.startsWith("image/"))
+    .map((asset) => ({
+      id: asset.id,
+      label: asset.label || asset.filename,
+      url: asset.url,
+      source: "asset",
+      kind: "image"
+    }));
   const assetRefs = selectedAsset?.assetUrl && selectedAsset.assetKind === "image"
     ? [{ id: `asset-ref-${selectedAsset.itemId || "sel"}`, label: selectedAsset.text || "Selected", url: selectedAsset.assetUrl, source: "asset", kind: "image" }]
     : [];
-  return [...brandRefs, ...assetRefs, ...runRefs];
+  return [...brandRefs, ...uploadedRefs, ...assetRefs, ...runRefs];
 }
 
 function renderReferenceChips() {
@@ -423,6 +446,114 @@ function renderReferenceChips() {
   els.studioReferenceChipset.innerHTML = refs.map((r) =>
     `<span class="reference-chip reference-chip--${escapeHtml(r.source)}">${escapeHtml(r.label)}</span>`
   ).join("");
+}
+
+function assetAnalysisForId(assetId) {
+  return studioState.assetAnalyses.find((analysis) => analysis.assetId === assetId) || null;
+}
+
+async function analyzeUploadedAssetRecord(asset) {
+  const res = await fetch("/api/uploads/analyze", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      brandProfileId: els.studioProductSelect.value,
+      prompt: els.studioIdeaInput.value.trim(),
+      asset
+    })
+  });
+  if (!res.ok) throw new Error("Failed to analyze upload.");
+  return res.json();
+}
+
+function renderUploadedAssets() {
+  if (!els.studioUploadedAssets) return;
+  if (!studioState.uploadedAssets.length) {
+    els.studioUploadedAssets.innerHTML = `<p class="assistant-status">No uploads yet.</p>`;
+    return;
+  }
+
+  els.studioUploadedAssets.innerHTML = studioState.uploadedAssets.map((asset) => {
+    const analysis = assetAnalysisForId(asset.id);
+    const confidence = analysis ? `${Math.round((analysis.confidence || 0) * 100)}%` : "Pending";
+    return `
+      <div class="uploaded-asset-card" data-upload-id="${escapeHtml(asset.id)}">
+        <img class="uploaded-asset-card__preview" src="${escapeHtml(asset.url)}" alt="${escapeHtml(asset.label || asset.filename)}" />
+        <div class="uploaded-asset-card__meta">
+          <strong>${escapeHtml(asset.filename)}</strong>
+          <span>${escapeHtml(analysis?.assetType || "pending")}</span>
+          <span>${escapeHtml(analysis?.subjectSummary || "Waiting for analysis")}</span>
+          <span>Confidence: ${escapeHtml(confidence)}</span>
+        </div>
+        <input class="uploaded-asset-card__input" data-upload-field="label" value="${escapeHtml(asset.label || "")}" placeholder="What is this?" />
+        <textarea class="uploaded-asset-card__notes" data-upload-field="notes" rows="2" placeholder="Optional notes">${escapeHtml(asset.notes || "")}</textarea>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderRoutePreview() {
+  if (!els.studioRoutePreview) return;
+  const preview = studioState.routePreview;
+  if (!preview?.decision) {
+    els.studioRoutePreview.innerHTML = `<p class="assistant-status">Upload assets or enter a prompt to preview the route.</p>`;
+    return;
+  }
+
+  const decision = preview.decision;
+  const candidates = (decision.candidates || [])
+    .slice(0, 3)
+    .map((candidate) => `<li>${escapeHtml(candidate.recipeId)} — ${escapeHtml(candidate.routeFamily)} (${candidate.score})</li>`)
+    .join("");
+
+  els.studioRoutePreview.innerHTML = `
+    <div class="route-preview__summary">
+      <strong>${escapeHtml(decision.recipeId)}</strong>
+      <span>${escapeHtml(decision.routeFamily)} → ${escapeHtml(decision.workflowType)}</span>
+      <p>${escapeHtml(decision.reasonSummary || "No routing summary available.")}</p>
+      ${decision.requiresConfirmation ? `<p class="assistant-status">Low confidence: review the asset labels before generating.</p>` : ""}
+    </div>
+    <ul class="route-preview__candidates">${candidates}</ul>
+  `;
+}
+
+async function refreshRoutePreview() {
+  const rawIdea = els.studioIdeaInput.value.trim();
+  if (!rawIdea && !studioState.uploadedAssets.length) {
+    studioState.routePreview = null;
+    renderRoutePreview();
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/routes/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandProfileId: els.studioProductSelect.value,
+        rawIdea,
+        notes: els.studioNotesInput.value.trim(),
+        platformTargets: [els.studioPlatformSelect.value],
+        goal: getBrandById(els.studioProductSelect.value)?.defaults?.goal || "awareness",
+        uploadedAssets: studioState.uploadedAssets,
+        assetAnalyses: studioState.assetAnalyses
+      })
+    });
+    if (!res.ok) throw new Error("Failed to preview route.");
+    studioState.routePreview = await res.json();
+  } catch (err) {
+    studioState.routePreview = {
+      decision: {
+        recipeId: "unavailable",
+        routeFamily: "carousel",
+        workflowType: "slideshow",
+        reasonSummary: err instanceof Error ? err.message : "Route preview unavailable.",
+        candidates: [],
+        requiresConfirmation: false
+      }
+    };
+  }
+  renderRoutePreview();
 }
 
 // ── Content Type Selector ─────────────────────────────────────────────────────
@@ -663,6 +794,14 @@ function renderCheckpoints() {
 async function runGeneration(rawIdea, notes) {
   const brandId = els.studioProductSelect.value;
   const brief = studioState.session?.inferredBrief || {};
+  const workflowOverride =
+    studioState.routePreview?.decision?.workflowType && studioState.routePreview.decision.workflowType !== studioState.workflowType
+      ? studioState.workflowType
+      : undefined;
+  const contentTypeOverride =
+    studioState.routePreview?.decision?.contentTypeId && els.studioContentTypeSelect?.value && els.studioContentTypeSelect.value !== studioState.routePreview.decision.contentTypeId
+      ? els.studioContentTypeSelect.value
+      : undefined;
   const request = {
     brandProfileId: brandId,
     rawIdea,
@@ -675,12 +814,20 @@ async function runGeneration(rawIdea, notes) {
       inputValue: els.studioReferenceInput.value,
       selectedAsset: studioState.selectedAsset
     }),
+    uploadedAssets: studioState.uploadedAssets,
+    assetAnalyses: studioState.assetAnalyses,
     platformTargets: [els.studioPlatformSelect.value],
     goal: getBrandById(brandId)?.defaults?.goal || "awareness",
-    workflowType: studioState.workflowType,
+    workflowType: studioState.routePreview?.decision?.workflowType || studioState.workflowType,
     visualMode: els.studioVisualMode.value,
-    deliveryTargets: els.studioDeliveryTarget.value,
-    contentTypeId: els.studioContentTypeSelect?.value || undefined,
+    deliveryTargets: studioState.routePreview?.decision?.deliveryTargets || els.studioDeliveryTarget.value,
+    contentTypeId: studioState.routePreview?.decision?.contentTypeId || els.studioContentTypeSelect?.value || undefined,
+    routingOverride: workflowOverride || contentTypeOverride
+      ? {
+          workflowType: workflowOverride,
+          contentTypeId: contentTypeOverride
+        }
+      : undefined,
     variantCount: studioState.workflowType === "mascot-variants" ? 4 : undefined,
     videoOptions: ["video-clip", "reel-package"].includes(studioState.workflowType)
       ? { duration: 5, aspectRatio: "9:16", withAudio: true, consistencyMode: "mascot-consistent" }
@@ -720,6 +867,12 @@ function finishGeneration(output) {
   studioState.generatedOutput = output;
   studioState.workflowType = output.workflow_type || studioState.workflowType;
   studioState.selectedAsset = outputAssets(output)[0] || null;
+  if (output.routing_decision) {
+    studioState.routePreview = {
+      decision: output.routing_decision,
+      trace: output.routing_trace
+    };
+  }
   setCheckpoint("visuals", "done");
   setCheckpoint("finalPackage", "done");
   hideCanvasProgress();
@@ -737,6 +890,7 @@ function finishGeneration(output) {
 
   // Load into canvas engine
   loadOutputToEngine(output);
+  renderRoutePreview();
 }
 
 /**
@@ -1254,11 +1408,33 @@ els.studioProductSelect.addEventListener("change", async () => {
   renderBrandEditor(els.studioProductSelect.value);
   renderReferenceChips();
   updateContentTypeSelector(els.studioProductSelect.value);
+  await refreshRoutePreview();
   await createSession(els.studioProductSelect.value);
 });
 
-els.studioVisualMode.addEventListener("change", renderReferenceChips);
+els.studioVisualMode.addEventListener("change", () => {
+  renderReferenceChips();
+  refreshRoutePreview();
+});
 els.studioReferenceInput.addEventListener("input", renderReferenceChips);
+els.studioIdeaInput.addEventListener("input", () => {
+  refreshRoutePreview();
+});
+els.studioNotesInput.addEventListener("input", () => {
+  refreshRoutePreview();
+});
+els.studioPlatformSelect.addEventListener("change", () => {
+  refreshRoutePreview();
+});
+els.studioContentTypeSelect?.addEventListener("change", () => {
+  refreshRoutePreview();
+});
+els.studioUploadTrigger?.addEventListener("click", () => {
+  els.studioReferenceFiles.click();
+});
+document.getElementById("toolbar-upload-btn")?.addEventListener("click", () => {
+  els.studioReferenceFiles.click();
+});
 
 els.studioReferenceFiles.addEventListener("change", async () => {
   showStatus("Uploading references…");
@@ -1276,17 +1452,37 @@ els.studioReferenceFiles.addEventListener("change", async () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filename: file.name, dataUrl })
       });
-      const { url } = await res.json();
+      const uploadedAsset = await res.json();
+      const analysis = await analyzeUploadedAssetRecord(uploadedAsset);
+      studioState.uploadedAssets.push(uploadedAsset);
+      studioState.assetAnalyses = [...studioState.assetAnalyses.filter((item) => item.assetId !== analysis.assetId), analysis];
       const current = els.studioReferenceInput.value.trim();
-      els.studioReferenceInput.value = [current, url].filter(Boolean).join("\n");
+      els.studioReferenceInput.value = [current, uploadedAsset.url].filter(Boolean).join("\n");
     }
     renderReferenceChips();
+    renderUploadedAssets();
+    await refreshRoutePreview();
     hideStatus();
   } catch (err) {
     showStatus(err instanceof Error ? err.message : "Upload failed.");
   } finally {
     els.studioReferenceFiles.value = "";
   }
+});
+
+els.studioUploadedAssets?.addEventListener("change", async (e) => {
+  const wrapper = e.target.closest("[data-upload-id]");
+  if (!wrapper) return;
+  const asset = studioState.uploadedAssets.find((item) => item.id === wrapper.dataset.uploadId);
+  if (!asset) return;
+  const labelInput = wrapper.querySelector('[data-upload-field="label"]');
+  const notesInput = wrapper.querySelector('[data-upload-field="notes"]');
+  asset.label = labelInput?.value?.trim() || "";
+  asset.notes = notesInput?.value?.trim() || "";
+  const analysis = await analyzeUploadedAssetRecord(asset);
+  studioState.assetAnalyses = [...studioState.assetAnalyses.filter((item) => item.assetId !== asset.id), analysis];
+  renderUploadedAssets();
+  await refreshRoutePreview();
 });
 
 // ── Library ───────────────────────────────────────────────────────────────────
@@ -1346,6 +1542,13 @@ async function loadOutputIntoCanvas(postId) {
   studioState.generatedOutput = output;
   studioState.workflowType = output.workflow_type || "slideshow";
   studioState.selectedAsset = outputAssets(output)[0] || null;
+  if (output.routing_decision) {
+    studioState.routePreview = {
+      decision: output.routing_decision,
+      trace: output.routing_trace
+    };
+    renderRoutePreview();
+  }
   resetCheckpoints();
   ["strategy", "hooks", "visuals", "finalPackage"].forEach((s) => setCheckpoint(s, "done"));
   const brief = { goal: output.caption || output.post_id, audience: null, offer: null, tone: null, platform: null };
@@ -1823,6 +2026,14 @@ async function loadLibrary() {
 
   renderStorageIndicator();
   renderLibrary();
+  if (adminEls.traceSelect) {
+    const current = adminEls.traceSelect.value;
+    adminEls.traceSelect.innerHTML = `<option value="">Select a generated run</option>` +
+      libraryOutputs.map((item) => `<option value="${escapeHtml(item.postId)}">${escapeHtml(item.postId)} — ${escapeHtml(titleCase(item.product || ""))}</option>`).join("");
+    if (current && libraryOutputs.some((item) => item.postId === current)) {
+      adminEls.traceSelect.value = current;
+    }
+  }
 }
 
 function renderStorageIndicator() {
@@ -1944,8 +2155,10 @@ function renderLibrary() {
       <span class="library-card__brand">${escapeHtml(titleCase(item.product || "Unknown"))}</span>
       <span class="library-card__platform">${escapeHtml(titleCase(item.platform || ""))}</span>
       <span class="library-card__type">${escapeHtml(titleCase(item.workflowType || ""))}</span>
+      ${item.content_recipe_id ? `<span class="library-card__type">${escapeHtml(titleCase(item.content_recipe_id))}</span>` : ""}
       <span class="library-card__date">${date}</span>
       <span class="library-card__slides">${item.slideCount || 0} slides</span>
+      ${item.routeSummary ? `<p class="library-card__caption">${escapeHtml(item.routeSummary)}</p>` : ""}
       ${item.caption ? `<p class="library-card__caption">${escapeHtml(item.caption)}</p>` : ""}
     `;
     card.appendChild(body);
@@ -2074,12 +2287,48 @@ calEls.libraryPlatformFilter?.addEventListener("change", onFilterOrSortChange);
 calEls.librarySearch?.addEventListener("input", onFilterOrSortChange);
 document.getElementById("library-sort")?.addEventListener("change", onFilterOrSortChange);
 
+async function loadAdmin() {
+  try {
+    const treeRes = await fetch("/api/admin/routing-tree");
+    const treePayload = await treeRes.json();
+    adminEls.routingTree.textContent = treePayload.tree || "Routing tree unavailable.";
+  } catch {
+    adminEls.routingTree.textContent = "Routing tree unavailable.";
+  }
+
+  if (!libraryOutputs.length) {
+    await loadLibrary();
+  }
+
+  if (!adminEls.traceSelect.value) {
+    adminEls.routingTrace.textContent = "Select a run to inspect its routing trace.";
+  }
+}
+
+adminEls.traceSelect?.addEventListener("change", async () => {
+  const postId = adminEls.traceSelect.value;
+  if (!postId) {
+    adminEls.routingTrace.textContent = "Select a run to inspect its routing trace.";
+    return;
+  }
+  adminEls.routingTrace.textContent = "Loading trace…";
+  try {
+    const res = await fetch(`/api/outputs/${encodeURIComponent(postId)}/routing-trace`);
+    const payload = await res.json();
+    adminEls.routingTrace.textContent = JSON.stringify(payload, null, 2);
+  } catch {
+    adminEls.routingTrace.textContent = "Failed to load routing trace.";
+  }
+});
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 async function bootstrap() {
   await loadProducts();
   renderBrandEditor("peppera");
   updateContentTypeSelector("peppera");
   updateWorkflowUI();
+  renderUploadedAssets();
+  renderRoutePreview();
   await createSession("peppera");
   initCanvasDrag();
 

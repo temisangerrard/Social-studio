@@ -21,6 +21,7 @@
           <a class="is-active" href="#" data-view="studio">Studio</a>
           <a href="#" data-view="calendar">Calendar</a>
           <a href="#" data-view="library">Library</a>
+          <a href="#" data-view="admin">Admin</a>
         </nav>
       </div>
       <div class="topbar__right">
@@ -99,6 +100,21 @@
           <div class="field-group">
             <label class="field-label" for="studio-notes-input">Ingredients or notes</label>
             <input id="studio-notes-input" type="text" placeholder="eggs, peppers, leftover rice…" />
+          </div>
+          <div class="field-group">
+            <div class="field-row" style="align-items:center;justify-content:space-between">
+              <label class="field-label" for="studio-reference-files">Uploads</label>
+              <button id="studio-upload-trigger" class="ghost-button" type="button">Upload photos</button>
+            </div>
+            <div id="studio-uploaded-assets" class="uploaded-asset-list">
+              <p class="assistant-status">No uploads yet.</p>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Proposed Route</label>
+            <div id="studio-route-preview" class="route-preview">
+              <p class="assistant-status">Upload assets or enter a prompt to preview the route.</p>
+            </div>
           </div>
 
           <div id="studio-status" class="assistant-status hidden"></div>
@@ -328,6 +344,35 @@
         </div>
         <div id="library-list" class="library-list">
           <p class="library-empty">No past generations yet. Go to Studio to make your first post.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-admin" class="view view--admin hidden">
+      <div class="library-container">
+        <div class="library-header">
+          <div>
+            <p class="eyebrow">Routing Admin</p>
+            <h1 class="gen-heading">Decision tree and traces</h1>
+          </div>
+          <div class="library-filters">
+            <div class="field-group">
+              <label class="field-label" for="admin-trace-select">Run trace</label>
+              <select id="admin-trace-select">
+                <option value="">Select a generated run</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="admin-grid">
+          <section class="admin-card">
+            <p class="eyebrow">Static tree</p>
+            <pre id="admin-routing-tree" class="admin-pre">Loading routing tree…</pre>
+          </section>
+          <section class="admin-card">
+            <p class="eyebrow">Run trace</p>
+            <pre id="admin-routing-trace" class="admin-pre">Select a run to inspect its routing trace.</pre>
+          </section>
         </div>
       </div>
     </div>
