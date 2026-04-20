@@ -35,11 +35,11 @@ test("clampZoom constrains zoom to minimum 0.1", () => {
   assert.equal(t.zoom, 0.1);
 });
 
-test("clampZoom constrains zoom to maximum 3.0", () => {
+test("clampZoom constrains zoom to maximum 5.0", () => {
   const t = new TransformState();
   t.zoom = 10;
   t.clampZoom();
-  assert.equal(t.zoom, 3.0);
+  assert.equal(t.zoom, 5.0);
 });
 
 test("clampZoom leaves valid zoom unchanged", () => {
@@ -134,9 +134,9 @@ test("applyWheelZoom preserves the canvas point under cursor", () => {
 
 test("applyWheelZoom clamps zoom to bounds", () => {
   const t = new TransformState();
-  t.zoom = 3.0;
+  t.zoom = 5.0;
   t.applyWheelZoom(-1, 0, 0); // try to zoom in past max
-  assert.equal(t.zoom, 3.0);
+  assert.equal(t.zoom, 5.0);
 });
 
 // ── applyPinchZoom ────────────────────────────────────────────────────────────
@@ -168,8 +168,8 @@ test("applyPinchZoom preserves the canvas point at midpoint", () => {
 test("applyPinchZoom clamps zoom to bounds", () => {
   const t = new TransformState();
   t.zoom = 2.5;
-  t.applyPinchZoom(2.0, 0, 0); // 2.5 * 2.0 = 5.0, should clamp to 3.0
-  assert.equal(t.zoom, 3.0);
+  t.applyPinchZoom(2.0, 0, 0); // 2.5 * 2.0 = 5.0, should clamp to 5.0
+  assert.equal(t.zoom, 5.0);
 });
 
 // @ts-nocheck — canvas-engine.js is a vanilla JS module; TS types are not available

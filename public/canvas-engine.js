@@ -14,7 +14,7 @@ const ZOOM_STEP = 0.1;
 const ZOOM_MIN = 0.1;
 
 /** Maximum allowed zoom level. */
-const ZOOM_MAX = 3.0;
+const ZOOM_MAX = 5.0;
 
 /**
  * Manages the transform matrix (zoom + pan) for the infinite canvas.
@@ -27,7 +27,7 @@ const ZOOM_MAX = 3.0;
  * under the pointer stays at the same screen position before and after zoom.
  */
 export class TransformState {
-  /** @type {number} Current zoom level (0.1–3.0). */
+  /** @type {number} Current zoom level (0.1–5.0). */
   zoom = 1;
 
   /** @type {number} Horizontal pan offset in screen pixels. */
@@ -100,7 +100,7 @@ export class TransformState {
   }
 
   /**
-   * Constrain zoom to the allowed range [0.1, 3.0].
+   * Constrain zoom to the allowed range [0.1, 5.0].
    */
   clampZoom() {
     this.zoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, this.zoom));
@@ -604,6 +604,9 @@ export class PointerStateMachine {
   /** @type {HTMLElement|null} The artboard element currently being dragged. */
   _dragTarget = null;
 
+  /** @type {HTMLElement|null} The drop position indicator element. */
+  _dropIndicatorEl = null;
+
   /** @type {{x: number, y: number}|null} Original canvas-space position of dragged artboard. */
   _dragOrigPos = null;
 
@@ -670,11 +673,24 @@ export class PointerStateMachine {
     return null;
   }
 
+  /** @type {boolean} When true, suppress pan/drag to allow inline text editing. */
+  _editingActive = false;
+
+  /**
+   * Set the editing-active flag to suppress pan and drag gestures.
+   * @param {boolean} active
+   */
+  setEditingActive(active) {
+    this._editingActive = !!active;
+  }
+
   /** @param {PointerEvent} e */
   _onPointerDown(e) {
     if (this.state !== "idle") return;
     // Ignore right-click
     if (e.button !== 0) return;
+    // Suppress pan/drag while inline editing is active
+    if (this._editingActive) return;
 
     const artboard = this._findArtboard(e.target);
     this._lastPointer = { x: e.clientX, y: e.clientY };
@@ -713,6 +729,9 @@ export class PointerStateMachine {
       const curTop = parseFloat(this._dragTarget.style.top) || 0;
       this._dragTarget.style.left = `${curLeft + canvasDx}px`;
       this._dragTarget.style.top = `${curTop + canvasDy}px`;
+
+      // Show drop position indicator
+      this._updateDropIndicator(curLeft + canvasDx);
     }
   }
 
@@ -720,6 +739,7 @@ export class PointerStateMachine {
   _onPointerUp(e) {
     if (this.state === "dragging" && this._dragTarget) {
       this._dragTarget.classList.remove("canvas-artboard--dragging");
+      this._removeDropIndicator();
       this._snapToStrip(this._dragTarget);
       if (this._onDragEnd) this._onDragEnd(this._dragTarget);
       this._dragTarget = null;
@@ -790,6 +810,72 @@ export class PointerStateMachine {
       this._rafPending = false;
       if (this._onTransformChange) this._onTransformChange();
     });
+  }
+
+  /**
+   * Show or move the drop position indicator (vertical line) between artboards.
+   * Calculates where the dragged artboard would be inserted based on its x position.
+   * @param {number} draggedX - Current x position of the dragged artboard in canvas space.
+   */
+  _updateDropIndicator(draggedX) {
+    const descriptors = this._artboardManager.artboards;
+    if (!descriptors || descriptors.length < 2) return;
+
+    const draggedId = this._dragTarget ? this._dragTarget.dataset.artboardId : null;
+    // Get sorted non-dragged artboards
+    const others = [...descriptors]
+      .filter((d) => d.id !== draggedId)
+      .sort((a, b) => a.x - b.x);
+
+    if (!others.length) return;
+
+    // Find insertion index
+    let insertIdx = others.length;
+    for (let i = 0; i < others.length; i++) {
+      const midX = others[i].x + others[i].width / 2;
+      if (draggedX < midX) {
+        insertIdx = i;
+        break;
+      }
+    }
+
+    // Calculate indicator x position (between artboards or at edges)
+    let indicatorX;
+    if (insertIdx === 0) {
+      indicatorX = others[0].x - STRIP_GAP / 2;
+    } else if (insertIdx >= others.length) {
+      const last = others[others.length - 1];
+      indicatorX = last.x + last.width + STRIP_GAP / 2;
+    } else {
+      const prev = others[insertIdx - 1];
+      indicatorX = prev.x + prev.width + STRIP_GAP / 2;
+    }
+
+    // Use the first artboard's y and height for the indicator
+    const refArtboard = others[0];
+    const indicatorY = refArtboard.y;
+    const indicatorH = refArtboard.height;
+
+    // Create or reuse indicator element
+    if (!this._dropIndicatorEl) {
+      this._dropIndicatorEl = document.createElement("div");
+      this._dropIndicatorEl.className = "canvas-drop-indicator";
+      this._transformEl.appendChild(this._dropIndicatorEl);
+    }
+
+    this._dropIndicatorEl.style.left = `${indicatorX - 1}px`;
+    this._dropIndicatorEl.style.top = `${indicatorY}px`;
+    this._dropIndicatorEl.style.height = `${indicatorH}px`;
+  }
+
+  /**
+   * Remove the drop position indicator from the DOM.
+   */
+  _removeDropIndicator() {
+    if (this._dropIndicatorEl) {
+      this._dropIndicatorEl.remove();
+      this._dropIndicatorEl = null;
+    }
   }
 
   /**
@@ -886,16 +972,21 @@ export class SelectionManager {
   /** @type {string} CSS class applied to selected artboards. */
   static SELECTED_CLASS = "canvas-artboard--selected";
 
+  /** @type {function|null} */
+  _onDelete;
+
   /**
    * @param {HTMLElement} stageEl - The .studio-canvas-stage element.
    * @param {ArtboardManager} artboardManager
    * @param {object} [callbacks]
    * @param {function} [callbacks.onSelect] - Called with the selected descriptor or null.
+   * @param {function} [callbacks.onDelete] - Called with the artboard ID when delete is confirmed.
    */
   constructor(stageEl, artboardManager, callbacks = {}) {
     this._stageEl = stageEl;
     this._artboardManager = artboardManager;
     this._onSelect = callbacks.onSelect || null;
+    this._onDelete = callbacks.onDelete || null;
 
     this._onClick = this._onClick.bind(this);
     this._onKeyDown = this._onKeyDown.bind(this);
@@ -971,10 +1062,40 @@ export class SelectionManager {
   }
 
   /**
-   * Keyboard navigation: arrow keys move selection between adjacent artboards.
+   * Keyboard navigation: arrow keys move selection between adjacent artboards,
+   * Escape deselects the current artboard, Delete/Backspace removes selected artboard.
    * @param {KeyboardEvent} e
    */
   _onKeyDown(e) {
+    // Don't handle keys when InlineEditor (contenteditable) is active
+    const active = document.activeElement;
+    if (active && (active.isContentEditable || active.tagName === "INPUT" || active.tagName === "TEXTAREA")) {
+      return;
+    }
+
+    // Escape deselects
+    if (e.key === "Escape") {
+      if (this._selectedId) {
+        this.deselect();
+        e.preventDefault();
+      }
+      return;
+    }
+
+    // Delete/Backspace removes selected artboard after confirmation
+    if (e.key === "Delete" || e.key === "Backspace") {
+      if (this._selectedId && this._onDelete) {
+        e.preventDefault();
+        const confirmed = confirm("Delete this artboard?");
+        if (confirmed) {
+          const idToDelete = this._selectedId;
+          this.deselect();
+          this._onDelete(idToDelete);
+        }
+      }
+      return;
+    }
+
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
 
     const sorted = [...this._artboardManager.artboards].sort((a, b) => a.order - b.order);
@@ -999,6 +1120,142 @@ export class SelectionManager {
   destroy() {
     this._stageEl.removeEventListener("click", this._onClick);
     document.removeEventListener("keydown", this._onKeyDown);
+  }
+}
+
+// ── ContextMenu (Task 7.1) ────────────────────────────────────────────────────
+
+/**
+ * Right-click / long-press context menu for artboards.
+ * Displays action items (Regenerate, Download, Duplicate, Delete) at pointer position.
+ */
+export class ContextMenu {
+  /** @type {HTMLElement} */
+  _stageEl;
+
+  /** @type {object} Callback functions for menu actions. */
+  _callbacks;
+
+  /** @type {HTMLElement|null} The menu DOM element. */
+  _menuEl = null;
+
+  /** @type {object|null} The artboard descriptor the menu was opened for. */
+  _artboardDesc = null;
+
+  /**
+   * @param {HTMLElement} stageEl - The .studio-canvas-stage element.
+   * @param {object} callbacks
+   * @param {function} [callbacks.onRegenerate] - Called with artboardDesc.
+   * @param {function} [callbacks.onDownload] - Called with artboardDesc.
+   * @param {function} [callbacks.onDelete] - Called with artboardDesc.
+   * @param {function} [callbacks.onDuplicate] - Called with artboardDesc.
+   */
+  constructor(stageEl, callbacks = {}) {
+    this._stageEl = stageEl;
+    this._callbacks = callbacks;
+
+    this._onDocumentClick = this._onDocumentClick.bind(this);
+    this._onKeyDown = this._onKeyDown.bind(this);
+  }
+
+  /**
+   * Show the context menu at the given screen coordinates for an artboard.
+   *
+   * @param {number} x - Screen-space X (e.g. from event.clientX).
+   * @param {number} y - Screen-space Y (e.g. from event.clientY).
+   * @param {object} artboardDesc - The ArtboardDescriptor for the target artboard.
+   */
+  show(x, y, artboardDesc) {
+    // Hide any existing menu first
+    this.hide();
+
+    this._artboardDesc = artboardDesc;
+
+    // Build menu DOM
+    const menu = document.createElement("div");
+    menu.className = "canvas-context-menu";
+    menu.style.position = "fixed";
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+    menu.style.zIndex = "9999";
+
+    const actions = [
+      { label: "Regenerate", key: "onRegenerate", dangerous: false },
+      { label: "Download", key: "onDownload", dangerous: false },
+      { label: "Duplicate", key: "onDuplicate", dangerous: false },
+      { label: "Delete", key: "onDelete", dangerous: true },
+    ];
+
+    for (const action of actions) {
+      const item = document.createElement("div");
+      item.className = "canvas-context-menu__item";
+      item.textContent = action.label;
+      item.dataset.action = action.key;
+
+      if (action.dangerous) {
+        item.dataset.dangerous = "true";
+        item.classList.add("canvas-context-menu__item--dangerous");
+      }
+
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const cb = this._callbacks[action.key];
+        if (cb) cb(this._artboardDesc);
+        this.hide();
+      });
+
+      menu.appendChild(item);
+    }
+
+    document.body.appendChild(menu);
+    this._menuEl = menu;
+
+    // Attach document-level listeners to close on outside click or Escape
+    // Use setTimeout to avoid the same click that opened the menu from closing it
+    setTimeout(() => {
+      document.addEventListener("click", this._onDocumentClick, true);
+      document.addEventListener("keydown", this._onKeyDown);
+    }, 0);
+  }
+
+  /**
+   * Hide and remove the context menu from the DOM.
+   */
+  hide() {
+    if (this._menuEl) {
+      this._menuEl.remove();
+      this._menuEl = null;
+    }
+    this._artboardDesc = null;
+    document.removeEventListener("click", this._onDocumentClick, true);
+    document.removeEventListener("keydown", this._onKeyDown);
+  }
+
+  /**
+   * Clean up all event listeners. Call when the engine is destroyed.
+   */
+  destroy() {
+    this.hide();
+  }
+
+  /**
+   * Handle clicks outside the menu to close it.
+   * @param {MouseEvent} e
+   */
+  _onDocumentClick(e) {
+    if (this._menuEl && !this._menuEl.contains(e.target)) {
+      this.hide();
+    }
+  }
+
+  /**
+   * Handle Escape key to close the menu.
+   * @param {KeyboardEvent} e
+   */
+  _onKeyDown(e) {
+    if (e.key === "Escape") {
+      this.hide();
+    }
   }
 }
 
@@ -1042,10 +1299,16 @@ export class ZoomControlsUI {
   }
 
   /**
-   * Build and insert the zoom toolbar into the stage element.
+   * Build and insert the zoom controls.
+   *
+   * If a `targetContainer` is provided (e.g. the #studio-quick-form toolbar),
+   * the controls are rendered inline inside that container. Otherwise they
+   * fall back to being appended to the stage element.
+   *
    * @param {HTMLElement} transformEl - The .canvas-transform element to apply transforms to.
+   * @param {HTMLElement} [targetContainer] - Optional container to render into (e.g. toolbar).
    */
-  render(transformEl) {
+  render(transformEl, targetContainer) {
     if (this._toolbarEl) return; // Already rendered
 
     this._transformEl = transformEl;
@@ -1056,10 +1319,11 @@ export class ZoomControlsUI {
     // Zoom out button
     const btnOut = document.createElement("button");
     btnOut.className = "canvas-zoom-btn";
+    btnOut.type = "button";
     btnOut.dataset.action = "zoom-out";
     btnOut.textContent = "−";
     btnOut.setAttribute("aria-label", "Zoom out");
-    btnOut.addEventListener("click", () => this._stepZoom(-1));
+    btnOut.addEventListener("click", (e) => { e.preventDefault(); this._stepZoom(-1); });
 
     // Zoom label
     const label = document.createElement("span");
@@ -1070,25 +1334,37 @@ export class ZoomControlsUI {
     // Zoom in button
     const btnIn = document.createElement("button");
     btnIn.className = "canvas-zoom-btn";
+    btnIn.type = "button";
     btnIn.dataset.action = "zoom-in";
     btnIn.textContent = "+";
     btnIn.setAttribute("aria-label", "Zoom in");
-    btnIn.addEventListener("click", () => this._stepZoom(1));
+    btnIn.addEventListener("click", (e) => { e.preventDefault(); this._stepZoom(1); });
 
-    // Fit button
+    // Fit-to-view button
     const btnFit = document.createElement("button");
     btnFit.className = "canvas-zoom-btn";
+    btnFit.type = "button";
     btnFit.dataset.action = "zoom-fit";
     btnFit.textContent = "Fit";
     btnFit.setAttribute("aria-label", "Zoom to fit");
-    btnFit.addEventListener("click", () => this._zoomToFit());
+    btnFit.addEventListener("click", (e) => { e.preventDefault(); this._zoomToFit(); });
 
     toolbar.appendChild(btnOut);
     toolbar.appendChild(label);
     toolbar.appendChild(btnIn);
     toolbar.appendChild(btnFit);
 
-    this._stageEl.appendChild(toolbar);
+    // Render into the target container (toolbar) if provided, otherwise stage
+    const host = targetContainer || this._stageEl;
+
+    // Add a visual divider before zoom controls when inside the toolbar
+    if (targetContainer) {
+      const divider = document.createElement("div");
+      divider.className = "toolbar-divider";
+      host.appendChild(divider);
+    }
+
+    host.appendChild(toolbar);
     this._toolbarEl = toolbar;
   }
 
@@ -1663,12 +1939,32 @@ export class CanvasEngine {
   /** @type {number} rAF id for batched updates. */
   _rafId = 0;
 
+  /** @type {ContextMenu} */
+  _contextMenu;
+
+  /** @type {number|null} Long-press timer ID for touch context menu. */
+  _longPressTimer = null;
+
+  /** @type {{x: number, y: number}|null} Touch start position for long-press detection. */
+  _longPressStart = null;
+
+  /** Long-press threshold in ms. */
+  static LONG_PRESS_MS = 500;
+
+  /** Max movement (px) allowed during long-press before cancelling. */
+  static LONG_PRESS_MOVE_THRESHOLD = 10;
+
   /**
    * @param {HTMLElement} stageEl - The .studio-canvas-stage element.
    * @param {object} [options]
    * @param {function} [options.onSelect] - Called with selected artboard descriptor or null.
    * @param {function} [options.onReorder] - Called with array of ordered artboard IDs.
    * @param {function} [options.onZoomChange] - Called with current zoom level.
+   * @param {function} [options.onRegenerate] - Context menu: called with artboard descriptor.
+   * @param {function} [options.onDownload] - Context menu: called with artboard descriptor.
+   * @param {function} [options.onDelete] - Context menu: called with artboard descriptor.
+   * @param {function} [options.onDuplicate] - Context menu: called with artboard descriptor.
+   * @param {HTMLElement} [options.toolbarEl] - Optional toolbar element to render zoom controls into.
    */
   constructor(stageEl, options = {}) {
     this._stageEl = stageEl;
@@ -1721,6 +2017,9 @@ export class CanvasEngine {
         onSelect: (desc) => {
           if (this._onSelect) this._onSelect(desc);
         },
+        onDelete: (id) => {
+          this.removeArtboard(id);
+        },
       }
     );
 
@@ -1737,7 +2036,28 @@ export class CanvasEngine {
       { onTransformChange }
     );
 
-    this._zoomControls.render(this._transformEl);
+    this._zoomControls.render(this._transformEl, options.toolbarEl || null);
+
+    // ── Context Menu wiring (Task 7.2) ──────────────────────────────────────
+    this._contextMenu = new ContextMenu(this._stageEl, {
+      onRegenerate: options.onRegenerate || null,
+      onDownload: options.onDownload || null,
+      onDelete: options.onDelete || null,
+      onDuplicate: options.onDuplicate || null,
+    });
+
+    // Right-click context menu on artboards
+    this._onContextMenu = this._onContextMenu.bind(this);
+    this._stageEl.addEventListener("contextmenu", this._onContextMenu);
+
+    // Long-press detection for touch devices
+    this._onLongPressStart = this._onLongPressStart.bind(this);
+    this._onLongPressMove = this._onLongPressMove.bind(this);
+    this._onLongPressEnd = this._onLongPressEnd.bind(this);
+    this._stageEl.addEventListener("touchstart", this._onLongPressStart, { passive: true });
+    this._stageEl.addEventListener("touchmove", this._onLongPressMove, { passive: true });
+    this._stageEl.addEventListener("touchend", this._onLongPressEnd);
+    this._stageEl.addEventListener("touchcancel", this._onLongPressEnd);
   }
 
   /**
@@ -1794,6 +2114,131 @@ export class CanvasEngine {
 
       if (this._onZoomChange) this._onZoomChange(this._transform.zoom);
     });
+  }
+
+  /**
+   * Add an uploaded image as a new artboard on the canvas.
+   *
+   * Creates an ArtboardDescriptor from the upload result, positions it after
+   * the last existing artboard in the horizontal strip, appends it to the
+   * artboard manager, and reconciles the DOM.
+   *
+   * @param {{ filename: string, url: string, mimeType: string }} uploadResult
+   * @returns {object} The created ArtboardDescriptor.
+   */
+  addUploadedArtboard(uploadResult) {
+    const artboards = this._artboardManager.artboards;
+
+    // Calculate x position after the last artboard
+    let x = STRIP_START_X;
+    if (artboards.length) {
+      const last = artboards.reduce((a, b) => (a.x + a.width > b.x + b.width ? a : b));
+      x = last.x + last.width + STRIP_GAP;
+    }
+
+    const order = artboards.length;
+    const slideNumber = order + 1;
+    const id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `upload-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    const descriptor = {
+      id,
+      type: 'image',
+      role: 'uploaded',
+      label: `${pad2(slideNumber)} — Uploaded`,
+      assetUrl: uploadResult.url,
+      slideNumber,
+      prompt: '',
+      text: uploadResult.filename || '',
+      x,
+      y: STRIP_START_Y,
+      width: ARTBOARD_W,
+      height: ARTBOARD_H,
+      isVariant: false,
+      originalId: null,
+      order,
+    };
+
+    artboards.push(descriptor);
+
+    this._scheduleUpdate(() => {
+      this._artboardManager.reconcile(this._transformEl);
+      this._connectors.render();
+      this._updateVisibility();
+    });
+
+    return descriptor;
+  }
+
+  /**
+   * Remove an artboard from the canvas by ID.
+   *
+   * Filters the artboard from the manager's array, deselects it if it was
+   * selected, reconciles the DOM, updates connectors, and persists state.
+   *
+   * @param {string} id - The artboard ID to remove.
+   */
+  removeArtboard(id) {
+    const artboards = this._artboardManager.artboards;
+    const idx = artboards.findIndex((d) => d.id === id);
+    if (idx === -1) return;
+
+    // Deselect if the removed artboard was selected
+    const selected = this._selection.getSelected();
+    if (selected && selected.id === id) {
+      this._selection.deselect();
+    }
+
+    // Remove from array
+    this._artboardManager.artboards = artboards.filter((d) => d.id !== id);
+
+    this._scheduleUpdate(() => {
+      this._artboardManager.reconcile(this._transformEl);
+      this._connectors.render();
+      this._updateVisibility();
+      this._persistState();
+    });
+  }
+
+  /**
+   * Duplicate an artboard by ID.
+   *
+   * Clones the artboard descriptor with a new unique ID and offsets its x
+   * position by the artboard width plus the strip gap. The duplicate is
+   * appended to the artboards array and the DOM is reconciled.
+   *
+   * @param {string} id - The artboard ID to duplicate.
+   * @returns {object|null} The new duplicated descriptor, or null if not found.
+   */
+  duplicateArtboard(id) {
+    const artboards = this._artboardManager.artboards;
+    const source = artboards.find((d) => d.id === id);
+    if (!source) return null;
+
+    const newId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `dup-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+    const duplicate = {
+      ...source,
+      id: newId,
+      x: source.x + source.width + STRIP_GAP,
+      isVariant: true,
+      originalId: source.id,
+      order: artboards.length,
+      label: `${pad2(artboards.length + 1)} — ${capitalizeRole(source.role)}`,
+    };
+
+    artboards.push(duplicate);
+
+    this._scheduleUpdate(() => {
+      this._artboardManager.reconcile(this._transformEl);
+      this._connectors.render();
+      this._updateVisibility();
+    });
+
+    return duplicate;
   }
 
   /**
@@ -1934,6 +2379,113 @@ export class CanvasEngine {
     });
   }
 
+  // ── Context Menu Event Handlers (Task 7.2) ─────────────────────────────────
+
+  /**
+   * Find the artboard element at a given target element (walks up the DOM).
+   * @param {HTMLElement} el
+   * @returns {HTMLElement|null}
+   */
+  _findArtboardEl(el) {
+    let node = el;
+    while (node && node !== this._stageEl) {
+      if (node.classList && node.classList.contains("canvas-artboard")) return node;
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  /**
+   * Get the artboard descriptor for a given artboard DOM element.
+   * @param {HTMLElement} artboardEl
+   * @returns {object|null}
+   */
+  _getDescriptorForEl(artboardEl) {
+    if (!artboardEl) return null;
+    const id = artboardEl.dataset.artboardId;
+    return this._artboardManager.artboards.find((d) => d.id === id) || null;
+  }
+
+  /**
+   * Handle right-click (contextmenu) event on the stage.
+   * Shows context menu if an artboard was right-clicked.
+   * @param {MouseEvent} e
+   */
+  _onContextMenu(e) {
+    const artboardEl = this._findArtboardEl(e.target);
+    if (!artboardEl) return; // Let default context menu show on empty space
+
+    e.preventDefault();
+    const desc = this._getDescriptorForEl(artboardEl);
+    if (desc) {
+      this._contextMenu.show(e.clientX, e.clientY, desc);
+    }
+  }
+
+  /**
+   * Handle touchstart for long-press detection.
+   * Starts a 500ms timer; if the touch doesn't move significantly, triggers context menu.
+   * @param {TouchEvent} e
+   */
+  _onLongPressStart(e) {
+    // Only detect long-press for single-finger touches
+    if (e.touches.length !== 1) {
+      this._cancelLongPress();
+      return;
+    }
+
+    const touch = e.touches[0];
+    const artboardEl = this._findArtboardEl(touch.target);
+    if (!artboardEl) return; // Only trigger on artboards
+
+    this._longPressStart = { x: touch.clientX, y: touch.clientY };
+
+    this._longPressTimer = setTimeout(() => {
+      this._longPressTimer = null;
+      const desc = this._getDescriptorForEl(artboardEl);
+      if (desc && this._longPressStart) {
+        this._contextMenu.show(this._longPressStart.x, this._longPressStart.y, desc);
+      }
+      this._longPressStart = null;
+    }, CanvasEngine.LONG_PRESS_MS);
+  }
+
+  /**
+   * Handle touchmove — cancel long-press if finger moves too far.
+   * @param {TouchEvent} e
+   */
+  _onLongPressMove(e) {
+    if (!this._longPressTimer || !this._longPressStart) return;
+
+    const touch = e.touches[0];
+    const dx = touch.clientX - this._longPressStart.x;
+    const dy = touch.clientY - this._longPressStart.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist > CanvasEngine.LONG_PRESS_MOVE_THRESHOLD) {
+      this._cancelLongPress();
+    }
+  }
+
+  /**
+   * Handle touchend/touchcancel — cancel long-press timer.
+   * @param {TouchEvent} e
+   */
+  _onLongPressEnd(e) {
+    this._cancelLongPress();
+  }
+
+  /**
+   * Cancel any pending long-press timer.
+   */
+  _cancelLongPress() {
+    if (this._longPressTimer) {
+      clearTimeout(this._longPressTimer);
+      this._longPressTimer = null;
+    }
+    this._longPressStart = null;
+  }
+
   /**
    * Clean up all event listeners and DOM elements.
    */
@@ -1942,6 +2494,13 @@ export class CanvasEngine {
     this._selection.destroy();
     this._connectors.destroy();
     this._zoomControls.destroy();
+    this._contextMenu.destroy();
+    this._cancelLongPress();
+    this._stageEl.removeEventListener("contextmenu", this._onContextMenu);
+    this._stageEl.removeEventListener("touchstart", this._onLongPressStart);
+    this._stageEl.removeEventListener("touchmove", this._onLongPressMove);
+    this._stageEl.removeEventListener("touchend", this._onLongPressEnd);
+    this._stageEl.removeEventListener("touchcancel", this._onLongPressEnd);
     if (this._transformEl && this._transformEl.parentNode) {
       this._transformEl.remove();
     }

@@ -164,6 +164,96 @@ const calendarState = {
   editingSlotDate: null
 };
 
+// ── Upload Queue ──────────────────────────────────────────────────────────────
+const uploadQueue = {
+  /** @type {Array<{ file: File, dataUrl: string, status: 'pending'|'uploading'|'done'|'error' }>} */
+  files: [],
+
+  /**
+   * Accept a FileList, read each file as a base64 data URL, push to the queue.
+   * @param {FileList} fileList
+   */
+  add(fileList) {
+    const promises = Array.from(fileList).map(
+      (file) =>
+        new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            this.files.push({ file, dataUrl: reader.result, status: "pending" });
+            resolve();
+          };
+          reader.onerror = () => {
+            // Still queue the file but mark as error
+            this.files.push({ file, dataUrl: "", status: "error" });
+            resolve();
+          };
+          reader.readAsDataURL(file);
+        })
+    );
+    Promise.all(promises).then(() => this._updateBadge());
+  },
+
+  /**
+   * Remove a queued file by index.
+   * @param {number} index
+   */
+  remove(index) {
+    if (index >= 0 && index < this.files.length) {
+      this.files.splice(index, 1);
+    }
+    this._updateBadge();
+  },
+
+  /** Clear all queued files. */
+  clear() {
+    this.files.length = 0;
+    this._updateBadge();
+  },
+
+  /**
+   * POST each pending file to /api/uploads and return results.
+   * @returns {Promise<Array<{ filename: string, url: string, mimeType: string }>>}
+   */
+  async uploadAll() {
+    const results = [];
+    for (const item of this.files) {
+      if (item.status !== "pending") continue;
+      item.status = "uploading";
+      try {
+        const res = await fetch("/api/uploads", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ filename: item.file.name, dataUrl: item.dataUrl }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: "Upload failed" }));
+          item.status = "error";
+          item.error = err.error || `HTTP ${res.status}`;
+          continue;
+        }
+        const data = await res.json();
+        item.status = "done";
+        item.result = data;
+        results.push(data);
+      } catch (e) {
+        item.status = "error";
+        item.error = e.message || "Network error";
+      }
+    }
+    this._updateBadge();
+    return results;
+  },
+
+  /** Update the #toolbar-upload-count badge text and visibility. */
+  _updateBadge() {
+    const badge = document.getElementById("toolbar-upload-count");
+    if (!badge) return;
+    const count = this.files.length;
+    badge.textContent = String(count);
+    badge.classList.toggle("hidden", count === 0);
+  },
+};
+
 // ── Routing ───────────────────────────────────────────────────────────────────
 function switchView(name) {
   Object.entries(els.views).forEach(([key, el]) => {
@@ -615,7 +705,7 @@ async function runGeneration(rawIdea, notes) {
       setCheckpoint("strategy", "done");
       setCheckpoint("hooks", "done");
       setCheckpoint("visuals", "active");
-      showCanvasProgress("Generating food images…");
+      showCanvasProgress("Generating visuals…");
     }
     if (stage === "rendering") {
       setCheckpoint("visuals", "done");
@@ -649,307 +739,17 @@ function finishGeneration(output) {
   loadOutputToEngine(output);
 }
 
-// ── Branded text card helpers ──────────────────────────────────────────────
-
-/**
- * Parse hook slide text into title + subtitle.
- * First non-empty line = title, remaining lines joined = subtitle.
- * Falls back to brandName if text is empty/whitespace.
- */
-function parseHookText(text, brandName) {
-  const lines = (text || '').split('\n').filter(l => l.trim());
-  return {
-    title: lines[0] || brandName,
-    subtitle: lines.slice(1).join('\n') || ''
-  };
-}
-
-/**
- * Build a branded hook card DOM element.
- */
-function renderHookCard(slide, brandVisual, brandName) {
-  const primary = brandVisual.primaryColor || '#333';
-  const surface = brandVisual.surfaceColor || '#fff';
-  const accent = brandVisual.accentColor || '#f5f5f5';
-  const textColor = brandVisual.textColor || '#1a1a1a';
-  const textSecondary = brandVisual.textSecondary || '#666';
-  const fontFamily = brandVisual.fontFamily || "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
-
-  const { title, subtitle } = parseHookText(slide.text, brandName);
-
-  const card = document.createElement('div');
-  card.className = 'canvas-output__card canvas-output__card--hook';
-
-  const outer = document.createElement('div');
-  outer.className = 'hook-card';
-  outer.style.background = accent;
-  outer.style.fontFamily = fontFamily;
-
-  const inner = document.createElement('div');
-  inner.className = 'hook-card__inner';
-  inner.style.background = surface;
-
-  const wordmark = document.createElement('div');
-  wordmark.className = 'hook-card__wordmark';
-  wordmark.style.color = primary;
-  wordmark.textContent = brandName.toUpperCase();
-
-  const divider = document.createElement('div');
-  divider.className = 'hook-card__divider';
-  divider.style.background = primary;
-
-  const titleEl = document.createElement('div');
-  titleEl.className = 'hook-card__title';
-  titleEl.style.color = textColor;
-  titleEl.textContent = title;
-
-  const subtitleEl = document.createElement('div');
-  subtitleEl.className = 'hook-card__subtitle';
-  subtitleEl.style.color = textSecondary;
-  subtitleEl.textContent = subtitle;
-
-  const hint = document.createElement('div');
-  hint.className = 'hook-card__hint';
-  hint.textContent = 'Swipe for recipes →';
-
-  inner.appendChild(wordmark);
-  inner.appendChild(divider);
-  inner.appendChild(titleEl);
-  inner.appendChild(subtitleEl);
-  inner.appendChild(hint);
-  outer.appendChild(inner);
-  card.appendChild(outer);
-
-  return card;
-}
-
-/**
- * Build a branded CTA card DOM element.
- */
-function renderCtaCard(slide, brandVisual, brandCta) {
-  const primary = brandVisual.primaryColor || '#333';
-  const surface = brandVisual.surfaceColor || '#fff';
-  const accent = brandVisual.accentColor || '#f5f5f5';
-  const textColor = brandVisual.textColor || '#1a1a1a';
-  const textSecondary = brandVisual.textSecondary || '#666';
-  const fontFamily = brandVisual.fontFamily || "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
-
-  const lines = (slide.text || '').split('\n').filter(l => l.trim());
-  const headline = lines[0] || '';
-  const subtitle = lines.slice(1).join('\n') || '';
-  const ctaText = brandCta || 'Learn more';
-
-  const card = document.createElement('div');
-  card.className = 'canvas-output__card canvas-output__card--cta';
-
-  const outer = document.createElement('div');
-  outer.className = 'cta-card';
-  outer.style.background = accent;
-  outer.style.fontFamily = fontFamily;
-
-  const inner = document.createElement('div');
-  inner.className = 'cta-card__inner';
-  inner.style.background = surface;
-
-  const headlineEl = document.createElement('div');
-  headlineEl.className = 'cta-card__headline';
-  headlineEl.style.color = textColor;
-  headlineEl.textContent = headline;
-
-  const subtitleEl = document.createElement('div');
-  subtitleEl.className = 'cta-card__subtitle';
-  subtitleEl.style.color = textSecondary;
-  subtitleEl.textContent = subtitle;
-
-  const divider = document.createElement('div');
-  divider.className = 'cta-card__divider';
-  divider.style.background = primary;
-
-  const pill = document.createElement('div');
-  pill.className = 'cta-card__pill';
-  pill.style.background = primary;
-  pill.style.color = surface;
-  pill.textContent = ctaText;
-
-  const question = document.createElement('div');
-  question.className = 'cta-card__question';
-  question.style.color = textSecondary;
-  question.textContent = 'Which recipe are you trying first?';
-
-  inner.appendChild(headlineEl);
-  inner.appendChild(subtitleEl);
-  inner.appendChild(divider);
-  inner.appendChild(pill);
-  inner.appendChild(question);
-  outer.appendChild(inner);
-  card.appendChild(outer);
-
-  return card;
-}
-
 /**
  * Load output into the CanvasEngine (infinite canvas).
- * Falls back to old renderCanvas() if engine not available.
+ * Delegates to CanvasEngine.loadOutput() which handles artboard descriptor
+ * building, DOM reconciliation, zoom-to-fit, and connector rendering.
+ *
+ * @param {object} output - PostMetadata from the server.
  */
 function loadOutputToEngine(output) {
-  console.log("[studio] loadOutputToEngine called, engine:", !!studioState.canvasEngine, "output:", !!output);
-  if (!output) return;
-
-  // Hide empty state
+  if (!output || !studioState.canvasEngine) return;
   if (els.canvasEmpty) els.canvasEmpty.classList.add("hidden");
-
-  // Get the stage element and render directly
-  const stage = document.getElementById("studio-canvas-stage");
-  if (!stage) { console.error("[studio] No stage element"); return; }
-
-  // Remove any previous output render
-  const prev = stage.querySelector(".canvas-output");
-  if (prev) prev.remove();
-
-  // Build the output HTML directly
-  const container = document.createElement("div");
-  container.className = "canvas-output";
-
-  // Slides strip
-  const strip = document.createElement("div");
-  strip.className = "canvas-output__strip";
-
-  const items = (output.artifacts && output.artifacts.length) ? output.artifacts : (output.slides || []);
-  const postId = output.post_id || "";
-
-  // Extract brand settings with neutral fallbacks
-  const brandProfile = output.brand_profile || {};
-  const brandVisual = brandProfile.visual || {
-    primaryColor: '#333',
-    secondaryColor: '#ccc',
-    accentColor: '#f5f5f5',
-    surfaceColor: '#fff',
-    textColor: '#1a1a1a',
-    textSecondary: '#666',
-    fontFamily: "'Avenir Next', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
-  };
-  const brandName = brandProfile.name || 'Brand';
-  const brandCta = brandProfile.cta || '';
-
-  items.forEach((item, i) => {
-    // Branded hook card (no asset_path)
-    if (item.role === 'hook' && !item.asset_path) {
-      const hookCard = renderHookCard(item, brandVisual, brandName);
-      // Add label
-      const label = document.createElement("div");
-      label.className = "canvas-output__label";
-      label.textContent = `${String(i + 1).padStart(2, "0")} — Hook`;
-      hookCard.appendChild(label);
-      strip.appendChild(hookCard);
-      return;
-    }
-
-    // Branded CTA card (no asset_path)
-    if (item.role === 'cta' && !item.asset_path) {
-      const ctaCard = renderCtaCard(item, brandVisual, brandCta);
-      // Add label
-      const label = document.createElement("div");
-      label.className = "canvas-output__label";
-      label.textContent = `${String(i + 1).padStart(2, "0")} — Cta`;
-      ctaCard.appendChild(label);
-      strip.appendChild(ctaCard);
-      return;
-    }
-
-    // Text-only slides with unknown roles — render as branded text card
-    if (item.type === 'text_only' && !item.asset_path) {
-      const textCard = renderHookCard(item, brandVisual, brandName);
-      const label = document.createElement("div");
-      label.className = "canvas-output__label";
-      const roleName = (item.role || "slide").charAt(0).toUpperCase() + (item.role || "slide").slice(1);
-      label.textContent = `${String(i + 1).padStart(2, "0")} — ${roleName}`;
-      textCard.appendChild(label);
-      strip.appendChild(textCard);
-      return;
-    }
-
-    // Default card (recipe cards with images, or any other slide)
-    const card = document.createElement("div");
-    card.className = "canvas-output__card";
-
-    // Resolve image URL
-    let imgUrl = null;
-    if (item.asset_path) {
-      const filename = item.asset_path.split("/").pop();
-      imgUrl = `/api/assets/${postId}/${filename}`;
-    }
-
-    if (imgUrl) {
-      const img = document.createElement("img");
-      img.src = imgUrl;
-      img.alt = item.role || "slide";
-      img.loading = "lazy";
-      img.onerror = () => { img.style.display = "none"; };
-      card.appendChild(img);
-    } else {
-      const placeholder = document.createElement("div");
-      placeholder.className = "canvas-output__placeholder";
-      placeholder.textContent = item.role || "slide";
-      card.appendChild(placeholder);
-    }
-
-    // Label
-    const label = document.createElement("div");
-    label.className = "canvas-output__label";
-    label.textContent = `${String(i + 1).padStart(2, "0")} — ${(item.role || "slide").charAt(0).toUpperCase() + (item.role || "slide").slice(1)}`;
-    card.appendChild(label);
-
-    // Recipe info below image
-    const recipe = item.recipe || (output.slides && output.slides[i] && output.slides[i].recipe);
-    if (recipe) {
-      const info = document.createElement("div");
-      info.className = "canvas-output__recipe";
-      info.innerHTML = `<strong>${recipe.recipeName || ""}</strong>`;
-      if (recipe.cookTime) info.innerHTML += `<span class="canvas-output__meta">${recipe.cookTime}</span>`;
-      if (recipe.ingredients && recipe.ingredients.length) {
-        info.innerHTML += `<div class="canvas-output__ingredients">${recipe.ingredients.join(" · ")}</div>`;
-      }
-      if (recipe.steps && recipe.steps.length) {
-        info.innerHTML += `<div class="canvas-output__steps">${recipe.steps.map((s, j) => `<span>${j + 1}. ${s}</span>`).join(" ")}</div>`;
-      }
-      if (recipe.proTip) {
-        info.innerHTML += `<div class="canvas-output__tip">${recipe.proTip}</div>`;
-      }
-      card.appendChild(info);
-    }
-
-    strip.appendChild(card);
-  });
-
-  container.appendChild(strip);
-
-  // Caption + hashtags below the strip
-  if (output.caption) {
-    const captionEl = document.createElement("div");
-    captionEl.className = "canvas-output__caption";
-    captionEl.innerHTML = `<strong>Caption</strong><p>${output.caption}</p>`;
-    container.appendChild(captionEl);
-  }
-
-  if (output.hashtags && output.hashtags.length) {
-    const tagsEl = document.createElement("div");
-    tagsEl.className = "canvas-output__hashtags";
-    tagsEl.textContent = output.hashtags.join(" ");
-    container.appendChild(tagsEl);
-  }
-
-  if (output.hooks && output.hooks.length) {
-    const hooksEl = document.createElement("div");
-    hooksEl.className = "canvas-output__hooks";
-    hooksEl.innerHTML = `<strong>Hooks</strong>` + output.hooks.map(h => `<p>${h}</p>`).join("");
-    container.appendChild(hooksEl);
-  }
-
-  stage.appendChild(container);
-  console.log("[studio] Output rendered to canvas:", items.length, "items");
-
-  // ── Wire interactivity onto rendered cards ──────────────────────────────
-  wireCardInteractivity(strip, output, postId, brandVisual);
+  studioState.canvasEngine.loadOutput(output);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -957,8 +757,6 @@ function loadOutputToEngine(output) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let currentOutput = null;
-let selectedCardIndex = -1;
 let patchTimer = null;
 let pendingPatch = {};
 let patchFailed = false;
@@ -975,7 +773,7 @@ const InlineEditor = (() => {
     options = opts;
     previousValue = element.textContent;
     element.contentEditable = 'true';
-    element.classList.add('canvas-output__card--editing');
+    element.classList.add('canvas-inline-editing');
     element.focus();
 
     // Select all text
@@ -993,7 +791,7 @@ const InlineEditor = (() => {
   function deactivate(element) {
     if (!element) return '';
     element.contentEditable = 'false';
-    element.classList.remove('canvas-output__card--editing');
+    element.classList.remove('canvas-inline-editing');
     element.removeEventListener('blur', handleBlur);
     element.removeEventListener('keydown', handleKeydown);
     element.removeEventListener('paste', handlePaste);
@@ -1114,577 +912,6 @@ async function regenerateSlide(postId, slideNumber, imagePrompt) {
   return res.json();
 }
 
-// ── Card Selection ────────────────────────────────────────────────────────────
-function selectCard(index, cards, output, brandVisual) {
-  const prev = cards[selectedCardIndex];
-  if (prev) prev.classList.remove('canvas-output__card--selected');
-
-  selectedCardIndex = index;
-  if (index >= 0 && index < cards.length) {
-    const card = cards[index];
-    card.classList.add('canvas-output__card--selected');
-    card.style.borderColor = brandVisual.primaryColor || '#333';
-    populateDetailPanel(index, output);
-  } else {
-    selectedCardIndex = -1;
-    hideDetailPanel();
-  }
-}
-
-function deselectCard(cards) {
-  if (selectedCardIndex >= 0 && cards[selectedCardIndex]) {
-    cards[selectedCardIndex].classList.remove('canvas-output__card--selected');
-  }
-  selectedCardIndex = -1;
-  hideDetailPanel();
-}
-
-function populateDetailPanel(index, output) {
-  const inspector = document.getElementById('studio-inspector');
-  const assetSection = document.getElementById('inspector-asset');
-  if (!inspector || !assetSection) return;
-
-  const slides = output.slides || output.artifacts || [];
-  const slide = slides[index];
-  if (!slide) return;
-
-  inspector.classList.remove('hidden');
-  assetSection.classList.remove('hidden');
-
-  const titleEl = document.getElementById('inspector-asset-title');
-  const hintEl = document.getElementById('inspector-asset-hint');
-  const previewEl = document.getElementById('inspector-asset-preview');
-
-  if (titleEl) titleEl.textContent = `Slide ${slide.slide_number || index + 1} — ${(slide.role || 'slide').charAt(0).toUpperCase() + (slide.role || 'slide').slice(1)}`;
-  if (hintEl) {
-    let hint = slide.text || '';
-    if (slide.recipe) hint = slide.recipe.recipeName || hint;
-    hintEl.textContent = hint;
-  }
-
-  // Preview
-  if (previewEl) {
-    previewEl.innerHTML = '';
-    previewEl.classList.remove('refine-preview--empty');
-    const postId = output.post_id || '';
-    if (slide.asset_path) {
-      const filename = slide.asset_path.split('/').pop();
-      const img = document.createElement('img');
-      img.src = `/api/assets/${postId}/${filename}`;
-      img.alt = slide.role || 'slide';
-      previewEl.appendChild(img);
-    } else {
-      previewEl.classList.add('refine-preview--empty');
-      previewEl.innerHTML = '<span>Text card</span>';
-    }
-  }
-
-  // Regenerate prompt
-  const promptEl = document.getElementById('studio-refine-prompt');
-  if (promptEl) promptEl.value = slide.image_prompt || '';
-
-  // Show/hide regenerate button based on role
-  const regenBtn = document.getElementById('studio-refine-submit');
-  if (regenBtn) {
-    const canRegen = slide.role === 'recipe' || !!slide.image_prompt;
-    regenBtn.style.display = canRegen ? '' : 'none';
-    if (promptEl) promptEl.style.display = canRegen ? '' : 'none';
-  }
-}
-
-function hideDetailPanel() {
-  const assetSection = document.getElementById('inspector-asset');
-  if (assetSection) assetSection.classList.add('hidden');
-}
-
-// ── DragReorderController ─────────────────────────────────────────────────────
-const DragReorderController = (() => {
-  let strip = null;
-  let cards = [];
-  let onReorder = null;
-  let holdTimer = null;
-  let dragging = false;
-  let dragCard = null;
-  let dragIndex = -1;
-  let placeholder = null;
-
-  function init(stripEl, opts = {}) {
-    strip = stripEl;
-    onReorder = opts.onReorder || null;
-    cards = Array.from(strip.querySelectorAll('.canvas-output__card'));
-    strip.addEventListener('pointerdown', onPointerDown);
-  }
-
-  function destroy() {
-    if (strip) strip.removeEventListener('pointerdown', onPointerDown);
-    strip = null;
-    cards = [];
-  }
-
-  function onPointerDown(e) {
-    const card = e.target.closest('.canvas-output__card');
-    if (!card || InlineEditor.isActive()) return;
-    const idx = Array.from(strip.children).indexOf(card);
-    // Lock hook (first) and CTA (last)
-    const allCards = Array.from(strip.querySelectorAll('.canvas-output__card'));
-    if (idx === 0 || idx === allCards.length - 1) return;
-
-    holdTimer = setTimeout(() => {
-      startDrag(card, idx, e);
-    }, 200);
-
-    const onUp = () => {
-      clearTimeout(holdTimer);
-      document.removeEventListener('pointerup', onUp);
-      document.removeEventListener('pointermove', onMoveCancel);
-    };
-    const onMoveCancel = (ev) => {
-      if (Math.abs(ev.clientX - e.clientX) > 5 || Math.abs(ev.clientY - e.clientY) > 5) {
-        clearTimeout(holdTimer);
-      }
-    };
-    document.addEventListener('pointerup', onUp, { once: true });
-    document.addEventListener('pointermove', onMoveCancel);
-  }
-
-  function startDrag(card, idx) {
-    dragging = true;
-    dragCard = card;
-    dragIndex = idx;
-    card.classList.add('canvas-output__card--dragging');
-    card.setPointerCapture && card.releasePointerCapture && card.releasePointerCapture(1);
-
-    document.addEventListener('pointermove', onDragMove);
-    document.addEventListener('pointerup', onDragEnd);
-  }
-
-  function onDragMove(e) {
-    if (!dragging || !strip) return;
-    // Remove old indicator
-    const oldInd = strip.querySelector('.canvas-output__drop-indicator');
-    if (oldInd) oldInd.remove();
-
-    const allCards = Array.from(strip.querySelectorAll('.canvas-output__card'));
-    let insertIdx = -1;
-    for (let i = 0; i < allCards.length; i++) {
-      const rect = allCards[i].getBoundingClientRect();
-      const mid = rect.left + rect.width / 2;
-      if (e.clientX < mid) { insertIdx = i; break; }
-    }
-    if (insertIdx === -1) insertIdx = allCards.length;
-
-    // Don't allow drop at position 0 (hook) or last (cta)
-    if (insertIdx <= 0) insertIdx = 1;
-    if (insertIdx >= allCards.length) insertIdx = allCards.length - 1;
-
-    // Show indicator
-    const indicator = document.createElement('div');
-    indicator.className = 'canvas-output__drop-indicator';
-    if (insertIdx < allCards.length) {
-      strip.insertBefore(indicator, allCards[insertIdx]);
-    } else {
-      strip.appendChild(indicator);
-    }
-  }
-
-  function onDragEnd(e) {
-    if (!dragging || !strip) return;
-    document.removeEventListener('pointermove', onDragMove);
-    document.removeEventListener('pointerup', onDragEnd);
-
-    dragCard.classList.remove('canvas-output__card--dragging');
-
-    // Remove indicator
-    const ind = strip.querySelector('.canvas-output__drop-indicator');
-    if (ind) ind.remove();
-
-    // Calculate drop position
-    const allCards = Array.from(strip.querySelectorAll('.canvas-output__card'));
-    let insertIdx = -1;
-    for (let i = 0; i < allCards.length; i++) {
-      const rect = allCards[i].getBoundingClientRect();
-      const mid = rect.left + rect.width / 2;
-      if (e.clientX < mid) { insertIdx = i; break; }
-    }
-    if (insertIdx === -1) insertIdx = allCards.length;
-    if (insertIdx <= 0) insertIdx = 1;
-    if (insertIdx >= allCards.length) insertIdx = allCards.length - 1;
-
-    // Perform reorder in DOM
-    if (insertIdx !== dragIndex) {
-      strip.removeChild(dragCard);
-      const newCards = Array.from(strip.querySelectorAll('.canvas-output__card'));
-      if (insertIdx - 1 >= newCards.length) {
-        strip.appendChild(dragCard);
-      } else {
-        // Adjust index since we removed the card
-        const adjustedIdx = insertIdx > dragIndex ? insertIdx - 1 : insertIdx;
-        if (adjustedIdx < newCards.length) {
-          strip.insertBefore(dragCard, newCards[adjustedIdx]);
-        } else {
-          strip.appendChild(dragCard);
-        }
-      }
-      if (onReorder) onReorder();
-    }
-
-    dragging = false;
-    dragCard = null;
-    dragIndex = -1;
-  }
-
-  return { init, destroy };
-})();
-
-// ── Download helpers ──────────────────────────────────────────────────────────
-function getDownloadFilename(postId, slideNumber) {
-  return `${postId}-slide-${String(slideNumber).padStart(2, '0')}.png`;
-}
-
-async function downloadSlide(card, postId, slideNumber) {
-  const img = card.querySelector('img');
-  if (img && img.src) {
-    // Image card — fetch blob
-    try {
-      const res = await fetch(img.src);
-      const blob = await res.blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = getDownloadFilename(postId, slideNumber);
-      a.click();
-      URL.revokeObjectURL(a.href);
-    } catch {
-      // Fallback: use html2canvas-style approach
-      downloadCardAsCanvas(card, postId, slideNumber);
-    }
-  } else {
-    // Text card — capture DOM to canvas
-    downloadCardAsCanvas(card, postId, slideNumber);
-  }
-}
-
-function downloadCardAsCanvas(card, postId, slideNumber) {
-  try {
-    const canvas = document.createElement('canvas');
-    const rect = card.getBoundingClientRect();
-    canvas.width = rect.width * 2;
-    canvas.height = rect.height * 2;
-    const ctx = canvas.getContext('2d');
-    ctx.scale(2, 2);
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, rect.width, rect.height);
-    // Simple text rendering fallback
-    ctx.fillStyle = '#333';
-    ctx.font = '16px sans-serif';
-    ctx.fillText('Download from browser — use screenshot', 20, rect.height / 2);
-    canvas.toBlob((blob) => {
-      if (!blob) return;
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = getDownloadFilename(postId, slideNumber);
-      a.click();
-      URL.revokeObjectURL(a.href);
-    });
-  } catch {
-    console.warn('[studio] DOM capture failed for text card');
-  }
-}
-
-async function downloadAllSlides(output) {
-  if (!window.JSZip) {
-    showSaveIndicator('warning');
-    alert('ZIP library not available. Please reload the page.');
-    return;
-  }
-  const zip = new window.JSZip();
-  const postId = output.post_id || 'output';
-  const slides = output.slides || [];
-
-  for (const slide of slides) {
-    if (slide.asset_path) {
-      const filename = slide.asset_path.split('/').pop();
-      try {
-        const res = await fetch(`/api/assets/${postId}/${filename}`);
-        if (res.ok) {
-          const blob = await res.blob();
-          zip.file(getDownloadFilename(postId, slide.slide_number), blob);
-        }
-      } catch { /* skip */ }
-    }
-  }
-
-  if (output.caption) zip.file('caption.txt', output.caption);
-  if (output.hashtags?.length) zip.file('hashtags.txt', output.hashtags.join(' '));
-
-  const content = await zip.generateAsync({ type: 'blob' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(content);
-  a.download = `${postId}-all-slides.zip`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-// ── Wire interactivity ────────────────────────────────────────────────────────
-function wireCardInteractivity(strip, output, postId, brandVisual) {
-  currentOutput = output;
-  selectedCardIndex = -1;
-  const cards = Array.from(strip.querySelectorAll('.canvas-output__card'));
-
-  // Click to select
-  cards.forEach((card, i) => {
-    card.addEventListener('click', (e) => {
-      if (InlineEditor.isActive()) return;
-      e.stopPropagation();
-      selectCard(i, cards, output, brandVisual);
-    });
-  });
-
-  // Click empty space to deselect
-  const stage = document.getElementById('studio-canvas-stage');
-  if (stage) {
-    stage.addEventListener('click', (e) => {
-      if (e.target.closest('.canvas-output__card')) return;
-      if (e.target.closest('.studio-inspector')) return;
-      deselectCard(cards);
-    });
-  }
-
-  // Double-click for inline editing on recipe fields
-  cards.forEach((card, i) => {
-    const recipeEl = card.querySelector('.canvas-output__recipe');
-    if (!recipeEl) return;
-    const slide = (output.slides || [])[i];
-    if (!slide || !slide.recipe) return;
-
-    // Recipe name
-    const nameEl = recipeEl.querySelector('strong');
-    if (nameEl) {
-      nameEl.addEventListener('dblclick', (e) => {
-        e.stopPropagation();
-        InlineEditor.activate(nameEl, {
-          required: true,
-          onCommit(text) {
-            slide.recipe.recipeName = text;
-            schedulePatch(postId, { slides: [{ slide_number: slide.slide_number, recipe: slide.recipe }] });
-          }
-        });
-      });
-    }
-
-    // Ingredients
-    const ingredientsEl = recipeEl.querySelector('.canvas-output__ingredients');
-    if (ingredientsEl) {
-      ingredientsEl.addEventListener('dblclick', (e) => {
-        e.stopPropagation();
-        InlineEditor.activate(ingredientsEl, {
-          multiline: true,
-          onCommit(text) {
-            slide.recipe.ingredients = text.split('·').map(s => s.trim()).filter(Boolean);
-            ingredientsEl.textContent = slide.recipe.ingredients.join(' · ');
-            schedulePatch(postId, { slides: [{ slide_number: slide.slide_number, recipe: slide.recipe }] });
-          }
-        });
-      });
-    }
-
-    // Steps
-    const stepsEl = recipeEl.querySelector('.canvas-output__steps');
-    if (stepsEl) {
-      stepsEl.addEventListener('dblclick', (e) => {
-        e.stopPropagation();
-        InlineEditor.activate(stepsEl, {
-          multiline: true,
-          onCommit(text) {
-            slide.recipe.steps = text.split(/\d+\.\s*/).filter(Boolean).map(s => s.trim());
-            stepsEl.innerHTML = slide.recipe.steps.map((s, j) => `<span>${j + 1}. ${s}</span>`).join(' ');
-            schedulePatch(postId, { slides: [{ slide_number: slide.slide_number, recipe: slide.recipe }] });
-          }
-        });
-      });
-    }
-
-    // Pro tip
-    const tipEl = recipeEl.querySelector('.canvas-output__tip');
-    if (tipEl) {
-      tipEl.addEventListener('dblclick', (e) => {
-        e.stopPropagation();
-        InlineEditor.activate(tipEl, {
-          multiline: true,
-          onCommit(text) {
-            slide.recipe.proTip = text;
-            schedulePatch(postId, { slides: [{ slide_number: slide.slide_number, recipe: slide.recipe }] });
-          }
-        });
-      });
-    }
-  });
-
-  // Double-click on caption
-  const captionEl = strip.parentElement?.querySelector('.canvas-output__caption p');
-  if (captionEl) {
-    captionEl.addEventListener('dblclick', (e) => {
-      e.stopPropagation();
-      InlineEditor.activate(captionEl, {
-        multiline: true,
-        onCommit(text) {
-          output.caption = text;
-          currentOutput.caption = text;
-          schedulePatch(postId, { caption: text });
-        }
-      });
-    });
-  }
-
-  // Double-click on hashtags
-  const hashtagsEl = strip.parentElement?.querySelector('.canvas-output__hashtags');
-  if (hashtagsEl) {
-    hashtagsEl.addEventListener('dblclick', (e) => {
-      e.stopPropagation();
-      InlineEditor.activate(hashtagsEl, {
-        multiline: false,
-        onCommit(text) {
-          const tags = text.split(/\s+/).filter(Boolean);
-          output.hashtags = tags;
-          currentOutput.hashtags = tags;
-          hashtagsEl.textContent = tags.join(' ');
-          schedulePatch(postId, { hashtags: tags });
-        }
-      });
-    });
-  }
-
-  // Drag to reorder
-  DragReorderController.init(strip, {
-    onReorder() {
-      // Update slide numbers based on new DOM order
-      const reorderedCards = Array.from(strip.querySelectorAll('.canvas-output__card'));
-      const slides = output.slides || [];
-      reorderedCards.forEach((card, i) => {
-        if (slides[i]) {
-          slides[i].slide_number = i + 1;
-        }
-        // Update label
-        const label = card.querySelector('.canvas-output__label');
-        if (label && slides[i]) {
-          const role = slides[i].role || 'slide';
-          label.textContent = `${String(i + 1).padStart(2, '0')} — ${role.charAt(0).toUpperCase() + role.slice(1)}`;
-        }
-      });
-      schedulePatch(postId, { slides: slides.map(s => ({ slide_number: s.slide_number, role: s.role })) });
-    }
-  });
-
-  // Regeneration from detail panel
-  const refineForm = document.getElementById('studio-refine-form');
-  if (refineForm) {
-    // Remove old listener by cloning
-    const newForm = refineForm.cloneNode(true);
-    refineForm.parentNode.replaceChild(newForm, refineForm);
-    newForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      if (selectedCardIndex < 0) return;
-      const slide = (output.slides || [])[selectedCardIndex];
-      if (!slide) return;
-      const promptEl = newForm.querySelector('#studio-refine-prompt');
-      const submitBtn = newForm.querySelector('#studio-refine-submit');
-      const statusEl = newForm.querySelector('#studio-refine-status');
-      const prompt = promptEl?.value || slide.image_prompt || '';
-
-      if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Regenerating…'; }
-      if (statusEl) { statusEl.classList.remove('hidden'); statusEl.textContent = 'Generating new image…'; }
-
-      try {
-        const result = await regenerateSlide(postId, slide.slide_number, prompt);
-        // Update in-memory
-        slide.asset_path = result.slide.asset_path;
-        slide.image_prompt = prompt;
-        // Update DOM
-        const card = cards[selectedCardIndex];
-        const img = card?.querySelector('img');
-        if (img && result.slide.asset_path) {
-          const filename = result.slide.asset_path.split('/').pop();
-          img.src = `/api/assets/${postId}/${filename}`;
-        }
-        if (statusEl) statusEl.textContent = 'Done — image updated.';
-        populateDetailPanel(selectedCardIndex, output);
-      } catch (err) {
-        if (statusEl) statusEl.textContent = err.message || 'Regeneration failed';
-      } finally {
-        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Regenerate'; }
-      }
-    });
-  }
-
-  // Download slide button in inspector
-  let dlBtn = document.querySelector('.inspector-download-btn');
-  if (dlBtn) {
-    const newDl = dlBtn.cloneNode(true);
-    dlBtn.parentNode.replaceChild(newDl, dlBtn);
-    newDl.addEventListener('click', async () => {
-      if (selectedCardIndex < 0) return;
-      const slide = (output.slides || [])[selectedCardIndex];
-      const card = cards[selectedCardIndex];
-      if (!card || !slide) return;
-      newDl.disabled = true;
-      newDl.textContent = 'Downloading…';
-      await downloadSlide(card, postId, slide.slide_number || selectedCardIndex + 1);
-      newDl.disabled = false;
-      newDl.textContent = 'Download Asset';
-    });
-  }
-
-  // Download All button
-  const dlAllBtn = document.getElementById('studio-download-all-btn');
-  if (dlAllBtn) {
-    const newDlAll = dlAllBtn.cloneNode(true);
-    dlAllBtn.parentNode.replaceChild(newDlAll, dlAllBtn);
-    newDlAll.addEventListener('click', async () => {
-      newDlAll.disabled = true;
-      newDlAll.textContent = 'Downloading…';
-      await downloadAllSlides(output);
-      newDlAll.disabled = false;
-      newDlAll.textContent = 'Download All';
-    });
-  }
-}
-
-// ── Keyboard navigation ───────────────────────────────────────────────────────
-document.addEventListener('keydown', (e) => {
-  // Skip if inline editor is active (except Escape)
-  if (InlineEditor.isActive()) {
-    return; // InlineEditor handles its own Escape
-  }
-
-  // Skip if focused on input/textarea
-  const tag = document.activeElement?.tagName;
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-
-  const stage = document.getElementById('studio-canvas-stage');
-  if (!stage) return;
-  const strip = stage.querySelector('.canvas-output__strip');
-  if (!strip) return;
-  const cards = Array.from(strip.querySelectorAll('.canvas-output__card'));
-  if (!cards.length) return;
-
-  if (e.key === 'ArrowRight') {
-    e.preventDefault();
-    const next = Math.min(selectedCardIndex + 1, cards.length - 1);
-    if (next >= 0) selectCard(next, cards, currentOutput, getBrandVisualFromOutput(currentOutput));
-  } else if (e.key === 'ArrowLeft') {
-    e.preventDefault();
-    const prev = Math.max(selectedCardIndex - 1, 0);
-    selectCard(prev, cards, currentOutput, getBrandVisualFromOutput(currentOutput));
-  } else if (e.key === 'Escape') {
-    e.preventDefault();
-    deselectCard(cards);
-  }
-});
-
-function getBrandVisualFromOutput(output) {
-  if (!output) return { primaryColor: '#333' };
-  return output.brand_profile?.visual || { primaryColor: '#333' };
-}
-
 // ── Quick form ────────────────────────────────────────────────────────────────
 els.studioQuickForm.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -1709,6 +936,44 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
   showCanvasProgress("Planning content strategy…");
 
   try {
+    // ── Upload queued images before generation ──────────────────────────
+    if (uploadQueue.files.length > 0) {
+      showStatus("Uploading images…");
+      try {
+        const uploadResults = await uploadQueue.uploadAll();
+
+        // Render each successful upload as an artboard on the canvas
+        for (const result of uploadResults) {
+          if (studioState.canvasEngine) {
+            studioState.canvasEngine.addUploadedArtboard(result);
+          }
+        }
+
+        // Check for failed uploads and surface errors to the user
+        const failedItems = uploadQueue.files.filter((item) => item.status === "error");
+        if (failedItems.length > 0) {
+          const mimeErrors = failedItems.filter((item) => item.error && /unsupported|mime|400/i.test(item.error));
+          const networkErrors = failedItems.filter((item) => item.error && !/unsupported|mime|400/i.test(item.error));
+
+          if (mimeErrors.length > 0) {
+            showStatus(`${mimeErrors.length} file(s) skipped — unsupported file type. Use PNG, JPEG, WebP, or GIF.`);
+          } else if (networkErrors.length > 0) {
+            showStatus(`${networkErrors.length} upload(s) failed — network error. Files kept in queue for retry.`);
+          }
+          // Retain failed files in queue for retry; clear only successful ones
+          uploadQueue.files = uploadQueue.files.filter((item) => item.status !== "done");
+          uploadQueue._updateBadge();
+        } else {
+          // All uploads succeeded — clear the queue
+          uploadQueue.clear();
+        }
+      } catch (uploadErr) {
+        console.error("[studio] Upload error:", uploadErr);
+        showStatus("Upload failed — files kept in queue for retry.");
+        // Don't block generation on upload failure
+      }
+    }
+
     const output = await runGeneration(idea, els.studioNotesInput.value.trim());
     finishGeneration(output);
     clearButtonLoading(els.studioSubmit);
@@ -2027,10 +1292,51 @@ els.studioReferenceFiles.addEventListener("change", async () => {
 // ── Library ───────────────────────────────────────────────────────────────────
 // (loadLibrary is defined above with filters)
 
+/**
+ * Display an error message in the library view.
+ * Shows a dismissible error banner at the top of the library list.
+ * @param {string} message
+ */
+function showLibraryError(message) {
+  // Remove any existing error banner
+  const existing = els.libraryList?.querySelector(".library-error");
+  if (existing) existing.remove();
+
+  const banner = document.createElement("div");
+  banner.className = "library-error";
+  banner.setAttribute("role", "alert");
+  banner.innerHTML = `<span>${escapeHtml(message)}</span><button type="button" class="library-error__dismiss" aria-label="Dismiss">&times;</button>`;
+  banner.querySelector(".library-error__dismiss").addEventListener("click", () => banner.remove());
+
+  // Auto-dismiss after 6 seconds
+  setTimeout(() => { if (banner.parentNode) banner.remove(); }, 6000);
+
+  if (els.libraryList) {
+    els.libraryList.prepend(banner);
+  }
+}
+
 async function loadOutputIntoCanvas(postId) {
-  const res = await fetch(`/api/outputs/${postId}`);
-  if (!res.ok) return;
-  const output = await res.json();
+  let res;
+  try {
+    res = await fetch(`/api/outputs/${postId}`);
+  } catch (err) {
+    showLibraryError(`Failed to load "${postId}": network error.`);
+    return;
+  }
+
+  if (!res.ok) {
+    showLibraryError(`Failed to load "${postId}": server returned ${res.status}.`);
+    return;
+  }
+
+  let output;
+  try {
+    output = await res.json();
+  } catch (err) {
+    showLibraryError(`Failed to load "${postId}": invalid response data.`);
+    return;
+  }
 
   // Save current studio state so user can return to it
   if (studioState.generatedOutput && studioState.generatedOutput.post_id !== postId) {
@@ -2045,10 +1351,12 @@ async function loadOutputIntoCanvas(postId) {
   const brief = { goal: output.caption || output.post_id, audience: null, offer: null, tone: null, platform: null };
   studioState.canvasCards = buildCanvasCards(brief, output, makeId);
   renderCanvas();
+
+  // Switch to studio view and load output into canvas engine
+  switchView("studio");
   loadOutputToEngine(output);
   renderInspectorPackage();
   renderInspectorAsset();
-  switchView("studio");
 }
 
 // ── Brand editor ──────────────────────────────────────────────────────────────
@@ -2778,11 +2086,18 @@ async function bootstrap() {
   // Initialize CanvasEngine on the studio canvas stage
   const stageEl = document.querySelector(".studio-canvas-stage");
   console.log("[studio] Canvas stage element:", stageEl ? "found" : "NOT FOUND");
+  // Inspector panel reference — used for selection-driven show/hide
+  const inspector = document.getElementById("studio-inspector");
+
   if (stageEl) {
     try {
+      // Pass the toolbar element so zoom controls render inside it
+      const toolbarEl = document.getElementById("studio-quick-form");
       studioState.canvasEngine = new CanvasEngine(stageEl, {
+        toolbarEl,
         onSelect: (artboardDesc) => {
           if (artboardDesc) {
+            // Artboard selected — populate and show inspector
             studioState.selectedAsset = {
               itemId: artboardDesc.id,
               assetKind: artboardDesc.type,
@@ -2795,22 +2110,153 @@ async function bootstrap() {
               slideNumber: artboardDesc.slideNumber,
               order: artboardDesc.order
             };
+            renderInspectorPackage();
+            renderInspectorAsset();
+            if (inspector) inspector.classList.remove("hidden");
           } else {
+            // Deselected — hide inspector
             studioState.selectedAsset = null;
+            renderInspectorAsset();
+            if (inspector) inspector.classList.add("hidden");
           }
-          renderInspectorAsset();
         },
         onReorder: (orderedIds) => {
           if (studioState.generatedOutput) {
             studioState.generatedOutput._artboardOrder = orderedIds;
           }
         },
-        onZoomChange: () => {}
+        onZoomChange: () => {},
+
+        // ── Context menu action handlers (Task 7.3) ───────────────────────────
+        onRegenerate: async (desc) => {
+          const postId = studioState.generatedOutput?.post_id;
+          if (!postId || desc.slideNumber == null) return;
+          try {
+            showStatus("Regenerating slide…");
+            const result = await regenerateSlide(postId, desc.slideNumber, desc.prompt);
+            // Reload the output to reflect the regenerated slide
+            if (result && studioState.canvasEngine) {
+              studioState.generatedOutput = result;
+              loadOutputToEngine(result);
+            }
+            hideStatus();
+          } catch (err) {
+            showStatus(err instanceof Error ? err.message : "Regeneration failed.");
+          }
+        },
+        onDownload: (desc) => {
+          downloadArtboard(desc);
+        },
+        onDelete: (desc) => {
+          if (confirm("Delete this artboard?")) {
+            studioState.canvasEngine.removeArtboard(desc.id);
+          }
+        },
+        onDuplicate: (desc) => {
+          studioState.canvasEngine.duplicateArtboard(desc.id);
+        }
       });
       console.log("[studio] CanvasEngine created successfully");
+
+      // ── Double-click on overlay text → InlineEditor (Task 15.1) ──────────
+      stageEl.addEventListener("dblclick", (e) => {
+        const overlay = e.target.closest(".canvas-overlay");
+        if (!overlay) return;
+
+        // Activate inline editing on the overlay element
+        const psm = studioState.canvasEngine._pointer;
+        psm.setEditingActive(true);
+
+        InlineEditor.activate(overlay, {
+          multiline: true,
+          required: false,
+          onCommit: (text) => {
+            psm.setEditingActive(false);
+            // Update the overlay descriptor text
+            const overlayId = overlay.dataset.overlayId;
+            const desc = studioState.canvasEngine._artboardManager.overlays.find(
+              (o) => o.id === overlayId
+            );
+            if (desc) desc.text = text;
+
+            // Update in-memory output metadata and persist via schedulePatch
+            const output = studioState.generatedOutput;
+            const postId = output?.post_id;
+            if (postId && desc) {
+              if (desc.type === "caption") {
+                output.caption = text;
+                schedulePatch(postId, { caption: text });
+              } else if (desc.type === "hook") {
+                // Rebuild hooks array from overlay descriptors
+                const hooks = studioState.canvasEngine._artboardManager.overlays
+                  .filter((o) => o.type === "hook")
+                  .map((o) => o.text);
+                output.hooks = hooks;
+                schedulePatch(postId, { hooks });
+              } else if (desc.type === "hashtag") {
+                const hashtags = text.split(/\s+/).filter(Boolean);
+                output.hashtags = hashtags;
+                schedulePatch(postId, { hashtags });
+              }
+            }
+          },
+          onCancel: () => {
+            psm.setEditingActive(false);
+          }
+        });
+      });
     } catch (err) {
       console.error("[studio] CanvasEngine creation FAILED:", err);
     }
+  }
+
+  // ── Escape key: hide inspector panel ──────────────────────────────────────
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && inspector && !inspector.classList.contains("hidden")) {
+      inspector.classList.add("hidden");
+    }
+  });
+
+  // ── File picker: wire change event to upload queue ──────────────────────────
+  const fileInput = document.getElementById("toolbar-image-upload");
+  if (fileInput) {
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files && fileInput.files.length) {
+        uploadQueue.add(fileInput.files);
+        fileInput.value = ""; // reset so re-selecting the same file triggers change
+      }
+    });
+  }
+
+  // ── Drag-and-drop on canvas stage ─────────────────────────────────────────
+  if (stageEl) {
+    stageEl.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      stageEl.classList.add("drop-zone-active");
+    });
+
+    stageEl.addEventListener("dragleave", (e) => {
+      // Only remove if we actually left the stage (not entering a child)
+      if (!stageEl.contains(e.relatedTarget)) {
+        stageEl.classList.remove("drop-zone-active");
+      }
+    });
+
+    stageEl.addEventListener("drop", (e) => {
+      e.preventDefault();
+      stageEl.classList.remove("drop-zone-active");
+      const files = e.dataTransfer?.files;
+      if (files && files.length) {
+        // Filter to image files only
+        const imageFiles = Array.from(files).filter((f) => f.type.startsWith("image/"));
+        if (imageFiles.length) {
+          const dt = new DataTransfer();
+          imageFiles.forEach((f) => dt.items.add(f));
+          uploadQueue.add(dt.files);
+        }
+      }
+    });
   }
 
   // Mobile inspector overlay toggle
@@ -2831,10 +2277,13 @@ async function bootstrap() {
     inspectorToggle.addEventListener("click", () => inspector.classList.toggle("hidden"));
   }
 
-  // Inspector close button
+  // Inspector dismiss button — closes inspector without deselecting the artboard
   const inspectorClose = document.getElementById("inspector-overlay-close");
   if (inspectorClose && inspector) {
-    inspectorClose.addEventListener("click", () => inspector.classList.add("hidden"));
+    inspectorClose.addEventListener("click", () => {
+      inspector.classList.add("hidden");
+      // Intentionally do NOT deselect the artboard — the selection ring stays
+    });
   }
 
   els.studioIdeaInput.focus();
