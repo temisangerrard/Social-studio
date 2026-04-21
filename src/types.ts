@@ -342,6 +342,7 @@ export interface Slide {
   visual_goal: string;
   layout: SlideLayout;
   asset_path?: string | null;
+  uploaded_asset_url?: string | null;
   recipe?: StructuredRecipe;
 }
 

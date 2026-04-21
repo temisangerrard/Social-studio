@@ -517,11 +517,45 @@ function renderRoutePreview() {
   `;
 }
 
+function renderInlineRoutePreview() {
+  const el = document.getElementById("studio-route-inline");
+  if (!el) return;
+
+  const decision = studioState.routePreview?.decision;
+  if (!decision) {
+    el.classList.add("hidden");
+    return;
+  }
+
+  const workflowLabel = decision.workflowType || studioState.workflowType || "slideshow";
+  const contentTypeLabel = decision.contentTypeId || "";
+  const deliveryLabel = decision.deliveryTargets || "";
+
+  const parts = [];
+  parts.push(`<span class="route-inline__badge">${escapeHtml(workflowLabel)}</span>`);
+  if (contentTypeLabel) {
+    parts.push(`<span class="route-inline__label">${escapeHtml(contentTypeLabel)}</span>`);
+  }
+  if (deliveryLabel) {
+    parts.push(`<span class="route-inline__label">→ ${escapeHtml(deliveryLabel)}</span>`);
+  }
+
+  // Show upload count if any
+  const uploadCount = (studioState.uploadedAssets || []).length;
+  if (uploadCount > 0) {
+    parts.push(`<span class="route-inline__label">${uploadCount} upload${uploadCount > 1 ? 's' : ''}</span>`);
+  }
+
+  el.innerHTML = parts.join(" ");
+  el.classList.remove("hidden");
+}
+
 async function refreshRoutePreview() {
   const rawIdea = els.studioIdeaInput.value.trim();
   if (!rawIdea && !studioState.uploadedAssets.length) {
     studioState.routePreview = null;
     renderRoutePreview();
+    renderInlineRoutePreview();
     return;
   }
 
@@ -554,6 +588,7 @@ async function refreshRoutePreview() {
     };
   }
   renderRoutePreview();
+  renderInlineRoutePreview();
 }
 
 // ── Content Type Selector ─────────────────────────────────────────────────────
@@ -574,6 +609,23 @@ function updateContentTypeSelector(brandId) {
   // Auto-select default content type
   if (brand.defaultContentType) {
     select.value = brand.defaultContentType;
+  }
+
+  // Inject context-aware content types based on uploaded asset analyses
+  const analyses = studioState.assetAnalyses || [];
+  const platform = els.studioPlatformSelect?.value || "instagram";
+
+  if (analyses.some(a => a.assetType === "person_photo") && platform === "linkedin") {
+    const opt = document.createElement("option");
+    opt.value = "linkedin-photo-post";
+    opt.textContent = "LinkedIn Post with Photo";
+    select.appendChild(opt);
+  }
+  if (analyses.some(a => a.assetType === "product_photo")) {
+    const opt = document.createElement("option");
+    opt.value = "product-showcase";
+    opt.textContent = "Product Showcase";
+    select.appendChild(opt);
   }
 }
 
@@ -1083,6 +1135,10 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
   setButtonLoading(els.studioSubmit, "Planning…");
   showStatus("Planning content strategy…");
   resetCheckpoints();
+
+  // Hide inline route preview during generation
+  const routeInlineEl = document.getElementById("studio-route-inline");
+  if (routeInlineEl) routeInlineEl.classList.add("hidden");
   setCheckpoint("strategy", "active");
   studioState.canvasLoadingStage = "planning";
   studioState.canvasCards = buildCanvasCards(brief, null, makeId);

@@ -12,6 +12,7 @@ interface ImageGeneratorOptions {
     secondaryColor?: string;
   };
   mascotReferenceImages?: string[];
+  uploadedAssets?: Array<{ id: string; url: string; mimeType: string; filename: string }>;
   onProgress?: (slideNumber: number, total: number, status: string) => void;
 }
 
@@ -215,6 +216,29 @@ export async function generateImagesForSlides(
 
     imageIndex++;
     const recipeName = slide.recipe?.recipeName || slide.role;
+
+    // Check if this slide uses an uploaded asset
+    if (slide.uploaded_asset_url) {
+      const ext = slide.uploaded_asset_url.split('.').pop()?.split('?')[0] || 'jpg';
+      const filename = `slide-${String(slide.slide_number).padStart(2, "0")}-${sanitizeFilename(slide.role)}.${ext}`;
+      const filePath = path.join(assetsDir, filename);
+
+      try {
+        const response = await fetchWithTimeout(slide.uploaded_asset_url, {});
+        if (response.ok) {
+          const buffer = Buffer.from(await response.arrayBuffer());
+          await fs.writeFile(filePath, buffer);
+          slide.asset_path = filePath;
+          if (onProgress) onProgress(imageIndex, totalImages, `Using uploaded image for ${recipeName} (${imageIndex}/${totalImages})`);
+          console.log(`[image-generator] Using uploaded asset ${imageIndex}/${totalImages}: ${recipeName}`);
+          continue; // Skip FAL generation
+        }
+      } catch (error) {
+        console.warn(`[image-generator] Failed to download uploaded asset, falling back to generation: ${(error as Error).message}`);
+        // Fall through to normal generation
+      }
+    }
+
     if (onProgress) onProgress(imageIndex, totalImages, `Generating ${recipeName} (${imageIndex}/${totalImages})`);
     console.log(`[image-generator] Generating ${imageIndex}/${totalImages}: ${recipeName}`);
 
