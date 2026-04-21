@@ -359,7 +359,23 @@ export function buildPlannerPrompt({ brand, request, contentType }: PlannerConte
     `Selected route family: ${request.routingDecision?.routeFamily ?? "none"}`,
     `Selected workflow: ${request.routingDecision?.workflowType ?? request.workflowType ?? "slideshow"}`,
     `Selected recipe ID: ${request.routingDecision?.recipeId ?? "none"}`,
-    `Uploaded asset summaries: ${(request.assetAnalyses ?? []).map((asset) => `${asset.assetType}: ${asset.subjectSummary}`).join(" | ") || "none"}`,
+    ...((): string[] => {
+      const uploads = request.uploadedAssets ?? [];
+      const analyses = request.assetAnalyses ?? [];
+      if (uploads.length > 0) {
+        const assetDescriptions = uploads.map((upload) => {
+          const analysis = analyses.find((a) => a.assetId === upload.id);
+          const assetType = analysis?.assetType ?? "unknown";
+          const summary = analysis?.subjectSummary ?? upload.filename;
+          return `[${upload.id}] ${assetType}: ${summary} (url: ${upload.url})`;
+        });
+        return [
+          `Uploaded assets: ${assetDescriptions.join(" | ")}`,
+          "If uploaded assets are available, you MAY set `uploaded_asset_url` on any slide to use that asset directly instead of generating an AI image. Set it to the asset URL.",
+        ];
+      }
+      return [`Uploaded asset summaries: ${analyses.map((asset) => `${asset.assetType}: ${asset.subjectSummary}`).join(" | ") || "none"}`];
+    })(),
     "Canvas cards:",
     cardSummary(request),
   ];
@@ -447,12 +463,14 @@ export function parsePlannerResponse(text: string): PlannedPackage {
     hashtags: (Array.isArray(parsed.hashtags) ? parsed.hashtags : []).map((item) => normalizeHashtag(String(item))).filter(Boolean),
     platformNotes: parsed.platformNotes ?? {},
     slides: (Array.isArray(parsed.slides) ? parsed.slides : []).map((slide) => {
+      const rawSlide = slide as unknown as Record<string, unknown>;
       const base = {
         ...slide,
         asset_path: slide.asset_path ?? null,
+        uploaded_asset_url: typeof rawSlide.uploaded_asset_url === "string" ? rawSlide.uploaded_asset_url : null,
       };
       // Extract and validate recipe field if present
-      const recipe = validateRecipe((slide as unknown as Record<string, unknown>).recipe);
+      const recipe = validateRecipe(rawSlide.recipe);
       if (recipe) {
         return { ...base, recipe } as Slide;
       }
@@ -493,6 +511,66 @@ function extractIngredients(request: GenerationRequest): string[] {
   const found = commonIngredients.filter((ing) => rawWords.includes(ing));
 
   return found.length > 0 ? found : ingredientCards.length > 0 ? ingredientCards : ["eggs", "bread"];
+}
+
+/**
+ * Assign uploaded assets to slides based on asset type analysis.
+ * - person_photo → hook slide
+ * - product_photo → discovery or meal_reveal slide
+ */
+export function assignUploadedAssetsToSlides(slides: Slide[], request: GenerationRequest): Slide[] {
+  const uploads = request.uploadedAssets ?? [];
+  const analyses = request.assetAnalyses ?? [];
+  if (uploads.length === 0) return slides;
+
+  const result = [...slides];
+
+  for (const upload of uploads) {
+    const analysis = analyses.find((a) => a.assetId === upload.id);
+    const assetType = analysis?.assetType ?? "unknown";
+
+    if (assetType === "person_photo") {
+      // Assign to hook slide
+      const hookIdx = result.findIndex((s) => s.role === "hook");
+      if (hookIdx !== -1 && !result[hookIdx].uploaded_asset_url) {
+        result[hookIdx] = { ...result[hookIdx], uploaded_asset_url: upload.url };
+      }
+    } else if (assetType === "product_photo") {
+      // Assign to discovery or meal_reveal slide
+      const targetIdx = result.findIndex((s) => (s.role === "discovery" || s.role === "meal_reveal") && !s.uploaded_asset_url);
+      if (targetIdx !== -1) {
+        result[targetIdx] = { ...result[targetIdx], uploaded_asset_url: upload.url };
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Assign uploaded food photos to the first recipe slide in a Peppera carousel.
+ */
+export function assignUploadedAssetsToCarouselSlides(slides: Slide[], request: GenerationRequest): Slide[] {
+  const uploads = request.uploadedAssets ?? [];
+  const analyses = request.assetAnalyses ?? [];
+  if (uploads.length === 0) return slides;
+
+  const result = [...slides];
+
+  for (const upload of uploads) {
+    const analysis = analyses.find((a) => a.assetId === upload.id);
+    const assetType = analysis?.assetType ?? "unknown";
+
+    if (assetType === "food_photo") {
+      // Assign to the first recipe slide without an uploaded asset
+      const recipeIdx = result.findIndex((s) => s.role === "recipe" && !s.uploaded_asset_url);
+      if (recipeIdx !== -1) {
+        result[recipeIdx] = { ...result[recipeIdx], uploaded_asset_url: upload.url };
+      }
+    }
+  }
+
+  return result;
 }
 
 export function fallbackPlanSocialPackage({ brand, request, contentType }: PlannerContext): PlannedPackage {
@@ -581,7 +659,7 @@ export function fallbackPlanSocialPackage({ brand, request, contentType }: Plann
       tiktok: "Lead with the most surprising hook and keep slide copy sharp.",
       instagram: "Use the strongest visual cover and cleaner CTA framing."
     },
-    slides
+    slides: assignUploadedAssetsToSlides(slides, request),
   };
 }
 
@@ -616,7 +694,7 @@ function fallbackPlanFromBlueprint({ brand, request, contentType }: PlannerConte
     platformNotes: {
       instagram: "Use the strongest visual cover.",
     },
-    slides,
+    slides: assignUploadedAssetsToSlides(slides, request),
   };
 }
 
@@ -679,7 +757,7 @@ function fallbackPlanPepperaCarousel({ brand, request }: PlannerContext): Planne
     platformNotes: {
       instagram: "Use the strongest visual cover and cleaner CTA framing.",
     },
-    slides,
+    slides: assignUploadedAssetsToCarouselSlides(slides, request),
   };
 }
 

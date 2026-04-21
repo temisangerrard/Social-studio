@@ -3237,3 +3237,40 @@ textarea {
 .canvas-context-menu__item--dangerous:hover {
   background: rgba(192, 57, 43, 0.08);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INLINE ROUTE PREVIEW — compact pill above the toolbar
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.route-inline {
+  position: fixed;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: var(--surface-elevated, #fff);
+  border: 1px solid var(--border-subtle, #e0e0e0);
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--text-secondary, #666);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  z-index: 100;
+  transition: opacity 0.2s;
+}
+.route-inline.hidden { display: none; }
+.route-inline__badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--brand-light, #ffd9c8);
+  color: var(--brand-strong, #f04d23);
+  font-weight: 600;
+  font-size: 12px;
+}
+.route-inline__label {
+  color: var(--text-secondary, #666);
+}

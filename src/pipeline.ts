@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { generateFalImageAsset, generateFalVideoAsset } from "./fal-media.ts";
 import { generateImagesForSlides } from "./image-generator.ts";
-import { planSocialPackage } from "./planner.ts";
+import { planSocialPackage, assignUploadedAssetsToSlides, assignUploadedAssetsToCarouselSlides } from "./planner.ts";
 import { renderSlides } from "./renderer.ts";
 import { buildRoutingTrace, routeGenerationRequest } from "./routing.ts";
 import {
@@ -578,7 +578,16 @@ export async function runPipelineFromRequest(
   };
 
   if (workflowType === "slideshow" || workflowType === "linkedin-carousel") {
-    const slidesWithAssets = await imageGenerator(plan.slides, {
+    // Ensure uploaded assets are assigned to slides even if the planner didn't set them
+    const hasUploads = (request.uploadedAssets ?? []).length > 0;
+    const alreadyAssigned = plan.slides.some((s: any) => s.uploaded_asset_url != null);
+    const slidesToProcess = (hasUploads && !alreadyAssigned)
+      ? (isPepperaCarousel
+          ? assignUploadedAssetsToCarouselSlides(plan.slides, request)
+          : assignUploadedAssetsToSlides(plan.slides, request))
+      : plan.slides;
+
+    const slidesWithAssets = await imageGenerator(slidesToProcess, {
       assetsDir,
       falKey: process.env.FAL_KEY,
       falModel: process.env.FAL_MODEL ?? brandProfile.providers.imageModel,
@@ -587,7 +596,13 @@ export async function runPipelineFromRequest(
         primaryColor: brandProfile.visual.primaryColor,
         secondaryColor: brandProfile.visual.secondaryColor
       },
-      mascotReferenceImages: brandProfile.mascot?.referenceImages ?? []
+      mascotReferenceImages: brandProfile.mascot?.referenceImages ?? [],
+      uploadedAssets: (request.uploadedAssets ?? []).map(a => ({
+        id: a.id,
+        url: a.url,
+        mimeType: a.mimeType,
+        filename: a.filename
+      }))
     });
     metadata.slides = slidesWithAssets;
     metadata.artifacts = slidesWithAssets.map((slide) => ({
