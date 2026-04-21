@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { generateFalImageAsset, generateFalVideoAsset } from "./fal-media.ts";
 import { generateImagesForSlides } from "./image-generator.ts";
-import { planSocialPackage, assignUploadedAssetsToSlides } from "./planner.ts";
+import { planSocialPackage, assignUploadedAssetsToSlides, assignUploadedAssetsToCarouselSlides } from "./planner.ts";
 import { renderSlides } from "./renderer.ts";
 import { buildRoutingTrace, routeGenerationRequest } from "./routing.ts";
 import {
@@ -582,7 +582,9 @@ export async function runPipelineFromRequest(
     const hasUploads = (request.uploadedAssets ?? []).length > 0;
     const alreadyAssigned = plan.slides.some((s: any) => s.uploaded_asset_url != null);
     const slidesToProcess = (hasUploads && !alreadyAssigned)
-      ? assignUploadedAssetsToSlides(plan.slides, request)
+      ? (isPepperaCarousel
+          ? assignUploadedAssetsToCarouselSlides(plan.slides, request)
+          : assignUploadedAssetsToSlides(plan.slides, request))
       : plan.slides;
 
     const slidesWithAssets = await imageGenerator(slidesToProcess, {

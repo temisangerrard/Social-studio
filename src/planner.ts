@@ -550,7 +550,7 @@ export function assignUploadedAssetsToSlides(slides: Slide[], request: Generatio
 /**
  * Assign uploaded food photos to the first recipe slide in a Peppera carousel.
  */
-function assignUploadedAssetsToCarouselSlides(slides: Slide[], request: GenerationRequest): Slide[] {
+export function assignUploadedAssetsToCarouselSlides(slides: Slide[], request: GenerationRequest): Slide[] {
   const uploads = request.uploadedAssets ?? [];
   const analyses = request.assetAnalyses ?? [];
   if (uploads.length === 0) return slides;

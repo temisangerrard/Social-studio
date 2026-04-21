@@ -224,7 +224,11 @@ export async function generateImagesForSlides(
       const filePath = path.join(assetsDir, filename);
 
       try {
-        const response = await fetchWithTimeout(slide.uploaded_asset_url, {});
+        // Normalize relative URLs (e.g. /api/uploads/file.jpg) to absolute
+        const assetUrl = slide.uploaded_asset_url.startsWith("/")
+          ? `http://localhost:${process.env.PORT || 3000}${slide.uploaded_asset_url}`
+          : slide.uploaded_asset_url;
+        const response = await fetchWithTimeout(assetUrl, {});
         if (response.ok) {
           const buffer = Buffer.from(await response.arrayBuffer());
           await fs.writeFile(filePath, buffer);
