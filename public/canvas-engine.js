@@ -238,6 +238,14 @@ function resolveAssetUrl(output, item) {
     }
   }
 
+  // Slide fallback: use rendered slide path when asset_path is missing
+  // (matches getWorkspaceAssetUrl logic in app-helpers.js)
+  if (item.kind === "video") return null;
+  const slideNumber = item.slide_number;
+  if (typeof slideNumber === "number" && !Number.isNaN(slideNumber) && output.render_status !== "skipped") {
+    return `/api/slides/${output.post_id}/slide-${pad2(slideNumber)}.png`;
+  }
+
   return null;
 }
 

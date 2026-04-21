@@ -3036,6 +3036,146 @@ textarea {
   color: #721c24;
 }
 
+/* ── Selection ring (brand-coloured, applied via inline style) ─────────── */
+
+.canvas-artboard--selected {
+  outline: 3px solid var(--highlight, rgba(111, 92, 69, 0.55));
+  outline-offset: 2px;
+  transition: box-shadow 0.15s ease;
+}
+
+/* ── Inline editing border ─────────────────────────────────────────────── */
+
+.canvas-inline-editing {
+  outline: 2px dashed rgba(111, 92, 69, 0.5);
+  outline-offset: 2px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: text;
+}
+
+/* ── Slide detail panel ────────────────────────────────────────────────── */
+
+.inspector-slide-detail {
+  padding: 0 16px;
+}
+
+.inspector-slide-detail.hidden {
+  display: none;
+}
+
+.inspector-slide-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.inspector-slide-number {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--brand-strong, #1a1a1a);
+}
+
+.inspector-slide-role {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(175, 179, 170, 0.15);
+  color: var(--muted, #888);
+}
+
+.inspector-slide-text,
+.inspector-slide-prompt {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text, #333);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.inspector-recipe-data {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text, #333);
+}
+
+.inspector-recipe-field {
+  margin: 2px 0;
+}
+
+.inspector-recipe-field strong {
+  color: var(--brand-strong, #1a1a1a);
+}
+
+.inspector-slide-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inspector-regen-prompt {
+  width: 100%;
+  font-size: 0.8rem;
+  font-family: inherit;
+  padding: 8px;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 6px;
+  resize: vertical;
+  min-height: 60px;
+}
+
+.inspector-regen-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.inspector-regen-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--muted, #888);
+}
+
+.inspector-regen-loading.hidden {
+  display: none;
+}
+
+.inspector-regen-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border, #ddd);
+  border-top-color: var(--brand-primary, #6f5c45);
+  border-radius: 50%;
+  animation: inspector-regen-spin 0.7s linear infinite;
+}
+
+@keyframes inspector-regen-spin {
+  to { transform: rotate(360deg); }
+}
+
+.inspector-regen-error {
+  margin-top: 6px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  line-height: 1.4;
+}
+
+.inspector-regen-error.hidden {
+  display: none;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    LIBRARY — Enhanced cards, bulk selection, duplicate, pagination
    ═══════════════════════════════════════════════════════════════════════════ */
