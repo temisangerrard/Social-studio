@@ -587,6 +587,11 @@ export async function runPipelineFromRequest(
           : assignUploadedAssetsToSlides(plan.slides, request))
       : plan.slides;
 
+    // Ensure every slide has a slide_number (planner may omit it)
+    slidesToProcess.forEach((s: any, i: number) => {
+      if (s.slide_number == null) s.slide_number = i + 1;
+    });
+
     const slidesWithAssets = await imageGenerator(slidesToProcess, {
       assetsDir,
       falKey: process.env.FAL_KEY,

@@ -958,6 +958,244 @@ function loadOutputToEngine(output) {
   studioState.canvasEngine.loadOutput(output);
 }
 
+// ── Brand Selection Ring ──────────────────────────────────────────────────────
+
+/**
+ * Apply a brand-coloured selection ring to the currently selected artboard.
+ * Uses the brand's primaryColor from the generated output's brand_profile.
+ * @param {object} artboardDesc - The selected artboard descriptor.
+ */
+function applyBrandSelectionRing(artboardDesc) {
+  clearBrandSelectionRing();
+  const output = studioState.generatedOutput;
+  const primaryColor = output?.brand_profile?.visual?.primaryColor || '#6f5c45';
+  const el = document.querySelector(`.canvas-artboard[data-artboard-id="${artboardDesc.id}"]`);
+  if (el) {
+    el.style.outline = `3px solid ${primaryColor}`;
+    el.style.outlineOffset = '2px';
+    el.style.boxShadow = `0 0 12px ${primaryColor}44`;
+  }
+}
+
+/**
+ * Clear brand-coloured selection ring from all artboards.
+ */
+function clearBrandSelectionRing() {
+  document.querySelectorAll('.canvas-artboard').forEach(el => {
+    el.style.outline = '';
+    el.style.outlineOffset = '';
+    el.style.boxShadow = '';
+  });
+}
+
+// ── Detail Panel ──────────────────────────────────────────────────────────────
+
+/**
+ * Populate the detail panel (#studio-inspector) with slide-specific data
+ * when a card is selected: slide number, role, text, image_prompt, recipe data.
+ * Also shows "Download Slide" and conditional "Regenerate Image" button.
+ * @param {object} artboardDesc - The selected artboard descriptor.
+ */
+function populateDetailPanel(artboardDesc) {
+  const output = studioState.generatedOutput;
+  if (!output) return;
+
+  // Find the matching slide from the output
+  const slides = output.artifacts?.length ? output.artifacts : (output.slides || []);
+  const slide = slides.find(s => (s.slide_number ?? 0) === artboardDesc.slideNumber)
+    || slides[artboardDesc.order];
+
+  // Get or create the detail section
+  let detailSection = document.getElementById('inspector-slide-detail');
+  if (!detailSection) {
+    detailSection = document.createElement('div');
+    detailSection.id = 'inspector-slide-detail';
+    detailSection.className = 'inspector-slide-detail';
+    const inspectorEl = document.getElementById('studio-inspector');
+    if (inspectorEl) {
+      // Insert before the package section
+      const packageEl = document.getElementById('inspector-package');
+      inspectorEl.insertBefore(detailSection, packageEl);
+    }
+  }
+
+  detailSection.classList.remove('hidden');
+
+  const role = artboardDesc.role || slide?.role || 'slide';
+  const slideNumber = artboardDesc.slideNumber ?? slide?.slide_number ?? '—';
+  const text = slide?.text || artboardDesc.text || '';
+  const imagePrompt = slide?.image_prompt || artboardDesc.prompt || '';
+  const recipe = slide?.recipe || null;
+  const canRegenerate = role === 'recipe' || !!imagePrompt;
+
+  let html = `
+    <p class="eyebrow" style="margin-top:16px">Slide Detail</p>
+    <div class="inspector-slide-meta">
+      <span class="inspector-slide-number">Slide ${slideNumber}</span>
+      <span class="inspector-slide-role">${escapeHtml(capitalizeFirst(role))}</span>
+    </div>`;
+
+  if (text) {
+    html += `
+    <div class="inspector-row" style="margin-top:8px">
+      <p class="inspector-label">Text</p>
+    </div>
+    <p class="inspector-body-text inspector-slide-text">${escapeHtml(text)}</p>`;
+  }
+
+  if (imagePrompt) {
+    html += `
+    <div class="inspector-row" style="margin-top:8px">
+      <p class="inspector-label">Image Prompt</p>
+    </div>
+    <p class="inspector-body-text inspector-slide-prompt">${escapeHtml(imagePrompt)}</p>`;
+  }
+
+  if (recipe) {
+    html += `
+    <div class="inspector-row" style="margin-top:8px">
+      <p class="inspector-label">Recipe</p>
+    </div>
+    <div class="inspector-recipe-data">`;
+    if (recipe.name) html += `<p class="inspector-recipe-field"><strong>Name:</strong> ${escapeHtml(recipe.name)}</p>`;
+    if (recipe.cook_time) html += `<p class="inspector-recipe-field"><strong>Cook time:</strong> ${escapeHtml(recipe.cook_time)}</p>`;
+    if (recipe.ingredients?.length) html += `<p class="inspector-recipe-field"><strong>Ingredients:</strong> ${escapeHtml(recipe.ingredients.join(', '))}</p>`;
+    if (recipe.steps?.length) html += `<p class="inspector-recipe-field"><strong>Steps:</strong> ${escapeHtml(recipe.steps.join(' → '))}</p>`;
+    if (recipe.pro_tip) html += `<p class="inspector-recipe-field"><strong>Pro tip:</strong> ${escapeHtml(recipe.pro_tip)}</p>`;
+    html += `</div>`;
+  }
+
+  // Action buttons
+  html += `<div class="inspector-slide-actions" style="margin-top:12px">`;
+  html += `<button class="ghost-button inspector-download-slide-btn" type="button">Download Slide</button>`;
+
+  if (canRegenerate) {
+    html += `
+    <div class="inspector-regen-section" style="margin-top:8px">
+      <label class="field-label" for="inspector-regen-prompt">Regeneration prompt</label>
+      <textarea id="inspector-regen-prompt" class="inspector-regen-prompt" rows="3">${escapeHtml(imagePrompt)}</textarea>
+      <div class="inspector-regen-btn-row">
+        <button class="primary-button inspector-regen-btn" type="button" style="margin-top:6px">Regenerate Image</button>
+        <span class="inspector-regen-loading hidden" aria-label="Regenerating image">
+          <span class="inspector-regen-spinner"></span> Regenerating…
+        </span>
+      </div>
+      <div class="inspector-regen-error hidden" role="alert"></div>
+    </div>`;
+  }
+
+  html += `</div>`;
+
+  detailSection.innerHTML = html;
+
+  // Wire download slide button
+  const dlBtn = detailSection.querySelector('.inspector-download-slide-btn');
+  if (dlBtn) {
+    dlBtn.addEventListener('click', async () => {
+      if (!studioState.canvasEngine) return;
+      const selected = studioState.canvasEngine.getSelectedArtboard();
+      if (selected) {
+        try {
+          dlBtn.disabled = true;
+          dlBtn.textContent = 'Downloading…';
+          await downloadArtboard(selected);
+        } catch (err) {
+          showStatus(err instanceof Error ? err.message : 'Download failed.');
+        } finally {
+          dlBtn.disabled = false;
+          dlBtn.textContent = 'Download Slide';
+        }
+      }
+    });
+  }
+
+  // Wire regenerate button
+  const regenBtn = detailSection.querySelector('.inspector-regen-btn');
+  if (regenBtn) {
+    regenBtn.addEventListener('click', async () => {
+      const postId = output.post_id;
+      const promptEl = document.getElementById('inspector-regen-prompt');
+      const prompt = promptEl?.value || imagePrompt;
+      if (!postId || slideNumber == null) return;
+
+      const loadingEl = detailSection.querySelector('.inspector-regen-loading');
+      const errorEl = detailSection.querySelector('.inspector-regen-error');
+
+      try {
+        // Show loading indicator, hide previous error, disable button
+        regenBtn.disabled = true;
+        regenBtn.classList.add('hidden');
+        if (loadingEl) loadingEl.classList.remove('hidden');
+        if (errorEl) { errorEl.classList.add('hidden'); errorEl.textContent = ''; }
+
+        const result = await regenerateSlide(postId, slideNumber, prompt);
+
+        if (result && result.slide) {
+          const updatedSlide = result.slide;
+
+          // Update the specific slide in studioState.generatedOutput
+          const currentSlides = studioState.generatedOutput?.slides || [];
+          const slideIdx = currentSlides.findIndex(s => (s.slide_number ?? 0) === slideNumber);
+          if (slideIdx >= 0) {
+            currentSlides[slideIdx] = { ...currentSlides[slideIdx], asset_path: updatedSlide.asset_path, image_prompt: updatedSlide.image_prompt || prompt };
+          }
+          // Also update artifacts if present
+          const currentArtifacts = studioState.generatedOutput?.artifacts || [];
+          const artIdx = currentArtifacts.findIndex(s => (s.slide_number ?? 0) === slideNumber);
+          if (artIdx >= 0) {
+            currentArtifacts[artIdx] = { ...currentArtifacts[artIdx], asset_path: updatedSlide.asset_path, image_prompt: updatedSlide.image_prompt || prompt };
+          }
+
+          // Targeted image swap in the DOM — find the artboard element and swap its img src
+          const artboardId = `artboard-${String(slideNumber).padStart(2, '0')}`;
+          const artboardEl = document.querySelector(`.canvas-artboard[data-artboard-id="${artboardId}"]`);
+          if (artboardEl) {
+            const img = artboardEl.querySelector('img');
+            if (img && updatedSlide.asset_path) {
+              const filename = updatedSlide.asset_path.split('/').pop();
+              const newUrl = `/api/assets/${postId}/${filename}?t=${Date.now()}`;
+              img.src = newUrl;
+            }
+          }
+
+          // Re-populate the detail panel to reflect the updated prompt
+          const updatedDesc = { ...artboardDesc, prompt: updatedSlide.image_prompt || prompt };
+          populateDetailPanel(updatedDesc);
+        }
+        hideStatus();
+      } catch (err) {
+        // Show inline error message
+        const errMsg = err instanceof Error ? err.message : 'Regeneration failed.';
+        if (errorEl) {
+          errorEl.textContent = errMsg;
+          errorEl.classList.remove('hidden');
+        }
+        // Also show global status as fallback
+        showStatus(errMsg);
+      } finally {
+        regenBtn.disabled = false;
+        regenBtn.classList.remove('hidden');
+        if (loadingEl) loadingEl.classList.add('hidden');
+      }
+    });
+  }
+}
+
+/**
+ * Hide the detail panel section.
+ */
+function hideDetailPanel() {
+  const detailSection = document.getElementById('inspector-slide-detail');
+  if (detailSection) detailSection.classList.add('hidden');
+}
+
+/**
+ * Capitalize the first letter of a string.
+ */
+function capitalizeFirst(str) {
+  return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // INTERACTIVE CANVAS EDITOR — Selection, Inline Editing, Drag, Download, Keys
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -2415,13 +2653,20 @@ async function bootstrap() {
               slideNumber: artboardDesc.slideNumber,
               order: artboardDesc.order
             };
+
+            // Apply brand-coloured selection ring
+            applyBrandSelectionRing(artboardDesc);
+
             renderInspectorPackage();
             renderInspectorAsset();
+            populateDetailPanel(artboardDesc);
             if (inspector) inspector.classList.remove("hidden");
           } else {
             // Deselected — hide inspector
             studioState.selectedAsset = null;
+            clearBrandSelectionRing();
             renderInspectorAsset();
+            hideDetailPanel();
             if (inspector) inspector.classList.add("hidden");
           }
         },
