@@ -173,7 +173,8 @@ test("applyPinchZoom clamps zoom to bounds", () => {
 });
 
 // @ts-nocheck — canvas-engine.js is a vanilla JS module; TS types are not available
-import { buildArtboardDescriptors, buildOverlayDescriptors, ArtboardManager } from "./canvas-engine.js";
+import { buildArtboardDescriptors, buildOverlayDescriptors, ArtboardManager, resolveAssetUrl } from "./canvas-engine.js";
+import fc from "fast-check";
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -438,4 +439,136 @@ test("ArtboardManager.reconcile does nothing with null container", () => {
   const mgr = new ArtboardManager([], []);
   // Should not throw
   mgr.reconcile(null);
+});
+
+
+// ── resolveAssetUrl unit tests (Task 4.1) ─────────────────────────────────────
+
+test("resolveAssetUrl: artifact with asset_path + render_status skipped returns valid URL", () => {
+  const output = { post_id: "peppera_ig_0020", render_status: "skipped" };
+  const item = { asset_path: "/tmp/outputs/peppera_ig_0020/assets/generated/hero.jpg", slide_number: 1 };
+  const url = resolveAssetUrl(output, item);
+  assert.equal(url, "/api/assets/peppera_ig_0020/hero.jpg");
+});
+
+test("resolveAssetUrl: artifact with null asset_path + render_status skipped returns null", () => {
+  const output = { post_id: "peppera_ig_0020", render_status: "skipped" };
+  const item = { asset_path: null, slide_number: 1 };
+  const url = resolveAssetUrl(output, item);
+  assert.equal(url, null);
+});
+
+test("resolveAssetUrl: slide with slide_number + render_status complete returns /api/slides/ URL", () => {
+  const output = { post_id: "peppera_ig_0020", render_status: "complete" };
+  const item = { asset_path: null, slide_number: 3 };
+  const url = resolveAssetUrl(output, item);
+  assert.equal(url, "/api/slides/peppera_ig_0020/slide-03.png");
+});
+
+test("resolveAssetUrl: artifact with null asset_path cross-references slide asset_path", () => {
+  const output = { post_id: "peppera_ig_0020", render_status: "skipped" };
+  const item = { asset_path: null, slide_number: 2 };
+  const slides = [
+    { slide_number: 1, asset_path: "/tmp/outputs/slide-01.jpg" },
+    { slide_number: 2, asset_path: "/tmp/outputs/slide-02.jpg" },
+  ];
+  const url = resolveAssetUrl(output, item, slides);
+  assert.equal(url, "/api/assets/peppera_ig_0020/slide-02.jpg");
+});
+
+// ── buildArtboardDescriptors with render_status: "skipped" (Task 4.2) ─────────
+
+test("buildArtboardDescriptors: skipped render — artifacts with asset_path have valid assetUrl", () => {
+  const output = {
+    post_id: "peppera_ig_0021",
+    render_status: "skipped",
+    slides: [
+      { slide_number: 1, role: "hook", type: "text_only", text: "Hook text", asset_path: null },
+      { slide_number: 2, role: "recipe", type: "generated_image", text: "Recipe", asset_path: "/tmp/recipe.jpg" },
+    ],
+    artifacts: [
+      { id: "slide-01", kind: "image", role: "hook", title: "Hook text", asset_path: null, slide_number: 1 },
+      { id: "slide-02", kind: "image", role: "recipe", title: "Recipe", asset_path: "/tmp/recipe.jpg", slide_number: 2 },
+    ],
+    caption: "Test",
+    hooks: [],
+    hashtags: [],
+  };
+  const descriptors = buildArtboardDescriptors(output);
+  assert.equal(descriptors.length, 2);
+  // Artifact with asset_path should have a valid URL
+  assert.equal(descriptors[1].assetUrl, "/api/assets/peppera_ig_0021/recipe.jpg");
+});
+
+test("buildArtboardDescriptors: skipped render — text-only artifacts have assetUrl null (not error)", () => {
+  const output = {
+    post_id: "peppera_ig_0022",
+    render_status: "skipped",
+    slides: [
+      { slide_number: 1, role: "hook", type: "text_only", text: "Hook text", asset_path: null },
+    ],
+    artifacts: [
+      { id: "slide-01", kind: "image", role: "hook", title: "Hook text", asset_path: null, slide_number: 1 },
+    ],
+    caption: "Test",
+    hooks: [],
+    hashtags: [],
+  };
+  const descriptors = buildArtboardDescriptors(output);
+  assert.equal(descriptors.length, 1);
+  // Text-only artifact with no asset_path should have null assetUrl (graceful, not error)
+  assert.equal(descriptors[0].assetUrl, null);
+});
+
+// ── Property-based preservation tests (Task 5) ───────────────────────────────
+
+// **Validates: Requirements 3.1, 3.3**
+// Property 3: For any artifact with a valid asset_path, resolveAssetUrl returns
+// /api/assets/{postId}/{filename} preserving existing behavior.
+test("[PBT: Property 3] resolveAssetUrl preserves /api/assets/ URL for artifacts with valid asset_path", () => {
+  const postIdArb = fc.stringMatching(/^[a-z]{3,8}_[a-z]{2}_\d{4}$/);
+  const filenameArb = fc.stringMatching(/^[a-z][a-z0-9_-]{0,20}\.(jpg|png|webp|svg)$/);
+  const renderStatusArb = fc.constantFrom("complete", "skipped");
+
+  fc.assert(
+    fc.property(
+      postIdArb,
+      filenameArb,
+      renderStatusArb,
+      (postId, filename, renderStatus) => {
+        const output = { post_id: postId, render_status: renderStatus };
+        const item = { asset_path: `/some/path/to/${filename}`, slide_number: 1 };
+        const url = resolveAssetUrl(output, item);
+        assert.ok(url !== null, "URL should not be null for artifact with asset_path");
+        assert.ok(url.startsWith("/api/assets/"), `URL should start with /api/assets/, got: ${url}`);
+        assert.ok(url.endsWith(filename), `URL should end with filename "${filename}", got: ${url}`);
+        assert.equal(url, `/api/assets/${postId}/${filename}`);
+      }
+    ),
+    { numRuns: 200 }
+  );
+});
+
+// **Validates: Requirements 3.2**
+// Property 4: For slides with render_status "complete" and valid slide_number,
+// resolveAssetUrl returns /api/slides/{postId}/slide-{nn}.png.
+test("[PBT: Property 4] resolveAssetUrl preserves /api/slides/ URL for complete renders", () => {
+  const postIdArb = fc.stringMatching(/^[a-z]{3,8}_[a-z]{2}_\d{4}$/);
+  const slideNumberArb = fc.integer({ min: 1, max: 20 });
+
+  fc.assert(
+    fc.property(
+      postIdArb,
+      slideNumberArb,
+      (postId, slideNumber) => {
+        const output = { post_id: postId, render_status: "complete" };
+        const item = { asset_path: null, slide_number: slideNumber };
+        const url = resolveAssetUrl(output, item);
+        const nn = String(slideNumber).padStart(2, "0");
+        const expected = `/api/slides/${postId}/slide-${nn}.png`;
+        assert.equal(url, expected, `Expected ${expected}, got ${url}`);
+      }
+    ),
+    { numRuns: 200 }
+  );
 });

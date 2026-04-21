@@ -2294,6 +2294,23 @@ textarea {
   text-align: center;
 }
 
+/* Text-only placeholder (no image available) */
+.canvas-artboard__placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  background: var(--surface-muted);
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.45;
+  padding: 24px;
+  text-align: center;
+  border-radius: 14px 14px 0 0;
+  overflow: hidden;
+}
+
 /* Selected artboard */
 .canvas-artboard--selected {
   outline: 3px solid rgba(111, 92, 69, 0.55);

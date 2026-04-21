@@ -587,9 +587,10 @@ export async function runPipelineFromRequest(
           : assignUploadedAssetsToSlides(plan.slides, request))
       : plan.slides;
 
-    // Ensure every slide has a slide_number (planner may omit it)
+    // Ensure every slide has a slide_number BEFORE any downstream processing
+    // (planner may omit it — we derive from array index)
     slidesToProcess.forEach((s: any, i: number) => {
-      if (s.slide_number == null) s.slide_number = i + 1;
+      s.slide_number = i + 1;
     });
 
     const slidesWithAssets = await imageGenerator(slidesToProcess, {
@@ -610,17 +611,24 @@ export async function runPipelineFromRequest(
       }))
     });
     metadata.slides = slidesWithAssets;
-    metadata.artifacts = slidesWithAssets.map((slide) => ({
-      id: `slide-${String(slide.slide_number).padStart(2, "0")}`,
-      kind: "image",
-      role: slide.role,
-      title: slide.text,
-      prompt: slide.image_prompt ?? slide.text,
-      asset_path: slide.asset_path ?? null,
-      preview_path: slide.asset_path ?? null,
-      source_asset_id: null,
-      variant_group: null
-    }));
+    metadata.artifacts = slidesWithAssets.map((slide, index) => {
+      // Guard: if slide_number is still undefined or NaN after the loop, default to index + 1
+      const slideNumber = (typeof slide.slide_number === "number" && !Number.isNaN(slide.slide_number))
+        ? slide.slide_number
+        : index + 1;
+      return {
+        id: `slide-${String(slideNumber).padStart(2, "0")}`,
+        kind: "image" as const,
+        role: slide.role,
+        title: slide.text,
+        prompt: slide.image_prompt ?? slide.text,
+        asset_path: slide.asset_path ?? null,
+        preview_path: slide.asset_path ?? null,
+        slide_number: slideNumber,
+        source_asset_id: null,
+        variant_group: null,
+      };
+    });
 
     try {
       await renderer(metadata);

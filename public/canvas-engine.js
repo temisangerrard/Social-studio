@@ -217,9 +217,10 @@ function detectType(item) {
  *
  * @param {object} output - The PostMetadata object.
  * @param {object} item   - A slide or artifact.
+ * @param {Array<object>} [slides] - Optional slides array for cross-referencing artifacts against slides.
  * @returns {string|null}
  */
-function resolveAssetUrl(output, item) {
+export function resolveAssetUrl(output, item, slides) {
   if (!output || !item) return null;
 
   // Artifact-style: has asset_path
@@ -238,10 +239,27 @@ function resolveAssetUrl(output, item) {
     }
   }
 
+  // Cross-reference fallback: if the item has a slide_number and the output has
+  // a slides array, look up the corresponding slide's asset_path
+  const slideNumber = item.slide_number;
+  if (
+    Array.isArray(slides) &&
+    typeof slideNumber === "number" &&
+    !Number.isNaN(slideNumber) &&
+    output.post_id
+  ) {
+    const matchingSlide = slides.find((s) => s.slide_number === slideNumber);
+    if (matchingSlide && matchingSlide.asset_path) {
+      const filename = matchingSlide.asset_path.split("/").pop();
+      if (filename) {
+        return `/api/assets/${output.post_id}/${filename}`;
+      }
+    }
+  }
+
   // Slide fallback: use rendered slide path when asset_path is missing
   // (matches getWorkspaceAssetUrl logic in app-helpers.js)
   if (item.kind === "video") return null;
-  const slideNumber = item.slide_number;
   if (typeof slideNumber === "number" && !Number.isNaN(slideNumber) && output.render_status !== "skipped") {
     return `/api/slides/${output.post_id}/slide-${pad2(slideNumber)}.png`;
   }
@@ -267,6 +285,9 @@ export function buildArtboardDescriptors(output) {
     ? output.artifacts
     : (output.slides || []);
 
+  // Pass slides array to resolveAssetUrl for cross-referencing artifacts against slides
+  const slides = output.slides || [];
+
   let x = STRIP_START_X;
 
   return items.map((item, index) => {
@@ -274,7 +295,7 @@ export function buildArtboardDescriptors(output) {
     const role = item.role || "slide";
     const type = detectType(item);
     const label = `${pad2(slideNumber)} — ${capitalizeRole(role)}`;
-    const assetUrl = resolveAssetUrl(output, item);
+    const assetUrl = resolveAssetUrl(output, item, slides);
 
     const descriptor = {
       id: item.id || `artboard-${pad2(slideNumber)}`,
@@ -489,6 +510,28 @@ export class ArtboardManager {
     el.dataset.artboardId = desc.id;
     el.dataset.type = desc.type;
     el.style.position = "absolute";
+
+    // Text-only placeholder when assetUrl is null or empty
+    if (!desc.assetUrl) {
+      const placeholder = document.createElement("div");
+      placeholder.className = "canvas-artboard__placeholder";
+      placeholder.textContent = desc.text || desc.role || "Text";
+      el.appendChild(placeholder);
+
+      // Label
+      const label = document.createElement("span");
+      label.className = "canvas-artboard__label";
+      label.textContent = desc.label;
+      el.appendChild(label);
+
+      // Badge
+      const badge = document.createElement("span");
+      badge.className = "canvas-artboard__badge";
+      badge.textContent = desc.type.toUpperCase();
+      el.appendChild(badge);
+
+      return el;
+    }
 
     // Start with skeleton shimmer
     el.classList.add("canvas-artboard--loading");
