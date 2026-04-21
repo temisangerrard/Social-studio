@@ -312,3 +312,46 @@ test("validateContentTypes skips invalid entries", () => {
   assert.equal(valid.length, 1);
   assert.equal(valid[0].id, "valid");
 });
+
+
+// ── Task 4.3: Artifact slide_number and id validation ─────────────────────────
+
+test("pipeline artifacts have numeric slide_number >= 1 and id without 'undefined'", async () => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "social-studio-artifact-check-"));
+  const assetPath = path.join(outputRoot, "placeholder.svg");
+  await fs.writeFile(assetPath, "<svg xmlns='http://www.w3.org/2000/svg'></svg>", "utf8");
+
+  const metadata = await runPipelineFromRequest(
+    makeRequest(),
+    makeBrand(),
+    outputRoot,
+    {
+      planPackage: async () => ({
+        provider: "fallback",
+        plan: {
+          hooks: ["Hook line"],
+          caption: "Caption text",
+          hashtags: ["#test"],
+          platformNotes: { tiktok: "fast" },
+          // Deliberately omit slide_number to test the pipeline assigns it
+          slides: [
+            { role: "hook", type: "text_only", text: "Hook", image_prompt: null, visual_goal: "", layout: "hook_cover", asset_path: null },
+            { role: "recipe", type: "generated_image", text: "Recipe card", image_prompt: "Food photo", visual_goal: "Show food", layout: "recipe_card", asset_path: null },
+            { role: "cta", type: "text_only", text: "Download now", image_prompt: null, visual_goal: "", layout: "cta_banner", asset_path: null },
+          ]
+        }
+      }),
+      generateSlideImages: async (inputSlides) =>
+        inputSlides.map((slide) => ({ ...slide, asset_path: assetPath })),
+      renderPackageSlides: async () => []
+    }
+  );
+
+  assert.ok(metadata.artifacts && metadata.artifacts.length > 0, "Should have artifacts");
+  for (const artifact of metadata.artifacts!) {
+    assert.equal(typeof artifact.slide_number, "number", `slide_number should be a number, got ${typeof artifact.slide_number}`);
+    assert.ok(!Number.isNaN(artifact.slide_number), "slide_number should not be NaN");
+    assert.ok(artifact.slide_number >= 1, `slide_number should be >= 1, got ${artifact.slide_number}`);
+    assert.ok(!artifact.id.includes("undefined"), `artifact id should not contain "undefined", got "${artifact.id}"`);
+  }
+});
