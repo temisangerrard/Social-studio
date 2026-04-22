@@ -859,6 +859,28 @@ async function handleRequest(req: Request): Promise<Response> {
 
   if (url.pathname.startsWith("/api/outputs/") && req.method === "GET") {
     const postId = url.pathname.slice("/api/outputs/".length);
+
+    // Export endpoints: /api/outputs/:postId/export/pdf and /export/zip
+    const exportMatch = postId.match(/^([^/]+)\/export\/(pdf|zip)$/);
+    if (exportMatch) {
+      const [, id, format] = exportMatch;
+      const outputDir = path.join(OUTPUTS_ROOT, id);
+      try { await fs.access(outputDir); } catch { return json({ error: "Output not found" }, { status: 404 }); }
+      try {
+        const { exportPdf, exportZip } = await import("./export.ts");
+        if (format === "pdf") {
+          const buf = await exportPdf(outputDir);
+          return new Response(buf, { status: 200, headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${id}-carousel.pdf"` } });
+        } else {
+          const platforms = url.searchParams.getAll("platform");
+          const buf = await exportZip(outputDir, platforms.length ? platforms : undefined);
+          return new Response(buf, { status: 200, headers: { "Content-Type": "application/zip", "Content-Disposition": `attachment; filename="${id}-platforms.zip"` } });
+        }
+      } catch (err: any) {
+        return json({ error: err.message || "Export failed" }, { status: 500 });
+      }
+    }
+
     const output = await readOutput(postId);
     return output ? json(output) : json({ error: "Output not found" }, { status: 404 });
   }

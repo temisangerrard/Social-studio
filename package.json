@@ -11,8 +11,11 @@
     "test": "node --import tsx --test src/assistant.test.ts src/context.test.ts src/content-types.test.ts src/image-generator.test.ts src/pipeline.test.ts src/planner.test.ts src/routing.test.ts src/server.test.ts src/storage.test.ts src/upload-intake.test.ts src/workflow-engine.test.ts public/app-helpers.test.ts"
   },
   "dependencies": {
+    "@types/archiver": "^7.0.0",
+    "archiver": "^7.0.1",
     "dotenv": "^16.4.5",
     "playwright": "^1.52.0",
+    "sharp": "^0.33.2",
     "tsx": "^4.21.0"
   },
   "devDependencies": {
