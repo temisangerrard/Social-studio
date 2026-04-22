@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { TransformState } from "./canvas-engine.js";
+import { TransformState, PointerStateMachine } from "./canvas-engine.js";
 
 // ── Defaults ──────────────────────────────────────────────────────────────────
 
@@ -290,6 +290,55 @@ test("buildArtboardDescriptors resolves artifact asset URLs", () => {
   assert.equal(descriptors[1].assetUrl, "/api/assets/peppera_ig_0015/clip.mp4");
 });
 
+test("buildArtboardDescriptors falls back to rendered slide PNGs for artifact entries without asset paths", () => {
+  const output = {
+    post_id: "peppera_ig_0016",
+    slides: [
+      {
+        slide_number: 1,
+        role: "hook",
+        type: "text_only",
+        text: "Hook slide",
+        image_prompt: null,
+        asset_path: null,
+      },
+      {
+        slide_number: 2,
+        role: "recipe",
+        type: "generated_image",
+        text: "Recipe slide",
+        image_prompt: "recipe prompt",
+        asset_path: "outputs/peppera_ig_0016/assets/generated/slide-02.jpg",
+      },
+    ],
+    artifacts: [
+      {
+        id: "artboard-01",
+        slide_number: 1,
+        kind: "image",
+        role: "hook",
+        title: "Hook slide",
+        asset_path: null,
+        preview_path: null,
+      },
+      {
+        id: "artboard-02",
+        slide_number: 2,
+        kind: "image",
+        role: "recipe",
+        title: "Recipe slide",
+        asset_path: "outputs/peppera_ig_0016/assets/generated/slide-02.jpg",
+        preview_path: "outputs/peppera_ig_0016/assets/generated/slide-02.jpg",
+      },
+    ],
+    render_status: "complete",
+  };
+
+  const descriptors = buildArtboardDescriptors(output);
+  assert.equal(descriptors[0].assetUrl, "/api/slides/peppera_ig_0016/slide-01.png");
+  assert.equal(descriptors[1].assetUrl, "/api/assets/peppera_ig_0016/slide-02.jpg");
+});
+
 test("buildArtboardDescriptors sets order and isVariant correctly", () => {
   const output = makeOutput(2);
   const descriptors = buildArtboardDescriptors(output);
@@ -571,4 +620,107 @@ test("[PBT: Property 4] resolveAssetUrl preserves /api/slides/ URL for complete 
     ),
     { numRuns: 200 }
   );
+});
+
+// ── PointerStateMachine touch vs mouse tests ──────────────────────────────────
+
+test("PointerStateMachine uses panning for touch drags started on an artboard", () => {
+  const stageEl = createMockElement("div");
+  stageEl.setPointerCapture = () => {};
+
+  const transformEl = createMockElement("div");
+  const transform = new TransformState();
+  const artboardManager = new ArtboardManager();
+  const psm = new PointerStateMachine(stageEl, transformEl, transform, artboardManager);
+
+  const artboard = createMockElement("div");
+  artboard.classList.add("canvas-artboard");
+  artboard.setPointerCapture = () => {};
+  artboard.parentElement = stageEl;
+
+  psm._onPointerDown({
+    button: 0,
+    pointerType: "touch",
+    clientX: 120,
+    clientY: 80,
+    pointerId: 7,
+    target: artboard,
+  });
+
+  assert.equal(psm.state, "panning");
+  assert.equal(psm._dragTarget, null);
+});
+
+test("PointerStateMachine keeps artboard dragging for mouse drags started on an artboard", () => {
+  const stageEl = createMockElement("div");
+  stageEl.setPointerCapture = () => {};
+
+  const transformEl = createMockElement("div");
+  const transform = new TransformState();
+  const artboardManager = new ArtboardManager();
+  const psm = new PointerStateMachine(stageEl, transformEl, transform, artboardManager);
+
+  const artboard = createMockElement("div");
+  artboard.classList.add("canvas-artboard");
+  artboard.style.left = "420px";
+  artboard.style.top = "80px";
+  artboard.setPointerCapture = () => {};
+  artboard.parentElement = stageEl;
+
+  psm._onPointerDown({
+    button: 0,
+    pointerType: "mouse",
+    clientX: 120,
+    clientY: 80,
+    pointerId: 8,
+    target: artboard,
+  });
+
+  assert.equal(psm.state, "dragging");
+  assert.equal(psm._dragTarget, artboard);
+});
+
+test("CanvasEngine constructor initializes without reading transform before setup", async () => {
+  const origDocumentRef = globalThis.document;
+  const origRAF = globalThis.requestAnimationFrame;
+  const origCAF = globalThis.cancelAnimationFrame;
+  const origLocalStorage = globalThis.localStorage;
+
+  const stageEl = createMockElement("div");
+  stageEl.clientWidth = 1280;
+  stageEl.clientHeight = 720;
+  stageEl.addEventListener = () => {};
+  stageEl.removeEventListener = () => {};
+  stageEl.appendChild = (child) => { stageEl._children.push(child); child.parentNode = stageEl; };
+  stageEl.querySelectorAll = (selector) => {
+    return stageEl._children.filter((child) => child.className?.includes(selector.replace(".", "")));
+  };
+
+  globalThis.document = {
+    createElement: createMockElement,
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  };
+  globalThis.requestAnimationFrame = (fn) => {
+    fn();
+    return 1;
+  };
+  globalThis.cancelAnimationFrame = () => {};
+  globalThis.localStorage = {
+    getItem: () => null,
+    setItem: () => {},
+    removeItem: () => {},
+  };
+
+  try {
+    const { CanvasEngine } = await import(`./canvas-engine.js?canvas-engine-constructor=${Date.now()}`);
+    assert.doesNotThrow(() => new CanvasEngine(stageEl, {}));
+  } finally {
+    globalThis.document = origDocumentRef;
+    globalThis.requestAnimationFrame = origRAF;
+    globalThis.cancelAnimationFrame = origCAF;
+    globalThis.localStorage = origLocalStorage;
+  }
 });
