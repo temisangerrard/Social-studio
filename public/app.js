@@ -221,8 +221,6 @@ if (els.studioStylePreset) {
     }
   });
 }
-  });
-}
 els.studioUploadTrigger?.addEventListener("click", () => els.studioReferenceFiles.click());
 document.getElementById("toolbar-upload-btn")?.addEventListener("click", () => els.studioReferenceFiles.click());
 
