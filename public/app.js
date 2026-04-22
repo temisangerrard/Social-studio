@@ -192,6 +192,22 @@ function syncBrandDefaults(brandId) {
     studioState.userPickedStyle = false;
     if (els.studioStylePreset) els.studioStylePreset.value = brand.defaultStyleCardId;
   }
+  // Update UGC brief placeholders for this brand
+  updateUgcPlaceholders(brand);
+}
+
+function updateUgcPlaceholders(brand) {
+  const n = brand.name;
+  const desc = (brand.description || "").split(".")[0]; // first sentence
+  const set = (id, text) => { const el = document.getElementById(id); if (el) el.placeholder = text; };
+  set("ugc-hook", `e.g. I didn't know ${n} could do this until last week…`);
+  set("ugc-problem", `e.g. the problem ${n} solves for your audience`);
+  set("ugc-product-moment", `e.g. how ${n} shows up — the key feature or moment`);
+  set("ugc-outcome", `e.g. what changed after using ${n}`);
+  set("ugc-cta", `e.g. try ${n} — link in bio`);
+  set("ugc-tone-notes", `e.g. ${brand.tone || "casual, direct"}`);
+  // Also update the main idea input placeholder
+  els.studioIdeaInput.placeholder = `${desc || n} content idea…`;
 }
 
 els.studioProductSelect.addEventListener("change", async () => {
