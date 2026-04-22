@@ -13,7 +13,8 @@ export const studioState = {
   canvasEngine: null,
   stylePresets: [],
   selectedStyleId: "",
-  userPickedStyle: false
+  userPickedStyle: false,
+  ugcBriefApproved: false
 };
 
 export const calendarState = {
