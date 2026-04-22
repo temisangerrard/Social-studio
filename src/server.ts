@@ -10,7 +10,10 @@ import { analyzeUploadedAsset, filePathToDataUrl } from "./upload-intake.ts";
 import { runPipelineFromBrief, runPipelineFromRequest } from "./pipeline.ts";
 import { defaultProductRegistry, registerBrandDescription, resolveProductContext } from "./product-context.ts";
 import { createStorage } from "./storage.ts";
-import type { AssistantSession, BatchGenerationRequest, BoardDocument, BrandProfile, CalendarSlot, ContentPillar, GenerationRequest, PostMetadata, UploadedAsset, AssetAnalysis } from "./types.ts";
+import type { AssistantSession, BatchGenerationRequest, BoardDocument, BrandProfile, CalendarSlot, ContentPillar, GenerationRequest, PostMetadata, StyleCard, UploadedAsset, AssetAnalysis } from "./types.ts";
+import { listBuiltinPresets, resolveStyleCard } from "./style-library.ts";
+import { ingestReferencesAndCreateStyleCard } from "./reference-ingestion.ts";
+import { buildPreviewPlan, buildStructuredPrompt } from "./creative-director.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..");
@@ -1049,6 +1052,70 @@ async function handleRequest(req: Request): Promise<Response> {
       }
     }
     return json({ results });
+  }
+
+  // --- Style Library API ---
+
+  if (url.pathname === "/api/styles" && req.method === "GET") {
+    const custom = await storage.listStyleCards();
+    const builtins = listBuiltinPresets();
+    const customIds = new Set(custom.map((c) => c.id));
+    const all = [...custom, ...builtins.filter((b) => !customIds.has(b.id))];
+    return json(all.sort((a, b) => a.name.localeCompare(b.name)));
+  }
+
+  if (url.pathname === "/api/styles" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const card = body as unknown as StyleCard;
+    if (!card.id || !card.name) return json({ error: "id and name required" }, { status: 400 });
+    card.source = card.source || "custom";
+    card.createdAt = card.createdAt || new Date().toISOString();
+    card.updatedAt = new Date().toISOString();
+    await storage.saveStyleCard(card);
+    return json(card);
+  }
+
+  if (url.pathname.startsWith("/api/styles/") && !url.pathname.includes("/from-references") && !url.pathname.includes("/preview") && req.method === "GET") {
+    const styleId = url.pathname.slice("/api/styles/".length);
+    const custom = await storage.listStyleCards();
+    const card = resolveStyleCard(styleId, custom);
+    return card ? json(card) : json({ error: "Style not found" }, { status: 404 });
+  }
+
+  if (url.pathname.startsWith("/api/styles/") && !url.pathname.includes("/from-references") && !url.pathname.includes("/preview") && req.method === "DELETE") {
+    const styleId = url.pathname.slice("/api/styles/".length);
+    await storage.deleteStyleCard(styleId);
+    return json({ ok: true });
+  }
+
+  if (url.pathname === "/api/styles/from-references" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const analyses = body.analyses as AssetAnalysis[] | undefined;
+    const name = typeof body.name === "string" ? body.name : "Extracted Style";
+    const intent = typeof body.intent === "string" ? body.intent : "Custom style from reference analysis";
+    if (!analyses?.length) return json({ error: "analyses array required" }, { status: 400 });
+    const { analysis, styleCard } = ingestReferencesAndCreateStyleCard(analyses, name, intent);
+    await storage.saveStyleCard(styleCard);
+    return json({ analysis, styleCard });
+  }
+
+  if (url.pathname === "/api/styles/preview-plan" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const styleId = typeof body.styleCardId === "string" ? body.styleCardId : "";
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    if (!styleId) return json({ error: "styleCardId required" }, { status: 400 });
+    const custom = await storage.listStyleCards();
+    const style = resolveStyleCard(styleId, custom);
+    if (!style) return json({ error: "Style not found" }, { status: 404 });
+    const brand = await storage.getBrandProfile(brandId);
+    if (!brand) return json({ error: "Brand not found" }, { status: 404 });
+    const request = body as unknown as GenerationRequest;
+    request.brandProfileId = brandId;
+    request.rawIdea = typeof body.rawIdea === "string" ? body.rawIdea : "";
+    const control = request.styleControl ?? { styleCardId: styleId };
+    const plan = buildPreviewPlan({ style, request, brand, control });
+    const structured = buildStructuredPrompt({ style, request, brand, control });
+    return json({ plan, structured });
   }
 
   // --- Content Pillars API ---

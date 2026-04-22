@@ -15,7 +15,9 @@ export const studioState = {
   workflowType: "slideshow",
   canvasLoadingStage: null,
   downloading: false,
-  canvasEngine: null
+  canvasEngine: null,
+  stylePresets: [],
+  selectedStyleId: ""
 };
 
 export const calendarState = {

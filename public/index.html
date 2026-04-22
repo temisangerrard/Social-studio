@@ -56,7 +56,7 @@
       <!-- FLOATING TOOLBAR — bottom center, always visible -->
       <form class="studio-toolbar" id="studio-quick-form" autocomplete="off">
         <button id="toolbar-drawer-toggle" class="toolbar-btn" type="button" title="Settings">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M3 12h18"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="10" cy="18" r="2" fill="currentColor"/></svg>
         </button>
         <div class="toolbar-input-group">
           <select id="studio-product-select" class="toolbar-select" title="Brand"></select>
@@ -90,46 +90,120 @@
       <!-- DRAWER — slides out from left, hidden by default -->
       <aside class="studio-drawer hidden" id="studio-drawer">
         <div class="studio-drawer__header">
-          <span class="studio-drawer__title">Settings</span>
+          <span class="studio-drawer__title">Generation settings</span>
           <button id="drawer-close" class="studio-drawer__close" type="button">✕</button>
         </div>
         <div class="studio-drawer__body">
-          <div class="field-group">
-            <label class="field-label" for="studio-visual-mode">Visual mode</label>
-            <select id="studio-visual-mode">
-              <option value="food-led" selected>Food-led</option>
-              <option value="mascot-led">Mascot-led</option>
-              <option value="mixed">Mixed</option>
-            </select>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="studio-delivery-target">Delivery</label>
-            <select id="studio-delivery-target">
-              <option value="instagram">Instagram</option>
-              <option value="tiktok">TikTok</option>
-              <option value="both">TikTok + Instagram</option>
-              <option value="all">All Platforms</option>
-            </select>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="studio-notes-input">Ingredients or notes</label>
-            <input id="studio-notes-input" type="text" placeholder="eggs, peppers, leftover rice…" />
-          </div>
-          <div class="field-group">
-            <div class="field-row" style="align-items:center;justify-content:space-between">
-              <label class="field-label" for="studio-reference-files">Uploads</label>
-              <button id="studio-upload-trigger" class="ghost-button" type="button">Upload photos</button>
+
+          <!-- Section: Style -->
+          <div class="drawer-section">
+            <p class="drawer-section__label">Style</p>
+            <div class="drawer-section__fields">
+              <div class="field-group">
+                <label class="field-label" for="studio-style-preset">Preset</label>
+                <select id="studio-style-preset">
+                  <option value="">None — use default</option>
+                </select>
+              </div>
+              <div id="studio-style-controls" class="style-controls hidden">
+                <div class="field-row">
+                  <div class="field-group">
+                    <label class="field-label" for="studio-generation-mode">Mode</label>
+                    <select id="studio-generation-mode">
+                      <option value="image-first" selected>Image-first</option>
+                      <option value="layout-first">Layout-first</option>
+                      <option value="reference-match">Reference-match</option>
+                      <option value="brand-adapted">Brand-adapted</option>
+                    </select>
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label" for="studio-image-treatment">Treatment</label>
+                    <select id="studio-image-treatment">
+                      <option value="">Auto</option>
+                      <option value="photographic">Photographic</option>
+                      <option value="illustrated">Illustrated</option>
+                      <option value="collage">Collage</option>
+                      <option value="monochrome">Monochrome</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="field-row">
+                  <div class="field-group">
+                    <label class="field-label" for="studio-text-density">Density</label>
+                    <select id="studio-text-density">
+                      <option value="">Auto</option>
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                    </select>
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label" for="studio-reference-lock">Ref. lock</label>
+                    <select id="studio-reference-lock">
+                      <option value="loose" selected>Loose</option>
+                      <option value="medium">Medium</option>
+                      <option value="tight">Tight</option>
+                    </select>
+                  </div>
+                </div>
+                <div id="studio-style-preview" class="style-preview hidden">
+                  <p class="eyebrow">Preview</p>
+                  <div id="studio-style-preview-body" class="style-preview__body"></div>
+                </div>
+              </div>
             </div>
-            <div id="studio-uploaded-assets" class="uploaded-asset-list">
-              <p class="assistant-status">No uploads yet.</p>
+          </div>
+
+          <!-- Section: Output -->
+          <div class="drawer-section">
+            <p class="drawer-section__label">Output</p>
+            <div class="drawer-section__fields">
+              <div class="field-row">
+                <div class="field-group">
+                  <label class="field-label" for="studio-visual-mode">Visual</label>
+                  <select id="studio-visual-mode">
+                    <option value="food-led" selected>Food-led</option>
+                    <option value="mascot-led">Mascot-led</option>
+                    <option value="mixed">Mixed</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="studio-delivery-target">Delivery</label>
+                  <select id="studio-delivery-target">
+                    <option value="instagram">Instagram</option>
+                    <option value="tiktok">TikTok</option>
+                    <option value="both">TikTok + IG</option>
+                    <option value="all">All</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="studio-notes-input">Notes</label>
+                <input id="studio-notes-input" type="text" placeholder="eggs, peppers, leftover rice…" />
+              </div>
             </div>
           </div>
-          <div class="field-group">
-            <label class="field-label">Proposed Route</label>
+
+          <!-- Section: Assets -->
+          <div class="drawer-section">
+            <div class="drawer-section__header">
+              <p class="drawer-section__label">Assets</p>
+              <button id="studio-upload-trigger" class="drawer-section__action" type="button">+ Upload</button>
+            </div>
+            <div class="drawer-section__fields">
+              <div id="studio-uploaded-assets" class="uploaded-asset-list">
+                <p class="drawer-empty-hint">Drop images on the canvas or upload here.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Route (collapsed by default) -->
+          <details class="drawer-details">
+            <summary class="drawer-details__summary">Route preview</summary>
             <div id="studio-route-preview" class="route-preview">
-              <p class="assistant-status">Upload assets or enter a prompt to preview the route.</p>
+              <p class="drawer-empty-hint">Enter a prompt to preview the route.</p>
             </div>
-          </div>
+          </details>
 
           <div id="studio-status" class="assistant-status hidden"></div>
 

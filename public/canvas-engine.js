@@ -876,6 +876,8 @@ export class PointerStateMachine {
     if (e.button !== 0) return;
     // Suppress pan/drag while inline editing is active
     if (this._editingActive) return;
+    // Don't drag when clicking interactive elements inside overlays
+    if (e.target.closest("button, a, input, textarea, [contenteditable]")) return;
 
     const artboard = this._findDraggable(e.target);
     this._lastPointer = { x: e.clientX, y: e.clientY };
