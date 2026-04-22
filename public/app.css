@@ -2805,12 +2805,129 @@ textarea {
   backdrop-filter: blur(16px);
   border-right: 1px solid rgba(175,179,170,0.15);
   box-shadow: 4px 0 24px rgba(47,52,45,0.08);
-  padding: 20px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
   overflow-y: auto;
   transition: transform 0.25s ease;
+}
+
+.studio-drawer__header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: rgba(250,249,244,0.97);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(175,179,170,0.12);
+}
+
+.studio-drawer__body {
+  padding: 8px 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Drawer sections ─────────────────────────────────────────────────────── */
+
+.drawer-section {
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(175,179,170,0.10);
+}
+
+.drawer-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.drawer-section__label {
+  margin: 0 0 10px;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.drawer-section__header .drawer-section__label {
+  margin-bottom: 0;
+}
+
+.drawer-section__action {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--highlight);
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.12s;
+}
+
+.drawer-section__action:hover {
+  background: rgba(111, 92, 69, 0.08);
+}
+
+.drawer-section__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.drawer-empty-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--outline);
+  line-height: 1.5;
+}
+
+/* ── Drawer details (collapsible) ────────────────────────────────────────── */
+
+.drawer-details {
+  padding: 0 20px;
+  border-bottom: 1px solid rgba(175,179,170,0.10);
+}
+
+.drawer-details__summary {
+  cursor: pointer;
+  padding: 14px 0;
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.drawer-details__summary::-webkit-details-marker {
+  display: none;
+}
+
+.drawer-details__summary::before {
+  content: "›";
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: transform 0.15s ease;
+  display: inline-block;
+}
+
+.drawer-details[open] > .drawer-details__summary::before {
+  transform: rotate(90deg);
+}
+
+.drawer-details > .route-preview {
+  padding-bottom: 14px;
 }
 
 .uploaded-asset-list {
@@ -2929,11 +3046,7 @@ textarea {
   pointer-events: auto;
 }
 
-.studio-drawer__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
+/* drawer header — see sticky definition above */
 
 .studio-drawer__title {
   font-size: 0.78rem;
@@ -2951,6 +3064,10 @@ textarea {
   color: var(--muted);
   padding: 4px 8px;
   border-radius: 8px;
+}
+
+.studio-drawer__close:hover {
+  background: var(--surface-soft);
 }
 
 .studio-drawer__close:hover {
@@ -3684,4 +3801,56 @@ textarea {
 }
 .route-inline__label {
   color: var(--text-secondary, #666);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STYLE CONTROLS — preset picker, generation mode, text density
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.style-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(111, 92, 69, 0.04);
+  border: 1px solid rgba(111, 92, 69, 0.08);
+}
+
+.style-preview {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(175, 179, 170, 0.18);
+}
+
+.style-preview__body {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
+.style-preview__body .style-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  margin: 2px 4px 2px 0;
+  border-radius: 6px;
+  background: rgba(111, 92, 69, 0.08);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--highlight);
+}
+
+.style-preview__body .style-section {
+  margin-top: 8px;
+}
+
+.style-preview__body .style-section-label {
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
 }

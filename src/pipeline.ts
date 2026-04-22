@@ -14,6 +14,8 @@ import {
   resolveVideoOptions,
   resolveWorkflowType
 } from "./workflow-engine.ts";
+import { generateSlidesFromStyle, buildStructuredPrompt } from "./creative-director.ts";
+import { listBuiltinPresets, resolveStyleCard } from "./style-library.ts";
 import type {
   BrandProfile,
   ContentBrief,
@@ -23,6 +25,8 @@ import type {
   PipelineOptions,
   Platform,
   PostMetadata,
+  StyleCard,
+  StyleControlledRequest,
   UploadedAsset,
   AssetAnalysis
 } from "./types.ts";
@@ -313,6 +317,10 @@ function normalizeRequest(input: unknown): GenerationRequest {
     routingTrace:
       request.routingTrace && typeof request.routingTrace === "object"
         ? (request.routingTrace as GenerationRequest["routingTrace"])
+        : undefined,
+    styleControl:
+      request.styleControl && typeof request.styleControl === "object"
+        ? (request.styleControl as GenerationRequest["styleControl"])
         : undefined
   };
 }
@@ -578,22 +586,49 @@ export async function runPipelineFromRequest(
   };
 
   if (workflowType === "slideshow" || workflowType === "linkedin-carousel") {
+    // ── Style-controlled generation path ────────────────────────────────────
+    const styleControl = request.styleControl;
+    let slidesToProcess = plan.slides;
+
+    if (styleControl?.styleCardId) {
+      const style = resolveStyleCard(styleControl.styleCardId, []);
+      if (style) {
+        console.log(`[pipeline] Using style card: ${style.name}`);
+        const control: StyleControlledRequest = {
+          styleCardId: style.id,
+          generationMode: styleControl.generationMode ?? "image-first",
+          textDensity: styleControl.textDensity,
+          imageTreatment: styleControl.imageTreatment,
+          referenceLockStrength: styleControl.referenceLockStrength,
+        };
+        const styledSlides = generateSlidesFromStyle({ style, request, brand: brandProfile, control });
+        // Merge planner copy with style-directed image prompts and layout
+        slidesToProcess = styledSlides.map((styled, i) => {
+          const plannerSlide = plan.slides[i];
+          return {
+            ...styled,
+            text: plannerSlide?.text ?? styled.text,
+          };
+        });
+      }
+    }
+
     // Ensure uploaded assets are assigned to slides even if the planner didn't set them
     const hasUploads = (request.uploadedAssets ?? []).length > 0;
-    const alreadyAssigned = plan.slides.some((s: any) => s.uploaded_asset_url != null);
-    const slidesToProcess = (hasUploads && !alreadyAssigned)
+    const alreadyAssigned = slidesToProcess.some((s: any) => s.uploaded_asset_url != null);
+    const finalSlides = (hasUploads && !alreadyAssigned)
       ? (isPepperaCarousel
-          ? assignUploadedAssetsToCarouselSlides(plan.slides, request)
-          : assignUploadedAssetsToSlides(plan.slides, request))
-      : plan.slides;
+          ? assignUploadedAssetsToCarouselSlides(slidesToProcess, request)
+          : assignUploadedAssetsToSlides(slidesToProcess, request))
+      : slidesToProcess;
 
     // Ensure every slide has a slide_number BEFORE any downstream processing
     // (planner may omit it — we derive from array index)
-    slidesToProcess.forEach((s: any, i: number) => {
+    finalSlides.forEach((s: any, i: number) => {
       s.slide_number = i + 1;
     });
 
-    const slidesWithAssets = await imageGenerator(slidesToProcess, {
+    const slidesWithAssets = await imageGenerator(finalSlides, {
       assetsDir,
       falKey: process.env.FAL_KEY,
       falModel: process.env.FAL_MODEL ?? brandProfile.providers.imageModel,

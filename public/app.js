@@ -278,6 +278,32 @@ els.studioIdeaInput.addEventListener("input", () => refreshRoutePreview());
 els.studioNotesInput.addEventListener("input", () => refreshRoutePreview());
 els.studioPlatformSelect.addEventListener("change", () => refreshRoutePreview());
 els.studioContentTypeSelect?.addEventListener("change", () => refreshRoutePreview());
+// ── Style preset change listener ──────────────────────────────────────────────
+if (els.studioStylePreset) {
+  els.studioStylePreset.addEventListener("change", () => {
+    const styleId = els.studioStylePreset.value;
+    studioState.selectedStyleId = styleId;
+    const hasStyle = !!styleId;
+    if (els.studioStyleControls) els.studioStyleControls.classList.toggle("hidden", !hasStyle);
+    if (hasStyle) {
+      const style = studioState.stylePresets.find((s) => s.id === styleId);
+      if (style && els.studioStylePreviewBody) {
+        els.studioStylePreview.classList.remove("hidden");
+        const tags = style.visualTraits.tone.map((t) => `<span class="style-tag">${t}</span>`).join("");
+        const avoids = style.negativeConstraints.slice(0, 4).map((c) => `<span class="style-tag">${c}</span>`).join("");
+        els.studioStylePreviewBody.innerHTML = `
+          <div class="style-section"><div class="style-section-label">Intent</div>${style.intent}</div>
+          <div class="style-section"><div class="style-section-label">Tone</div>${tags}</div>
+          <div class="style-section"><div class="style-section-label">Image</div>${style.imageStyle}</div>
+          <div class="style-section"><div class="style-section-label">Layout</div>${style.layoutStyle}</div>
+          <div class="style-section"><div class="style-section-label">Avoids</div>${avoids}</div>
+        `;
+      }
+    } else if (els.studioStylePreview) {
+      els.studioStylePreview.classList.add("hidden");
+    }
+  });
+}
 els.studioUploadTrigger?.addEventListener("click", () => els.studioReferenceFiles.click());
 document.getElementById("toolbar-upload-btn")?.addEventListener("click", () => els.studioReferenceFiles.click());
 
@@ -320,13 +346,19 @@ initBrandEditorListeners();
 
 // ── Load products ─────────────────────────────────────────────────────────────
 async function loadProducts() {
-  const [productsRes, brandsRes] = await Promise.all([fetch("/api/products"), fetch("/api/brands")]);
+  const [productsRes, brandsRes, stylesRes] = await Promise.all([fetch("/api/products"), fetch("/api/brands"), fetch("/api/styles")]);
   studioState.products = await productsRes.json();
   studioState.brands = await brandsRes.json();
+  studioState.stylePresets = await stylesRes.json();
   els.studioProductSelect.innerHTML = studioState.products.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
   els.studioProductSelect.value = "peppera";
   calEls.brandSelect.innerHTML = `<option value="">All brands</option>` + studioState.products.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
   calEls.libraryBrandFilter.innerHTML = `<option value="">All brands</option>` + studioState.brands.map((b) => `<option value="${b.id}">${b.name}</option>`).join("");
+  // Populate style preset selector
+  if (els.studioStylePreset) {
+    els.studioStylePreset.innerHTML = `<option value="">None — use default</option>` +
+      studioState.stylePresets.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
+  }
 }
 
 // ── Mobile inspector ──────────────────────────────────────────────────────────

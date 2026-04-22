@@ -75,7 +75,14 @@ export async function runGeneration(rawIdea, notes) {
       ? { workflowType: workflowOverride, contentTypeId: contentTypeOverride } : undefined,
     variantCount: studioState.workflowType === "mascot-variants" ? 4 : undefined,
     videoOptions: ["video-clip", "reel-package"].includes(studioState.workflowType)
-      ? { duration: 5, aspectRatio: "9:16", withAudio: true, consistencyMode: "mascot-consistent" } : undefined
+      ? { duration: 5, aspectRatio: "9:16", withAudio: true, consistencyMode: "mascot-consistent" } : undefined,
+    styleControl: studioState.selectedStyleId ? {
+      styleCardId: studioState.selectedStyleId,
+      generationMode: els.studioGenerationMode?.value || "image-first",
+      textDensity: els.studioTextDensity?.value || undefined,
+      imageTreatment: els.studioImageTreatment?.value || undefined,
+      referenceLockStrength: els.studioReferenceLock?.value || "loose"
+    } : undefined
   };
 
   const res = await fetch("/api/generate", {
