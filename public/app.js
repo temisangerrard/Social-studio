@@ -468,6 +468,21 @@ async function analyzeUploadedAssetRecord(asset) {
   return res.json();
 }
 
+async function loadExistingUploads() {
+  try {
+    const res = await fetch("/api/uploads");
+    if (!res.ok) return;
+    const assets = await res.json();
+    if (Array.isArray(assets) && assets.length) {
+      // Merge: don't duplicate assets already in state (e.g. from this session)
+      const existingIds = new Set(studioState.uploadedAssets.map((a) => a.id));
+      const fresh = assets.filter((a) => !existingIds.has(a.id));
+      studioState.uploadedAssets = [...fresh, ...studioState.uploadedAssets];
+      renderUploadedAssets();
+    }
+  } catch { /* network error — ignore */ }
+}
+
 function renderUploadedAssets() {
   if (!els.studioUploadedAssets) return;
   if (!studioState.uploadedAssets.length) {
@@ -477,21 +492,35 @@ function renderUploadedAssets() {
 
   els.studioUploadedAssets.innerHTML = studioState.uploadedAssets.map((asset) => {
     const analysis = assetAnalysisForId(asset.id);
-    const confidence = analysis ? `${Math.round((analysis.confidence || 0) * 100)}%` : "Pending";
+    const confidence = analysis ? `${Math.round((analysis.confidence || 0) * 100)}%` : "–";
     return `
       <div class="uploaded-asset-card" data-upload-id="${escapeHtml(asset.id)}">
-        <img class="uploaded-asset-card__preview" src="${escapeHtml(asset.url)}" alt="${escapeHtml(asset.label || asset.filename)}" />
+        <div class="uploaded-asset-card__thumb-row">
+          <img class="uploaded-asset-card__preview" src="${escapeHtml(asset.url)}" alt="${escapeHtml(asset.label || asset.filename)}" />
+          <button class="uploaded-asset-card__delete" data-upload-id="${escapeHtml(asset.id)}" type="button" title="Remove">✕</button>
+        </div>
         <div class="uploaded-asset-card__meta">
-          <strong>${escapeHtml(asset.filename)}</strong>
-          <span>${escapeHtml(analysis?.assetType || "pending")}</span>
-          <span>${escapeHtml(analysis?.subjectSummary || "Waiting for analysis")}</span>
+          <strong>${escapeHtml(asset.label || asset.filename)}</strong>
+          <span>${escapeHtml(analysis?.subjectSummary || "Not yet analysed")}</span>
           <span>Confidence: ${escapeHtml(confidence)}</span>
         </div>
-        <input class="uploaded-asset-card__input" data-upload-field="label" value="${escapeHtml(asset.label || "")}" placeholder="What is this?" />
-        <textarea class="uploaded-asset-card__notes" data-upload-field="notes" rows="2" placeholder="Optional notes">${escapeHtml(asset.notes || "")}</textarea>
+        <input class="uploaded-asset-card__input" data-upload-field="label" value="${escapeHtml(asset.label || "")}" placeholder="Label (e.g. 'hero product photo')" />
+        <textarea class="uploaded-asset-card__notes" data-upload-field="notes" rows="2" placeholder="Optional notes for the AI">${escapeHtml(asset.notes || "")}</textarea>
       </div>
     `;
   }).join("");
+
+  // Wire delete buttons
+  els.studioUploadedAssets.querySelectorAll(".uploaded-asset-card__delete").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.uploadId;
+      studioState.uploadedAssets = studioState.uploadedAssets.filter((a) => a.id !== id);
+      studioState.assetAnalyses = studioState.assetAnalyses.filter((a) => a.assetId !== id);
+      renderUploadedAssets();
+      await fetch("/api/uploads", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) }).catch(() => {});
+    });
+  });
 }
 
 function renderRoutePreview() {
@@ -685,26 +714,7 @@ function outputAssets(output) {
 
 // ── Inspector ─────────────────────────────────────────────────────────────────
 function renderInspectorPackage() {
-  const output = studioState.generatedOutput;
-  els.inspectorPackage.classList.toggle("hidden", !output);
-  if (!output) return;
-
-  const product = studioState.products.find((p) => p.id === els.studioProductSelect.value);
-  const publishLinks = getPlatformPublishLinks(product?.name || "this product");
-
-  els.inspectorPackageStatus.textContent =
-    output.render_status === "skipped" ? "Using generated visuals directly." : "Package ready.";
-  els.inspectorCaptionText.textContent = output.caption || "";
-  els.inspectorHashtagsText.textContent = (output.hashtags || []).join(" ");
-  els.inspectorHooksList.innerHTML = (output.hooks || [])
-    .map((h) => `<div class="package-list__item"><strong>Hook</strong><span>${escapeHtml(h)}</span></div>`)
-    .join("");
-  els.inspectorPublishLinks.innerHTML = publishLinks.map((l) =>
-    `<div class="publish-link">
-      <a href="${l.href}" target="_blank" rel="noreferrer">${escapeHtml(l.label)}</a>
-      <span>${escapeHtml(l.helper)}</span>
-    </div>`
-  ).join("");
+  // Content is now shown as canvas overlays — nothing to render here.
 }
 
 function showAssetNode(container, asset) {
@@ -734,9 +744,9 @@ function renderInspectorAsset() {
   const inspectorEl = document.getElementById("studio-inspector");
   els.inspectorAsset.classList.toggle("hidden", !sel);
 
-  // Show/hide the inspector panel based on selection
+  // Show/hide the inspector panel — only visible when an asset is selected
   if (inspectorEl) {
-    inspectorEl.classList.toggle("hidden", !sel && !studioState.generatedOutput);
+    inspectorEl.classList.toggle("hidden", !sel);
   }
 
   if (!sel) return;
@@ -965,6 +975,9 @@ function loadOutputToEngine(output) {
   if (!output || !studioState.canvasEngine) return;
   if (els.canvasEmpty) els.canvasEmpty.classList.add("hidden");
   studioState.canvasEngine.loadOutput(output);
+  // Show download-all button in toolbar once content is loaded
+  const dlAllBtn = document.getElementById("toolbar-download-all-btn");
+  if (dlAllBtn) dlAllBtn.classList.remove("hidden");
 }
 
 // ── Brand Selection Ring ──────────────────────────────────────────────────────
@@ -1697,6 +1710,7 @@ async function downloadAllAssets() {
 }
 
 els.studioDownloadAllBtn.addEventListener("click", downloadAllAssets);
+document.getElementById("toolbar-download-all-btn")?.addEventListener("click", downloadAllAssets);
 
 // ── Copy ──────────────────────────────────────────────────────────────────────
 els.inspectorCopyCaption.addEventListener("click", () =>
@@ -1854,14 +1868,10 @@ async function loadOutputIntoCanvas(postId) {
   }
   resetCheckpoints();
   ["strategy", "hooks", "visuals", "finalPackage"].forEach((s) => setCheckpoint(s, "done"));
-  const brief = { goal: output.caption || output.post_id, audience: null, offer: null, tone: null, platform: null };
-  studioState.canvasCards = buildCanvasCards(brief, output, makeId);
-  renderCanvas();
 
   // Switch to studio view and load output into canvas engine
   switchView("studio");
   loadOutputToEngine(output);
-  renderInspectorPackage();
   renderInspectorAsset();
 }
 
@@ -2525,9 +2535,9 @@ function renderLibrary() {
     });
     card.appendChild(delBtn);
 
-    // Click card to load on canvas
+    // Click card to open in studio (new tab)
     card.addEventListener("click", () => {
-      loadOutputIntoCanvas(item.postId);
+      window.open(`/?view=studio&postId=${encodeURIComponent(item.postId)}`, "_blank");
     });
 
     grid.appendChild(card);
@@ -2642,7 +2652,7 @@ async function bootstrap() {
   updateWorkflowUI();
   renderUploadedAssets();
   renderRoutePreview();
-  await createSession("peppera");
+  await Promise.all([createSession("peppera"), loadExistingUploads()]);
   initCanvasDrag();
 
   // Initialize CanvasEngine on the studio canvas stage
@@ -2731,12 +2741,13 @@ async function bootstrap() {
       stageEl.addEventListener("dblclick", (e) => {
         const overlay = e.target.closest(".canvas-overlay");
         if (!overlay) return;
+        const bodyEl = overlay.querySelector(".canvas-overlay__body") || overlay;
 
-        // Activate inline editing on the overlay element
+        // Activate inline editing on the body paragraph
         const psm = studioState.canvasEngine._pointer;
         psm.setEditingActive(true);
 
-        InlineEditor.activate(overlay, {
+        InlineEditor.activate(bodyEl, {
           multiline: true,
           required: false,
           onCommit: (text) => {
@@ -2914,4 +2925,13 @@ function initMobileInspector() {
   }
 }
 
-bootstrap().catch((err) => showStatus(err instanceof Error ? err.message : String(err)));
+bootstrap()
+  .then(() => {
+    // Handle ?view= and ?postId= query params (e.g. library → new tab)
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get("view");
+    const postIdParam = params.get("postId");
+    if (viewParam) switchView(viewParam);
+    if (postIdParam) loadOutputIntoCanvas(postIdParam);
+  })
+  .catch((err) => showStatus(err instanceof Error ? err.message : String(err)));

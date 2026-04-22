@@ -628,6 +628,32 @@ async function handleRequest(req: Request): Promise<Response> {
     return json(board);
   }
 
+  if (url.pathname === "/api/uploads" && req.method === "GET") {
+    try {
+      const raw = await fs.readFile(path.join(UPLOADS_ROOT, "_index.json"), "utf8");
+      return json(JSON.parse(raw) as UploadedAsset[]);
+    } catch {
+      return json([]);
+    }
+  }
+
+  if (url.pathname === "/api/uploads" && req.method === "DELETE") {
+    const body = await parseJsonBody(req);
+    const id = typeof body.id === "string" ? body.id : "";
+    if (!id) return json({ error: "id required" }, { status: 400 });
+    const indexPath = path.join(UPLOADS_ROOT, "_index.json");
+    let index: UploadedAsset[] = [];
+    try { index = JSON.parse(await fs.readFile(indexPath, "utf8")); } catch { /* empty */ }
+    const asset = index.find((a) => a.id === id);
+    index = index.filter((a) => a.id !== id);
+    await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+    if (asset) {
+      const filePath = uploadFilePathFromAsset(asset);
+      if (filePath) await fs.unlink(filePath).catch(() => {});
+    }
+    return json({ ok: true });
+  }
+
   if (url.pathname === "/api/uploads" && req.method === "POST") {
     const body = await parseJsonBody(req);
     const filename = typeof body.filename === "string" ? body.filename : "upload";
@@ -643,7 +669,16 @@ async function handleRequest(req: Request): Promise<Response> {
     const storedName = `${stem}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}${extension}`;
     await fs.mkdir(UPLOADS_ROOT, { recursive: true });
     await fs.writeFile(path.join(UPLOADS_ROOT, storedName), buffer);
-    return json(uploadedAssetFromBody(storedName, mimeType, body));
+    const asset = uploadedAssetFromBody(storedName, mimeType, body);
+
+    // Append to persistent index
+    const indexPath = path.join(UPLOADS_ROOT, "_index.json");
+    let index: UploadedAsset[] = [];
+    try { index = JSON.parse(await fs.readFile(indexPath, "utf8")); } catch { /* first upload */ }
+    index.push(asset);
+    await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+
+    return json(asset);
   }
 
   if (url.pathname === "/api/uploads/analyze" && req.method === "POST") {

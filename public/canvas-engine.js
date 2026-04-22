@@ -161,20 +161,20 @@ const STRIP_START_X = 420;
 /** Y offset for the slide strip. */
 const STRIP_START_Y = 80;
 
-/** Overlay column X position. */
-const OVERLAY_X = 60;
+/** Overlay column X position (left of artboard strip). */
+const OVERLAY_X = 40;
 
 /** Overlay column starting Y position. */
 const OVERLAY_START_Y = 80;
 
 /** Overlay width. */
-const OVERLAY_W = 320;
+const OVERLAY_W = 340;
 
-/** Overlay height. */
-const OVERLAY_H = 200;
+/** Overlay height used only for zoom-to-fit bounds — actual height is CSS auto. */
+const OVERLAY_H = 180;
 
 /** Vertical gap between overlays. */
-const OVERLAY_GAP = 20;
+const OVERLAY_GAP = 16;
 
 // ── Artboard Descriptor Builder (Task 2.1) ────────────────────────────────────
 
@@ -471,14 +471,14 @@ export class ArtboardManager {
         containerEl.appendChild(el);
       }
 
-      // Update position
+      // Update position — height is driven by CSS (auto)
       el.style.left = `${desc.x}px`;
       el.style.top = `${desc.y}px`;
       el.style.width = `${desc.width}px`;
-      el.style.height = `${desc.height}px`;
 
-      // Update text
-      el.textContent = desc.text;
+      // Update body text without destroying the card structure
+      const bodyEl = el.querySelector(".canvas-overlay__body");
+      if (bodyEl) bodyEl.textContent = desc.text;
     }
 
     // Remove stale overlay elements
@@ -587,8 +587,7 @@ export class ArtboardManager {
 
   /**
    * Create a DOM element for a content overlay descriptor.
-   *
-   * Structure: div.canvas-overlay.canvas-overlay--{type}
+   * Structure: div.canvas-overlay > header(chip + copy-btn) + p.body
    *
    * @param {object} desc - ContentOverlayDescriptor.
    * @returns {HTMLElement}
@@ -598,7 +597,39 @@ export class ArtboardManager {
     el.className = `canvas-overlay canvas-overlay--${desc.type}`;
     el.dataset.overlayId = desc.id;
     el.style.position = "absolute";
-    el.textContent = desc.text;
+
+    const typeLabel = { caption: "Caption", hook: "Hook", hashtag: "Hashtags" }[desc.type] || desc.type;
+
+    // Header row: type chip + copy button
+    const header = document.createElement("div");
+    header.className = "canvas-overlay__header";
+
+    const chip = document.createElement("span");
+    chip.className = "canvas-overlay__chip";
+    chip.textContent = typeLabel;
+    header.appendChild(chip);
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "canvas-overlay__copy";
+    copyBtn.type = "button";
+    copyBtn.title = `Copy ${typeLabel.toLowerCase()}`;
+    copyBtn.textContent = "Copy";
+    copyBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const text = el.querySelector(".canvas-overlay__body")?.textContent || desc.text;
+      navigator.clipboard?.writeText(text).catch(() => {});
+      copyBtn.textContent = "✓";
+      setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
+    });
+    header.appendChild(copyBtn);
+    el.appendChild(header);
+
+    // Text body
+    const body = document.createElement("p");
+    body.className = "canvas-overlay__body";
+    body.textContent = desc.text;
+    el.appendChild(body);
+
     return el;
   }
 }

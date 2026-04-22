@@ -71,6 +71,9 @@
         <input id="toolbar-image-upload" type="file" multiple accept="image/*" class="hidden" />
         <span id="toolbar-upload-count" class="toolbar-upload-count hidden"></span>
         <button id="studio-submit" class="toolbar-generate-btn" type="submit">Generate</button>
+        <button id="toolbar-download-all-btn" class="toolbar-btn hidden" type="button" title="Download all slides">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </button>
         <button id="toolbar-inspector-toggle" class="toolbar-btn" type="button" title="Toggle panel">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
         </button>
@@ -134,36 +137,18 @@
         </div>
       </aside>
 
-      <!-- INSPECTOR — slides out from right, only when asset selected -->
+      <!-- INSPECTOR — appears when an artboard is selected -->
       <aside class="studio-inspector hidden" id="studio-inspector">
-        <button class="inspector-overlay-close" id="inspector-overlay-close" type="button">✕</button>
-
-        <div id="inspector-package" class="inspector-package hidden">
-          <p class="eyebrow">Package</p>
-          <div class="inspector-row">
-            <p class="inspector-label">Caption</p>
-            <button id="inspector-copy-caption" class="ghost-button" type="button">Copy</button>
-          </div>
-          <p id="inspector-caption-text" class="inspector-body-text"></p>
-          <div class="inspector-row" style="margin-top:12px">
-            <p class="inspector-label">Hashtags</p>
-            <button id="inspector-copy-hashtags" class="ghost-button" type="button">Copy</button>
-          </div>
-          <p id="inspector-hashtags-text" class="inspector-body-text"></p>
-          <p class="inspector-label" style="margin-top:12px">Hooks</p>
-          <div id="inspector-hooks-list" class="package-list"></div>
-          <div id="inspector-publish-links" class="publish-links" style="margin-top:12px"></div>
-          <p id="inspector-package-status" class="assistant-status" style="margin-top:8px"></p>
-          <button id="studio-download-all-btn" class="ghost-button" style="width:100%;margin-top:12px" type="button">Download All</button>
+        <div class="inspector-header">
+          <span id="inspector-asset-title" class="inspector-asset-title"></span>
+          <button class="inspector-overlay-close" id="inspector-overlay-close" type="button" title="Close">✕</button>
         </div>
 
-        <div id="inspector-asset" class="inspector-asset hidden">
-          <p class="eyebrow" style="margin-top:16px">Selected</p>
-          <h3 id="inspector-asset-title" class="inspector-asset-title"></h3>
-          <p id="inspector-asset-hint" class="assistant-status"></p>
+        <div id="inspector-asset" class="inspector-asset">
           <div id="inspector-asset-preview" class="refine-preview refine-preview--empty"><span>Preview</span></div>
+          <p id="inspector-asset-hint" class="assistant-status"></p>
           <form id="studio-refine-form" class="refine-form">
-            <label class="field-label" for="studio-refine-prompt">Refine</label>
+            <label class="field-label" for="studio-refine-prompt">Refine this slide</label>
             <textarea id="studio-refine-prompt" rows="3" placeholder="Describe what to change…"></textarea>
             <div class="gen-form__footer">
               <div id="studio-refine-status" class="assistant-status hidden"></div>
@@ -175,6 +160,19 @@
             <select id="studio-refine-visual-mode"><option value="food-led">Food-led</option></select>
             <select id="studio-refine-mode"><option value="branch">Branch</option><option value="replace">Replace</option></select>
           </div>
+        </div>
+
+        <!-- Dead refs kept for JS compatibility -->
+        <div class="hidden">
+          <div id="inspector-package"></div>
+          <p id="inspector-package-status"></p>
+          <p id="inspector-caption-text"></p>
+          <p id="inspector-hashtags-text"></p>
+          <div id="inspector-hooks-list"></div>
+          <div id="inspector-publish-links"></div>
+          <button id="studio-download-all-btn" type="button"></button>
+          <button id="inspector-copy-caption" type="button"></button>
+          <button id="inspector-copy-hashtags" type="button"></button>
         </div>
       </aside>
 
