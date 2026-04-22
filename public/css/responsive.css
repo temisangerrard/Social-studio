@@ -37,24 +37,24 @@
 
 @media (max-width: 640px) {
   :root {
-    --topbar-h: 56px;
+    --topbar-h: 48px;
   }
 
-  /* Topbar */
+  /* Topbar — hide nav, keep wordmark + avatar */
   .topbar {
     padding: 0 16px;
   }
 
   .topbar__left {
-    gap: 16px;
+    gap: 12px;
   }
 
   .topnav {
-    gap: 16px;
+    display: none;
   }
 
   .wordmark {
-    font-size: 1.35rem;
+    font-size: 1.25rem;
   }
 
   .topnav a {
@@ -179,5 +179,24 @@
   .asset-modal__meta {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  /* Mobile bottom tab bar */
+  .mobile-tabs {
+    display: flex;
+  }
+
+  /* Adjust views for bottom tab bar */
+  .view {
+    padding-bottom: 68px;
+  }
+
+  .view--studio {
+    padding-bottom: 0;
+  }
+
+  /* Push toolbar above tab bar */
+  .studio-toolbar {
+    bottom: 76px;
   }
 }

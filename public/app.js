@@ -32,9 +32,12 @@ import { renderBrandEditor, initBrandEditorListeners } from "./brand-editor.js";
 import { InlineEditor, schedulePatch } from "./inline-editor.js";
 
 // ── View routing ──────────────────────────────────────────────────────────────
+const mobileTabs = Array.from(document.querySelectorAll(".mobile-tab[data-view]"));
+
 function switchView(name) {
   Object.entries(els.views).forEach(([key, el]) => el.classList.toggle("hidden", key !== name));
   els.navLinks.forEach((link) => link.classList.toggle("is-active", link.dataset.view === name));
+  mobileTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === name));
   if (name === "styles") loadStyles();
   if (name === "library") loadLibrary();
   if (name === "calendar") loadCalendar();
@@ -42,6 +45,7 @@ function switchView(name) {
 }
 
 els.navLinks.forEach((link) => link.addEventListener("click", (e) => { e.preventDefault(); switchView(link.dataset.view); }));
+mobileTabs.forEach((tab) => tab.addEventListener("click", (e) => { e.preventDefault(); switchView(tab.dataset.view); }));
 document.addEventListener("studio:switch-view", (e) => switchView(e.detail));
 
 // ── Asset modal listeners ─────────────────────────────────────────────────────
