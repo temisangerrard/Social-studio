@@ -14,6 +14,39 @@ import { ingestReferencesAndCreateStyleCard } from "./reference-ingestion.ts";
 import { buildPreviewPlan, buildStructuredPrompt } from "./creative-director.ts";
 import { listVoices } from "./voice-generator.ts";
 
+async function generateUgcBrief(idea: string, brand: BrandProfile): Promise<Record<string, string>> {
+  const fallback = {
+    hook: `I didn't know ${brand.name} could do this until last week…`,
+    problem: `The problem ${brand.name} solves`,
+    productMoment: `How ${brand.name} works — the key moment`,
+    outcome: `What changed after using ${brand.name}`,
+    cta: brand.cta || `Try ${brand.name} — link in bio`,
+    toneNotes: brand.tone || "casual, direct",
+  };
+  const apiKey = process.env.GLM_API_KEY;
+  if (!apiKey) return fallback;
+  try {
+    const res = await fetch(process.env.GLM_API_URL ?? "https://open.bigmodel.cn/api/paas/v4/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: process.env.GLM_MODEL ?? "glm-4.5",
+        temperature: 0.8,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: `You write UGC scripts for social media. Output JSON with keys: hook, problem, productMoment, outcome, cta, toneNotes. Each value is one short punchy sentence, max 15 words. First person, conversational, like talking to camera. Brand: ${brand.name} — ${brand.description}. Tone: ${brand.tone}. Audience: ${brand.audience}.` },
+          { role: "user", content: `UGC script brief for: "${idea}"` }
+        ]
+      })
+    });
+    if (!res.ok) return fallback;
+    const payload = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    const raw = payload.choices?.[0]?.message?.content;
+    if (!raw) return fallback;
+    return { ...fallback, ...JSON.parse(raw.replace(/```json\n?|\n?```/g, "").trim()) };
+  } catch { return fallback; }
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..");
 loadEnv({ path: path.join(PROJECT_ROOT, ".env") });
@@ -949,6 +982,16 @@ async function handleRequest(req: Request): Promise<Response> {
 
   if (url.pathname === "/api/voices" && req.method === "GET") {
     return json(await listVoices());
+  }
+
+  if (url.pathname === "/api/ugc-brief" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const idea = typeof body.idea === "string" ? body.idea.trim() : "";
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    if (!idea) return json({ error: "idea required" }, { status: 400 });
+    const brand = await storage.getBrandProfile(brandId);
+    if (!brand) return json({ error: "Brand not found" }, { status: 404 });
+    return json(await generateUgcBrief(idea, brand));
   }
 
   if (url.pathname === "/api/styles" && req.method === "GET") {
