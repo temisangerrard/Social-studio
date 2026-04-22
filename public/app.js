@@ -743,6 +743,12 @@ function renderInspectorAsset() {
   showAssetNode(els.inspectorAssetPreview, sel);
   els.studioRefinePrompt.value ||= sel.prompt || "";
 
+  // Add click handler to open asset in modal
+  els.inspectorAssetPreview.style.cursor = "pointer";
+  els.inspectorAssetPreview.onclick = () => {
+    openAssetPreview(sel.assetUrl, sel.text || "Asset", sel.assetKind || "image");
+  };
+
   // Add/update download button for selected artboard
   let dlBtn = els.inspectorAsset.querySelector(".inspector-download-btn");
   if (!dlBtn) {
