@@ -587,6 +587,64 @@
       </div>
     </div>
 
+    <!-- ═══ CREATE BRAND MODAL ══════════════════════════════════════════════ -->
+    <div id="brand-create-modal" class="asset-modal hidden">
+      <div class="asset-modal__scrim" data-close-brand-modal="true"></div>
+      <div class="asset-modal__dialog" role="dialog" aria-modal="true" aria-label="Create brand">
+        <button id="brand-modal-close" class="asset-modal__close" type="button">Close</button>
+        <h2 style="font-family:'Newsreader',serif;font-size:1.6rem;color:var(--brand-strong);margin:0">New brand profile</h2>
+        <p style="color:var(--muted);margin:0;font-size:0.88rem">Define the brand voice and positioning. This shapes how all content is generated.</p>
+        <form id="brand-create-form" class="pillar-form">
+          <div class="field-group">
+            <label class="field-label" for="brand-create-name">Brand name</label>
+            <input id="brand-create-name" type="text" placeholder="e.g. Mira, AutoBett, Your Brand" required />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="brand-create-description">What it does (1–2 sentences)</label>
+            <textarea id="brand-create-description" rows="2" placeholder="AI-powered meal planning app that turns leftovers into recipes"></textarea>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="brand-create-tone">Tone of voice</label>
+              <input id="brand-create-tone" type="text" placeholder="e.g. direct, warm, no-BS" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="brand-create-audience">Target audience</label>
+              <input id="brand-create-audience" type="text" placeholder="e.g. busy professionals, Gen Z foodies" />
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="brand-create-cta">Default CTA</label>
+              <input id="brand-create-cta" type="text" placeholder="e.g. Try it free, Download now" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="brand-create-platform">Primary platform</label>
+              <select id="brand-create-platform">
+                <option value="instagram">Instagram</option>
+                <option value="tiktok">TikTok</option>
+                <option value="linkedin">LinkedIn</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="brand-create-primary">Primary color</label>
+              <input id="brand-create-primary" type="color" value="#1a1a2e" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="brand-create-accent">Accent color</label>
+              <input id="brand-create-accent" type="color" value="#d4a017" />
+            </div>
+          </div>
+          <div class="gen-form__footer">
+            <span id="brand-create-status" class="assistant-status hidden"></span>
+            <button id="brand-create-submit" class="primary-button" type="submit">Create Brand</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script type="module" src="/app.js"></script>
   </body>
 </html>

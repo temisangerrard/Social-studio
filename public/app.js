@@ -195,6 +195,11 @@ function syncBrandDefaults(brandId) {
 }
 
 els.studioProductSelect.addEventListener("change", async () => {
+  if (els.studioProductSelect.value === "__new__") {
+    document.getElementById("brand-create-modal").classList.remove("hidden");
+    els.studioProductSelect.value = studioState.brands[0]?.id || "peppera";
+    return;
+  }
   renderBrandEditor(els.studioProductSelect.value); renderReferenceChips();
   updateContentTypeSelector(els.studioProductSelect.value);
   syncBrandDefaults(els.studioProductSelect.value);
@@ -213,11 +218,17 @@ if (els.studioStylePreset) {
     studioState.selectedStyleId = styleId;
     studioState.userPickedStyle = true;
     const style = studioState.stylePresets.find((s) => s.id === styleId);
+    // Auto-set workflow type for UGC presets
+    if (styleId.startsWith("ugc-faceless")) studioState.workflowType = "ugc-faceless";
+    else if (styleId.startsWith("ugc-voiceover")) studioState.workflowType = "ugc-voiceover";
+    else studioState.workflowType = "slideshow";
     if (style && els.studioStylePreviewBody) {
       els.studioStylePreview.classList.remove("hidden");
+      const isUgc = styleId.startsWith("ugc-");
       const tags = style.visualTraits.tone.map((t) => `<span class="style-tag">${t}</span>`).join("");
       const avoids = style.negativeConstraints.slice(0, 4).map((c) => `<span class="style-tag">${c}</span>`).join("");
       els.studioStylePreviewBody.innerHTML = `
+        ${isUgc ? `<div class="style-section"><div class="style-section-label">Type</div><span class="style-tag" style="background:rgba(39,174,96,0.12);color:#1a8a4a">${styleId.includes("faceless") ? "Faceless UGC" : "Voiceover UGC"}</span> + AI voiceover</div>` : ""}
         <div class="style-section"><div class="style-section-label">Intent</div>${style.intent}</div>
         <div class="style-section"><div class="style-section-label">Tone</div>${tags}</div>
         <div class="style-section"><div class="style-section-label">Image</div>${style.imageStyle}</div>
@@ -268,14 +279,61 @@ initAdminListeners();
 initStylesListeners();
 initBrandEditorListeners();
 
+// ── Create brand modal ────────────────────────────────────────────────────────
+{
+  const modal = document.getElementById("brand-create-modal");
+  const form = document.getElementById("brand-create-form");
+  const close = () => modal?.classList.add("hidden");
+  document.getElementById("brand-modal-close")?.addEventListener("click", close);
+  modal?.querySelector("[data-close-brand-modal]")?.addEventListener("click", close);
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("brand-create-name").value.trim();
+    if (!name) return;
+    const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    const platform = document.getElementById("brand-create-platform").value;
+    const brand = {
+      id,
+      name,
+      description: document.getElementById("brand-create-description").value.trim(),
+      tone: document.getElementById("brand-create-tone").value.trim() || "direct, clear",
+      audience: document.getElementById("brand-create-audience").value.trim() || "general audience",
+      cta: document.getElementById("brand-create-cta").value.trim() || `Try ${name}`,
+      logoPath: null,
+      visual: {
+        primaryColor: document.getElementById("brand-create-primary").value,
+        secondaryColor: "#e8e8e8",
+        accentColor: document.getElementById("brand-create-accent").value,
+        surfaceColor: "#f8f8f8"
+      },
+      defaults: { platformTargets: [platform], goal: "awareness", hashtags: [`#${id}`] },
+      providers: { plannerModel: "glm-4.5", imageModel: "fal-ai/flux/schnell" },
+      visualModes: ["mixed"],
+      defaultStyleCardId: "editorial-cultural-carousel"
+    };
+    const status = document.getElementById("brand-create-status");
+    status.textContent = "Creating…"; status.classList.remove("hidden");
+    try {
+      await fetch("/api/brands", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(brand) });
+      studioState.brands = await fetch("/api/brands").then((r) => r.json());
+      els.studioProductSelect.innerHTML = studioState.brands.map((b) => `<option value="${b.id}">${b.name}</option>`).join("") + `<option value="__new__">+ New brand</option>`;
+      els.studioProductSelect.value = id;
+      syncBrandDefaults(id);
+      status.textContent = `Created "${name}"`;
+      setTimeout(close, 600);
+    } catch (err) { status.textContent = err instanceof Error ? err.message : "Failed"; }
+  });
+}
+
 // ── Load products ─────────────────────────────────────────────────────────────
 async function loadProducts() {
   const [productsRes, brandsRes, stylesRes] = await Promise.all([fetch("/api/products"), fetch("/api/brands"), fetch("/api/styles")]);
   studioState.products = await productsRes.json();
   studioState.brands = await brandsRes.json();
   studioState.stylePresets = await stylesRes.json();
-  els.studioProductSelect.innerHTML = studioState.products.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
-  els.studioProductSelect.value = "peppera";
+  els.studioProductSelect.innerHTML = studioState.brands.map((b) => `<option value="${b.id}">${b.name}</option>`).join("") + `<option value="__new__">+ New brand</option>`;
+  els.studioProductSelect.value = studioState.brands[0]?.id || "peppera";
   calEls.brandSelect.innerHTML = `<option value="">All brands</option>` + studioState.products.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
   calEls.libraryBrandFilter.innerHTML = `<option value="">All brands</option>` + studioState.brands.map((b) => `<option value="${b.id}">${b.name}</option>`).join("");
   // Populate style preset selector — auto-select first preset

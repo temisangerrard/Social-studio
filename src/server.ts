@@ -12,6 +12,7 @@ import type { BatchGenerationRequest, BoardDocument, BrandProfile, CalendarSlot,
 import { listBuiltinPresets, resolveStyleCard } from "./style-library.ts";
 import { ingestReferencesAndCreateStyleCard } from "./reference-ingestion.ts";
 import { buildPreviewPlan, buildStructuredPrompt } from "./creative-director.ts";
+import { listVoices } from "./voice-generator.ts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..");
@@ -945,6 +946,10 @@ async function handleRequest(req: Request): Promise<Response> {
   }
 
   // --- Style Library API ---
+
+  if (url.pathname === "/api/voices" && req.method === "GET") {
+    return json(await listVoices());
+  }
 
   if (url.pathname === "/api/styles" && req.method === "GET") {
     const custom = await storage.listStyleCards();

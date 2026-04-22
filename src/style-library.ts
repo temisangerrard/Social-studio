@@ -176,6 +176,57 @@ export const BUILTIN_PRESETS: StyleCard[] = [
     generationRequirements: { needsImage: true, needsLayoutEngine: true, needsTypographyPairing: true },
     negativeConstraints: [...NEGATIVE_DEFAULTS, "no abstract visuals", "no unrelated stock photos"],
   }),
+  makePreset({
+    id: "ugc-faceless-explainer",
+    name: "UGC Faceless Explainer",
+    intent: "Faceless TikTok/Reels content — voiceover + visuals, no on-camera talent needed",
+    imageStyle: "clean product shots, screen recordings, b-roll footage style",
+    layoutStyle: "full-bleed visual with subtitle overlay",
+    copyStyle: "conversational script — hook, problem, solution, CTA",
+    visualTraits: {
+      layout: ["full-bleed visual", "subtitle bar bottom", "progress indicator"],
+      typography: ["bold subtitle sans", "high contrast on dark bg", "word-by-word highlight"],
+      colorMode: "dark overlay with white subtitles",
+      imageTreatment: ["product photography", "screen capture", "stock b-roll", "kinetic text"],
+      composition: ["vertical 9:16", "visual-led with text overlay", "fast-paced cuts"],
+      tone: ["conversational", "relatable", "informative", "scroll-stopping"],
+    },
+    contentRules: {
+      maxTextWordsPerSlide: 15,
+      headlineRequired: false,
+      bodyRequired: true,
+      captionStyle: "casual, direct, first-person",
+      avoid: ["corporate tone", "long sentences", "complex vocabulary", "static slides"],
+    },
+    generationRequirements: { needsImage: true, needsLayoutEngine: true, needsTypographyPairing: true },
+    negativeConstraints: [...NEGATIVE_DEFAULTS, "no static presentation slides", "no corporate tone"],
+  }),
+
+  makePreset({
+    id: "ugc-voiceover-story",
+    name: "UGC Voiceover Story",
+    intent: "Story-driven UGC with AI voiceover — product reviews, tutorials, day-in-my-life",
+    imageStyle: "lifestyle photography, POV shots, authentic texture",
+    layoutStyle: "story sequence with voiceover narration",
+    copyStyle: "first-person narrative — authentic, unscripted feel",
+    visualTraits: {
+      layout: ["story sequence", "scene transitions", "subtitle overlay"],
+      typography: ["casual sans-serif subtitles", "handwritten accents"],
+      colorMode: "natural warm tones with soft overlay",
+      imageTreatment: ["lifestyle", "POV", "authentic", "slightly imperfect"],
+      composition: ["vertical 9:16", "intimate framing", "natural movement"],
+      tone: ["authentic", "personal", "trustworthy", "relatable"],
+    },
+    contentRules: {
+      maxTextWordsPerSlide: 20,
+      headlineRequired: false,
+      bodyRequired: true,
+      captionStyle: "first-person, conversational, like talking to a friend",
+      avoid: ["polished corporate", "third-person", "marketing speak", "perfect lighting"],
+    },
+    generationRequirements: { needsImage: true, needsLayoutEngine: true, needsTypographyPairing: true },
+    negativeConstraints: [...NEGATIVE_DEFAULTS, "no corporate polish", "no third-person narration", "no marketing speak"],
+  }),
 ];
 
 // ── Style Library ─────────────────────────────────────────────────────────────
