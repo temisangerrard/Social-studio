@@ -2266,7 +2266,9 @@ textarea {
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 4px 20px rgba(47, 52, 45, 0.06), 0 12px 40px rgba(47, 52, 45, 0.10);
   cursor: pointer;
-  transition: box-shadow 0.15s ease, transform 0.15s ease;
+  transition-property: box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
 }
 
 .canvas-artboard img,
@@ -2276,6 +2278,8 @@ textarea {
   height: 100%;
   object-fit: cover;
   border-radius: 14px 14px 0 0;
+  outline: 1px solid rgba(0, 0, 0, 0.1);
+  outline-offset: -1px;
 }
 
 /* Loading skeleton shimmer */
@@ -2339,7 +2343,10 @@ textarea {
   z-index: 200;
   opacity: 0.9;
   cursor: grabbing !important;
-  transition: box-shadow 0.12s ease, transform 0.12s ease, opacity 0.12s ease;
+  will-change: transform;
+  transition-property: box-shadow, transform, opacity;
+  transition-duration: 120ms;
+  transition-timing-function: ease;
 }
 
 /* Drop position indicator (vertical line between artboards during drag) */
@@ -2351,7 +2358,9 @@ textarea {
   opacity: 0.8;
   z-index: 190;
   pointer-events: none;
-  transition: left 0.1s ease, top 0.1s ease;
+  transition-property: left, top;
+  transition-duration: 100ms;
+  transition-timing-function: ease;
 }
 
 /* Label below artboard */
@@ -2399,6 +2408,7 @@ textarea {
   white-space: pre-wrap;
   word-break: break-word;
   font-family: "Manrope", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 .canvas-overlay--caption {
@@ -2418,6 +2428,74 @@ textarea {
   border: 1px solid rgba(175, 179, 170, 0.22);
   color: var(--muted);
   font-size: 0.78rem;
+}
+
+/* ── Strategy Card ─────────────────────────────────────────────────────────── */
+
+.canvas-strategy-card {
+  position: absolute;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(111, 92, 69, 0.06);
+  border: 1px solid rgba(111, 92, 69, 0.15);
+  font-family: "Manrope", sans-serif;
+  font-size: 0.78rem;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: grab;
+  user-select: none;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition-property: box-shadow, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease-out;
+}
+
+.canvas-strategy-card:active {
+  cursor: grabbing;
+  transform: scale(0.96);
+}
+
+.strategy-card__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.strategy-card__workflow {
+  background: var(--highlight);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-weight: 600;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.strategy-card__platform {
+  color: var(--muted);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.strategy-card__label {
+  color: var(--muted);
+  font-size: 0.7rem;
+  min-width: 64px;
+}
+
+.strategy-card__recipe {
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.strategy-card__confidence {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Zoom Controls (legacy — now inline in toolbar, see below) ──────────── */
@@ -3039,8 +3117,21 @@ textarea {
   padding: 2px 8px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.12s, color 0.12s;
+  transition-property: background, color;
+  transition-duration: 120ms;
+  transition-timing-function: ease;
   letter-spacing: 0.04em;
+  position: relative;
+}
+
+.canvas-overlay__copy::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 40px;
+  min-height: 40px;
 }
 
 .canvas-overlay__copy:hover {
@@ -3056,6 +3147,7 @@ textarea {
   white-space: pre-wrap;
   word-break: break-word;
   outline: none;
+  text-wrap: pretty;
 }
 
 .canvas-overlay--hashtag .canvas-overlay__body {
@@ -3466,7 +3558,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
+  padding: 10px 14px;
   border: 0;
   background: transparent;
   border-radius: 8px;
@@ -3476,7 +3568,10 @@ textarea {
   font-weight: 600;
   color: var(--ink);
   font-family: inherit;
-  transition: background 0.12s ease;
+  min-height: 40px;
+  transition-property: background;
+  transition-duration: 120ms;
+  transition-timing-function: ease;
 }
 
 .canvas-context-menu__item:hover {

@@ -176,6 +176,14 @@ const OVERLAY_H = 180;
 /** Vertical gap between overlays. */
 const OVERLAY_GAP = 16;
 
+/** Strategy card position — pinned above the artboard strip. */
+const STRATEGY_CARD_X = STRIP_START_X;
+const STRATEGY_CARD_Y = 8;
+const STRATEGY_CARD_W = 480;
+
+/** Grid snap size in canvas-space pixels. */
+const SNAP_GRID = 8;
+
 // ── Artboard Descriptor Builder (Task 2.1) ────────────────────────────────────
 
 /**
@@ -378,6 +386,27 @@ export function buildOverlayDescriptors(output) {
   return overlays;
 }
 
+/**
+ * Build a strategy card descriptor from output routing metadata.
+ * Returns null if no routing decision exists.
+ * @param {object} output
+ * @returns {object|null}
+ */
+export function buildStrategyCard(output) {
+  const d = output?.routing_decision;
+  if (!d) return null;
+  return {
+    id: "strategy-card",
+    workflowType: d.workflowType || output.workflow_type || "slideshow",
+    platform: (output.platform_targets || [])[0] || "",
+    recipeId: d.recipeId || d.contentTypeId || "",
+    confidence: typeof d.confidence === "number" ? d.confidence : null,
+    x: STRATEGY_CARD_X,
+    y: STRATEGY_CARD_Y,
+    width: STRATEGY_CARD_W,
+  };
+}
+
 // ── ArtboardManager (Task 2.5) ────────────────────────────────────────────────
 
 /**
@@ -393,6 +422,9 @@ export class ArtboardManager {
 
   /** @type {Array<object>} */
   overlays = [];
+
+  /** @type {object|null} */
+  strategyCard = null;
 
   /**
    * @param {Array<object>} artboards - ArtboardDescriptor array.
@@ -486,6 +518,41 @@ export class ArtboardManager {
       if (!activeOverlayIds.has(id)) {
         el.remove();
       }
+    }
+
+    // Reflow overlay y positions based on actual rendered heights
+    let overlayY = OVERLAY_START_Y;
+    for (const desc of this.overlays) {
+      desc.y = overlayY;
+      const el = containerEl.querySelector(`[data-overlay-id="${desc.id}"]`);
+      if (el) {
+        el.style.top = `${overlayY}px`;
+        overlayY += el.offsetHeight + OVERLAY_GAP;
+      } else {
+        overlayY += OVERLAY_H + OVERLAY_GAP;
+      }
+    }
+
+    // ── Reconcile strategy card ──────────────────────────────────────────
+    const existingCard = containerEl.querySelector(".canvas-strategy-card");
+    if (this.strategyCard) {
+      const desc = this.strategyCard;
+      const el = existingCard || this._createStrategyCardElement(desc);
+      if (!existingCard) containerEl.appendChild(el);
+      el.style.left = `${desc.x}px`;
+      el.style.top = `${desc.y}px`;
+      el.style.width = `${desc.width}px`;
+      // Update content
+      const badge = el.querySelector(".strategy-card__workflow");
+      if (badge) badge.textContent = desc.workflowType;
+      const platform = el.querySelector(".strategy-card__platform");
+      if (platform) platform.textContent = desc.platform;
+      const recipe = el.querySelector(".strategy-card__recipe");
+      if (recipe) recipe.textContent = desc.recipeId;
+      const conf = el.querySelector(".strategy-card__confidence");
+      if (conf) conf.textContent = desc.confidence != null ? `${Math.round(desc.confidence * 100)}%` : "—";
+    } else if (existingCard) {
+      existingCard.remove();
     }
   }
 
@@ -581,6 +648,34 @@ export class ArtboardManager {
     badge.className = "canvas-artboard__badge";
     badge.textContent = desc.type.toUpperCase();
     el.appendChild(badge);
+
+    return el;
+  }
+
+  /**
+   * Create a DOM element for the strategy card.
+   * Structure: div.canvas-strategy-card > badge + platform + recipe + confidence
+   * @param {object} desc
+   * @returns {HTMLElement}
+   */
+  _createStrategyCardElement(desc) {
+    const el = document.createElement("div");
+    el.className = "canvas-strategy-card";
+    el.dataset.strategyCard = "true";
+    el.style.position = "absolute";
+
+    el.innerHTML = `<div class="strategy-card__row">
+      <span class="strategy-card__workflow">${desc.workflowType}</span>
+      <span class="strategy-card__platform">${desc.platform}</span>
+    </div>
+    <div class="strategy-card__row">
+      <span class="strategy-card__label">Recipe</span>
+      <span class="strategy-card__recipe">${desc.recipeId}</span>
+    </div>
+    <div class="strategy-card__row">
+      <span class="strategy-card__label">Confidence</span>
+      <span class="strategy-card__confidence">${desc.confidence != null ? Math.round(desc.confidence * 100) + "%" : "—"}</span>
+    </div>`;
 
     return el;
   }
@@ -736,6 +831,20 @@ export class PointerStateMachine {
   }
 
   /**
+   * Find the closest .canvas-artboard or .canvas-overlay ancestor of an element.
+   * @param {HTMLElement} el
+   * @returns {HTMLElement|null}
+   */
+  _findDraggable(el) {
+    let node = el;
+    while (node && node !== this._stageEl) {
+      if (node.classList && (node.classList.contains("canvas-artboard") || node.classList.contains("canvas-overlay") || node.classList.contains("canvas-strategy-card"))) return node;
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  /**
    * Find the closest .canvas-artboard ancestor of an element, if any.
    * @param {HTMLElement} el
    * @returns {HTMLElement|null}
@@ -768,7 +877,7 @@ export class PointerStateMachine {
     // Suppress pan/drag while inline editing is active
     if (this._editingActive) return;
 
-    const artboard = this._findArtboard(e.target);
+    const artboard = this._findDraggable(e.target);
     this._lastPointer = { x: e.clientX, y: e.clientY };
     const shouldPanViewport = e.pointerType === "touch";
 
@@ -799,16 +908,22 @@ export class PointerStateMachine {
       this._transform.applyPan(dx, dy);
       this._scheduleTransformUpdate();
     } else if (this.state === "dragging" && this._dragTarget) {
-      // Move artboard in canvas-space: screen delta / zoom
+      // Move element in canvas-space: screen delta / zoom
       const canvasDx = dx / this._transform.zoom;
       const canvasDy = dy / this._transform.zoom;
       const curLeft = parseFloat(this._dragTarget.style.left) || 0;
       const curTop = parseFloat(this._dragTarget.style.top) || 0;
-      this._dragTarget.style.left = `${curLeft + canvasDx}px`;
-      this._dragTarget.style.top = `${curTop + canvasDy}px`;
+      const rawX = curLeft + canvasDx;
+      const rawY = curTop + canvasDy;
+      const snappedX = Math.round(rawX / SNAP_GRID) * SNAP_GRID;
+      const snappedY = Math.round(rawY / SNAP_GRID) * SNAP_GRID;
+      this._dragTarget.style.left = `${snappedX}px`;
+      this._dragTarget.style.top = `${snappedY}px`;
 
-      // Show drop position indicator
-      this._updateDropIndicator(curLeft + canvasDx);
+      // Show drop position indicator for artboards only
+      if (this._dragTarget.classList.contains("canvas-artboard")) {
+        this._updateDropIndicator(snappedX);
+      }
     }
   }
 
@@ -816,8 +931,25 @@ export class PointerStateMachine {
   _onPointerUp(e) {
     if (this.state === "dragging" && this._dragTarget) {
       this._dragTarget.classList.remove("canvas-artboard--dragging");
-      this._removeDropIndicator();
-      this._snapToStrip(this._dragTarget);
+      if (this._dragTarget.classList.contains("canvas-overlay")) {
+        // Update overlay descriptor position
+        const id = this._dragTarget.dataset.overlayId;
+        const desc = this._artboardManager.overlays.find((o) => o.id === id);
+        if (desc) {
+          desc.x = parseFloat(this._dragTarget.style.left) || 0;
+          desc.y = parseFloat(this._dragTarget.style.top) || 0;
+        }
+      } else if (this._dragTarget.classList.contains("canvas-strategy-card")) {
+        // Update strategy card descriptor position
+        const desc = this._artboardManager.strategyCard;
+        if (desc) {
+          desc.x = parseFloat(this._dragTarget.style.left) || 0;
+          desc.y = parseFloat(this._dragTarget.style.top) || 0;
+        }
+      } else {
+        this._removeDropIndicator();
+        this._snapToStrip(this._dragTarget);
+      }
       if (this._onDragEnd) this._onDragEnd(this._dragTarget);
       this._dragTarget = null;
       this._dragOrigPos = null;
@@ -2157,6 +2289,7 @@ export class CanvasEngine {
 
     this._artboardManager.artboards = artboards;
     this._artboardManager.overlays = overlays;
+    this._artboardManager.strategyCard = buildStrategyCard(output);
 
     // Batch DOM updates into rAF
     this._scheduleUpdate(() => {
