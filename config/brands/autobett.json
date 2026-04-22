@@ -13,9 +13,19 @@
     "surfaceColor": "#16213e"
   },
   "defaults": {
-    "platformTargets": ["tiktok", "instagram"],
+    "platformTargets": [
+      "tiktok",
+      "instagram"
+    ],
     "goal": "awareness",
-    "hashtags": ["#autobett", "#onchainbetting", "#defi", "#cryptobetting", "#web3", "#aiagents"]
+    "hashtags": [
+      "#autobett",
+      "#onchainbetting",
+      "#defi",
+      "#cryptobetting",
+      "#web3",
+      "#aiagents"
+    ]
   },
   "providers": {
     "plannerModel": "glm-4.5",
@@ -27,43 +37,149 @@
       "id": "launch-post",
       "name": "Launch Post",
       "imageStyle": "bold neon-lit crypto/sports visual, dark background, high contrast, futuristic UI aesthetic",
-      "platformTargets": ["tiktok", "instagram"],
+      "platformTargets": [
+        "tiktok",
+        "instagram"
+      ],
       "slideBlueprint": [
-        { "role": "hero", "type": "generated_image", "textFields": ["headline", "subtitle"], "imagePromptTemplate": "Neon-lit announcement visual for {headline}", "layout": "image_focus" }
+        {
+          "role": "hero",
+          "type": "generated_image",
+          "textFields": [
+            "headline",
+            "subtitle"
+          ],
+          "imagePromptTemplate": "Neon-lit announcement visual for {headline}",
+          "layout": "image_focus"
+        }
       ]
     },
     {
       "id": "feature-highlight",
       "name": "Feature Highlight",
       "imageStyle": "bold neon-lit crypto/sports visual, dark background, high contrast, futuristic UI aesthetic",
-      "platformTargets": ["tiktok", "instagram"],
+      "platformTargets": [
+        "tiktok",
+        "instagram"
+      ],
       "slideBlueprint": [
-        { "role": "feature", "type": "generated_image", "textFields": ["featureName", "description"], "imagePromptTemplate": "Futuristic UI showcase of {featureName}", "layout": "image_focus" },
-        { "role": "benefit", "type": "generated_image", "textFields": ["benefitText"], "imagePromptTemplate": "Neon visual showing benefit of {featureName}", "layout": "image_focus" },
-        { "role": "cta", "type": "text_only", "textFields": ["headline", "cta"], "imagePromptTemplate": null, "layout": "cta_banner" }
+        {
+          "role": "feature",
+          "type": "generated_image",
+          "textFields": [
+            "featureName",
+            "description"
+          ],
+          "imagePromptTemplate": "Futuristic UI showcase of {featureName}",
+          "layout": "image_focus"
+        },
+        {
+          "role": "benefit",
+          "type": "generated_image",
+          "textFields": [
+            "benefitText"
+          ],
+          "imagePromptTemplate": "Neon visual showing benefit of {featureName}",
+          "layout": "image_focus"
+        },
+        {
+          "role": "cta",
+          "type": "text_only",
+          "textFields": [
+            "headline",
+            "cta"
+          ],
+          "imagePromptTemplate": null,
+          "layout": "cta_banner"
+        }
       ]
     },
     {
       "id": "community-update",
       "name": "Community Update",
       "imageStyle": "bold neon-lit crypto/sports visual, dark background, high contrast, futuristic UI aesthetic",
-      "platformTargets": ["tiktok", "instagram"],
+      "platformTargets": [
+        "tiktok",
+        "instagram"
+      ],
       "slideBlueprint": [
-        { "role": "update", "type": "generated_image", "textFields": ["headline", "body"], "imagePromptTemplate": "Community update visual with neon accents", "layout": "image_focus" }
+        {
+          "role": "update",
+          "type": "generated_image",
+          "textFields": [
+            "headline",
+            "body"
+          ],
+          "imagePromptTemplate": "Community update visual with neon accents",
+          "layout": "image_focus"
+        }
       ]
     },
     {
       "id": "odds-showcase",
       "name": "Odds Showcase",
       "imageStyle": "bold neon-lit crypto/sports visual, dark background, high contrast, futuristic UI aesthetic",
-      "platformTargets": ["tiktok", "instagram"],
+      "platformTargets": [
+        "tiktok",
+        "instagram"
+      ],
       "slideBlueprint": [
-        { "role": "event", "type": "generated_image", "textFields": ["eventName", "date"], "imagePromptTemplate": "Neon sports event visual for {eventName}", "layout": "image_focus" },
-        { "role": "odds", "type": "generated_image", "textFields": ["matchup", "odds"], "imagePromptTemplate": "Odds breakdown visual for {matchup}", "layout": "image_focus" },
-        { "role": "odds", "type": "generated_image", "textFields": ["matchup", "odds"], "imagePromptTemplate": "Odds breakdown visual for {matchup}", "layout": "image_focus" },
-        { "role": "odds", "type": "generated_image", "textFields": ["matchup", "odds"], "imagePromptTemplate": "Odds breakdown visual for {matchup}", "layout": "image_focus" },
-        { "role": "cta", "type": "text_only", "textFields": ["headline", "cta"], "imagePromptTemplate": null, "layout": "cta_banner" }
+        {
+          "role": "event",
+          "type": "generated_image",
+          "textFields": [
+            "eventName",
+            "date"
+          ],
+          "imagePromptTemplate": "Neon sports event visual for {eventName}",
+          "layout": "image_focus"
+        },
+        {
+          "role": "odds",
+          "type": "generated_image",
+          "textFields": [
+            "matchup",
+            "odds"
+          ],
+          "imagePromptTemplate": "Odds breakdown visual for {matchup}",
+          "layout": "image_focus"
+        },
+        {
+          "role": "odds",
+          "type": "generated_image",
+          "textFields": [
+            "matchup",
+            "odds"
+          ],
+          "imagePromptTemplate": "Odds breakdown visual for {matchup}",
+          "layout": "image_focus"
+        },
+        {
+          "role": "odds",
+          "type": "generated_image",
+          "textFields": [
+            "matchup",
+            "odds"
+          ],
+          "imagePromptTemplate": "Odds breakdown visual for {matchup}",
+          "layout": "image_focus"
+        },
+        {
+          "role": "cta",
+          "type": "text_only",
+          "textFields": [
+            "headline",
+            "cta"
+          ],
+          "imagePromptTemplate": null,
+          "layout": "cta_banner"
+        }
       ]
     }
+  ],
+  "defaultStyleCardId": "bold-monochrome-manifesto",
+  "visualModes": [
+    "product-led",
+    "data-led"
   ]
 }

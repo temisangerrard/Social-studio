@@ -199,7 +199,8 @@ function requestFromBrief(brief: ContentBrief): GenerationRequest {
     platformTargets: [brief.platform],
     goal: brief.goal,
     workflowType: "slideshow",
-    deliveryTargets: brief.platform
+    deliveryTargets: brief.platform,
+    styleControl: { styleCardId: listBuiltinPresets()[0].id, generationMode: "image-first" }
   };
 }
 
@@ -321,7 +322,7 @@ function normalizeRequest(input: unknown): GenerationRequest {
     styleControl:
       request.styleControl && typeof request.styleControl === "object"
         ? (request.styleControl as GenerationRequest["styleControl"])
-        : undefined
+        : { styleCardId: listBuiltinPresets()[0].id, generationMode: "image-first" as const }
   };
 }
 
@@ -586,32 +587,33 @@ export async function runPipelineFromRequest(
   };
 
   if (workflowType === "slideshow" || workflowType === "linkedin-carousel") {
-    // ── Style-controlled generation path ────────────────────────────────────
+    // ── Style-controlled generation path (always active) ────────────────────
     const styleControl = request.styleControl;
     let slidesToProcess = plan.slides;
 
-    if (styleControl?.styleCardId) {
-      const style = resolveStyleCard(styleControl.styleCardId, []);
-      if (style) {
-        console.log(`[pipeline] Using style card: ${style.name}`);
-        const control: StyleControlledRequest = {
-          styleCardId: style.id,
-          generationMode: styleControl.generationMode ?? "image-first",
-          textDensity: styleControl.textDensity,
-          imageTreatment: styleControl.imageTreatment,
-          referenceLockStrength: styleControl.referenceLockStrength,
-        };
-        const styledSlides = generateSlidesFromStyle({ style, request, brand: brandProfile, control });
-        // Merge planner copy with style-directed image prompts and layout
-        slidesToProcess = styledSlides.map((styled, i) => {
-          const plannerSlide = plan.slides[i];
-          return {
-            ...styled,
-            text: plannerSlide?.text ?? styled.text,
-          };
-        });
-      }
+    let style = resolveStyleCard(styleControl.styleCardId, []);
+    if (!style) {
+      console.warn(`[pipeline] Style card not found: ${styleControl.styleCardId} — falling back to default preset`);
+      style = listBuiltinPresets()[0];
     }
+
+    console.log(`[pipeline] Using style card: ${style.name}`);
+    const control: StyleControlledRequest = {
+      styleCardId: style.id,
+      generationMode: styleControl.generationMode ?? "image-first",
+      textDensity: styleControl.textDensity,
+      imageTreatment: styleControl.imageTreatment,
+      referenceLockStrength: styleControl.referenceLockStrength,
+    };
+    const styledSlides = generateSlidesFromStyle({ style, request, brand: brandProfile, control });
+    // Merge planner copy with style-directed image prompts and layout
+    slidesToProcess = styledSlides.map((styled, i) => {
+      const plannerSlide = plan.slides[i];
+      return {
+        ...styled,
+        text: plannerSlide?.text ?? styled.text,
+      };
+    });
 
     // Ensure uploaded assets are assigned to slides even if the planner didn't set them
     const hasUploads = (request.uploadedAssets ?? []).length > 0;
@@ -743,16 +745,9 @@ export async function runPipelineFromRequest(
   return metadata;
 }
 
-export async function runPipelineFromBrief(
-  briefInput: ContentBrief,
-  outputRoot?: string
-): Promise<PostMetadata> {
+export async function runPipeline(options: PipelineOptions): Promise<PostMetadata> {
+  const briefInput = await readBrief(path.resolve(options.briefPath));
   const brief = normalizeBrief(briefInput);
   const brandProfile = await loadOrCreateBrandProfile(brief);
-  return runPipelineFromRequest(requestFromBrief(brief), brandProfile, outputRoot);
-}
-
-export async function runPipeline(options: PipelineOptions): Promise<PostMetadata> {
-  const brief = await readBrief(path.resolve(options.briefPath));
-  return runPipelineFromBrief(brief, options.outputRoot ?? path.resolve("workspace", "outputs"));
+  return runPipelineFromRequest(requestFromBrief(brief), brandProfile, options.outputRoot ?? path.resolve("workspace", "outputs"));
 }

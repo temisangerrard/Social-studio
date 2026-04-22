@@ -1,0 +1,112 @@
+/* ═══ Toolbar — floating bottom toolbar ═══ */
+
+.studio-toolbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(47, 52, 45, 0.12), 0 2px 8px rgba(47, 52, 45, 0.06);
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  border: 0;
+}
+
+.toolbar-btn {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 10px;
+  color: var(--brand-strong);
+  display: grid;
+  place-items: center;
+}
+
+.toolbar-btn:hover {
+  background: var(--surface-soft);
+}
+
+.toolbar-select {
+  border: 1px solid rgba(175, 179, 170, 0.25);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.toolbar-input-group {
+  display: flex;
+  gap: 6px;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 28px;
+  background: rgba(175, 179, 170, 0.25);
+  margin: 0 4px;
+}
+
+.toolbar-idea-input {
+  border: 1px solid rgba(175, 179, 170, 0.25);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 0.88rem;
+  color: var(--ink);
+  min-width: 280px;
+  flex: 1;
+}
+
+.toolbar-idea-input::placeholder {
+  color: var(--outline);
+}
+
+.toolbar-generate-btn {
+  border: 0;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: var(--brand-strong);
+  color: #faf7f2;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.toolbar-generate-btn:hover {
+  background: var(--highlight);
+}
+
+/* ── Upload count badge ────────────────────────────────────────────────── */
+
+#toolbar-upload-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 50%;
+  background: var(--highlight);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+#toolbar-upload-count.hidden {
+  display: none !important;
+}

@@ -1,15 +1,14 @@
 // ── Social Studio — app.js (orchestrator) ─────────────────────────────────────
 // Thin entry point: imports modules, wires listeners, runs bootstrap.
 
-import { buildCanvasCards } from "./app-helpers.js";
 import { CanvasEngine, downloadArtboard, downloadAllAsZip } from "./canvas-engine.js";
 
 import { studioState } from "./state.js";
 import { els, calEls } from "./dom-refs.js";
 import {
-  showStatus, hideStatus, showChatStatus, hideChatStatus,
-  setCheckpoint, resetCheckpoints, showCanvasProgress, hideCanvasProgress,
-  setButtonLoading, clearButtonLoading, copyText, getWorkflowPreset, makeId, getBrandById
+  showStatus, hideStatus,
+  showCanvasProgress, hideCanvasProgress,
+  setButtonLoading, clearButtonLoading, copyText, makeId, getBrandById
 } from "./ui-utils.js";
 import { uploadQueue, loadExistingUploads, renderUploadedAssets, analyzeUploadedAssetRecord, onAssetDeleted } from "./upload-manager.js";
 import {
@@ -22,7 +21,7 @@ import {
   populateDetailPanel, hideDetailPanel, regenerateSlide
 } from "./inspector.js";
 import {
-  pollJob, syncCardsFromBrief, loadOutputToEngine,
+  pollJob, loadOutputToEngine,
   runGeneration, finishGeneration, mergeRefinedOutput, downloadAllAssets
 } from "./generation.js";
 import { loadCalendar, initCalendarListeners } from "./calendar-view.js";
@@ -46,66 +45,37 @@ document.addEventListener("studio:switch-view", (e) => switchView(e.detail));
 // ── Asset modal listeners ─────────────────────────────────────────────────────
 initAssetModalListeners();
 
-// ── Session helpers ───────────────────────────────────────────────────────────
-async function persistSession() {
-  if (!studioState.session) return;
-  await fetch(`/api/assistant/sessions/${studioState.session.id}`, {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ...studioState.session, workspaceCards: studioState.canvasCards })
-  });
-}
-
-async function createSession(productId) {
-  showStatus("Loading product context…");
-  const res = await fetch("/api/assistant/sessions", {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ productId })
-  });
-  studioState.session = await res.json();
-  studioState.generatedOutput = null;
-  studioState.canvasCards = studioState.session.workspaceCards || [];
-  studioState.selectedAsset = null;
-  renderMessages(); renderCanvas(); renderInspectorPackage(); renderInspectorAsset();
-  hideStatus();
-}
-
 // ── Messages ──────────────────────────────────────────────────────────────────
-function renderMessages() {
-  if (!els.studioMessageThread) return;
-  els.studioMessageThread.innerHTML = "";
-  (studioState.session?.messages || []).filter((m) => m.role !== "system").forEach((msg) => {
-    const el = document.createElement("article");
-    el.className = `message-bubble message-bubble--${msg.role === "user" ? "user" : "assistant"}`;
-    el.innerHTML = `<strong>${msg.role === "user" ? "You" : "Social Studio"}</strong><p>${msg.text}</p>`;
-    els.studioMessageThread.appendChild(el);
-  });
-  els.studioMessageThread.scrollTop = els.studioMessageThread.scrollHeight;
-}
-
-function renderCheckpoints() {
-  if (!studioState.session) return;
-  els.studioCheckpoints.forEach((node) => {
-    const status = studioState.session.checkpoints?.[node.dataset.step] || "pending";
-    node.classList.remove("is-active", "is-done");
-    if (status === "active") node.classList.add("is-active");
-    if (status === "done") node.classList.add("is-done");
-  });
-}
-
 // ── Quick form submit ─────────────────────────────────────────────────────────
 els.studioQuickForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const idea = els.studioIdeaInput.value.trim();
   if (!idea) return;
+  if (!studioState.selectedStyleId) { showStatus("Select a style preset first."); return; }
 
   setButtonLoading(els.studioSubmit, "Planning…");
   showStatus("Planning content strategy…");
-  resetCheckpoints();
   const routeInlineEl = document.getElementById("studio-route-inline");
   if (routeInlineEl) routeInlineEl.classList.add("hidden");
-  setCheckpoint("strategy", "active");
   studioState.canvasLoadingStage = "planning";
-  studioState.canvasCards = buildCanvasCards({ goal: idea, audience: null, offer: els.studioNotesInput.value.trim() || null, tone: els.studioVisualMode.value, platform: els.studioPlatformSelect.value }, null, makeId);
+
+  // Auto-match style if user hasn't manually picked one
+  if (!studioState.userPickedStyle) {
+    try {
+      showStatus("Matching style to idea…");
+      const matchRes = await fetch("/api/styles/match", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idea, brandProfileId: els.studioProductSelect.value })
+      });
+      const match = await matchRes.json();
+      if (match.styleCardId) {
+        studioState.selectedStyleId = match.styleCardId;
+        if (els.studioStylePreset) els.studioStylePreset.value = match.styleCardId;
+      }
+    } catch { /* keep current selection */ }
+  }
+
+  studioState.canvasCards = [{ id: makeId("card"), type: "idea", text: idea, x: 80, y: 80, width: 280, height: 180, tags: ["idea"] }];
   renderCanvas();
   showCanvasProgress("Planning content strategy…");
 
@@ -134,74 +104,7 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
     hideCanvasProgress();
     clearButtonLoading(els.studioSubmit);
     showCanvasProgress(err instanceof Error ? err.message : String(err));
-    resetCheckpoints();
   }
-});
-
-// ── Chat ──────────────────────────────────────────────────────────────────────
-if (els.chatToggle) els.chatToggle.addEventListener("click", () => {
-  const open = !els.chatPanel.classList.contains("hidden");
-  els.chatPanel.classList.toggle("hidden", open);
-  els.chatToggle.classList.toggle("is-active", !open);
-});
-
-function inferWorkflow(text) {
-  const v = String(text || "").toLowerCase();
-  if (/\breel\b|\bvoiceover\b/.test(v)) return "reel-package";
-  if (/\bvideo\b|\bclip\b/.test(v)) return "video-clip";
-  if (/\bvariant\b|\bpack\b/.test(v)) return "mascot-variants";
-  if (/\bedit\b|\brefine\b/.test(v)) return "reference-edit";
-  if (/\blinkedin\b.*\btext\b|\btext.only\b|\btext\spost\b/.test(v)) return "linkedin-text";
-  if (/\blinkedin\b|\bcarousel\b/.test(v)) return "linkedin-carousel";
-  return "slideshow";
-}
-
-async function submitChatAnswer(text) {
-  const isFirst = (studioState.session?.messages || []).filter((m) => m.role === "user").length === 0;
-  const res = await fetch(`/api/assistant/sessions/${studioState.session.id}/reply`, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text })
-  });
-  if (!res.ok) throw new Error("Failed to get assistant reply.");
-  const { session, shouldGenerate } = await res.json();
-  studioState.session = session;
-  if (isFirst) { studioState.workflowType = inferWorkflow(text); updateWorkflowUI(); }
-  syncCardsFromBrief(); renderMessages(); renderCanvas(); renderCheckpoints();
-
-  if (shouldGenerate) {
-    studioState.session.checkpoints = studioState.session.checkpoints || {};
-    studioState.session.checkpoints.strategy = "active";
-    studioState.canvasLoadingStage = "planning";
-    renderCheckpoints(); renderCanvas();
-    showCanvasProgress("Planning content strategy…");
-    setButtonLoading(els.studioChatSubmit, "Working…");
-    const firstMsg = studioState.session.messages.find((m) => m.role === "user")?.text || text;
-    try {
-      const output = await runGeneration(firstMsg, "");
-      finishGeneration(output);
-      studioState.session.checkpoints.visuals = "done";
-      studioState.session.checkpoints.finalPackage = "done";
-      studioState.session.messages.push({ id: makeId("msg"), role: "assistant", text: `Done — ${getWorkflowPreset(studioState.workflowType).label.toLowerCase()} placed on the canvas.`, createdAt: new Date().toISOString() });
-      syncCardsFromBrief(); clearButtonLoading(els.studioChatSubmit); hideChatStatus();
-      renderMessages(); renderCanvas(); renderCheckpoints(); renderInspectorPackage(); renderInspectorAsset();
-      await persistSession();
-    } catch (err) {
-      studioState.canvasLoadingStage = null; hideCanvasProgress(); clearButtonLoading(els.studioChatSubmit);
-      studioState.session.messages.push({ id: makeId("msg"), role: "assistant", text: `Hit a problem: ${err instanceof Error ? err.message : String(err)}`, createdAt: new Date().toISOString() });
-      renderMessages(); renderCanvas(); renderCheckpoints(); hideChatStatus();
-      await persistSession();
-    }
-  }
-}
-
-if (els.studioChatForm) els.studioChatForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const text = els.studioChatInput.value.trim();
-  if (!text || !studioState.session) return;
-  els.studioChatInput.value = "";
-  showChatStatus("Thinking…"); setButtonLoading(els.studioChatSubmit, "Sending…");
-  try { await submitChatAnswer(text); }
-  catch (err) { showChatStatus(err instanceof Error ? err.message : String(err)); }
-  finally { if (!studioState.canvasLoadingStage) { clearButtonLoading(els.studioChatSubmit); hideChatStatus(); } }
 });
 
 // ── Refinement form ───────────────────────────────────────────────────────────
@@ -215,11 +118,15 @@ els.studioRefineForm.addEventListener("submit", async (e) => {
     brandProfileId: brandId,
     rawIdea: els.studioRefinePrompt.value.trim() || studioState.selectedAsset.prompt || studioState.selectedAsset.text,
     notes: "Refinement request.", cards: [], references: [],
-    referenceAssets: buildReferenceAssets({ brandId, visualMode: els.studioRefineVisualMode.value, inputValue: "", selectedAsset: studioState.selectedAsset }),
+    referenceAssets: buildReferenceAssets({ brandId, visualMode: els.studioVisualMode.value, inputValue: "", selectedAsset: studioState.selectedAsset }),
     platformTargets: [els.studioPlatformSelect.value],
     goal: getBrandById(brandId)?.defaults?.goal || "awareness",
-    workflowType: "reference-edit", visualMode: els.studioRefineVisualMode.value,
-    targetAssetId: studioState.selectedAsset.itemId, deliveryTargets: els.studioDeliveryTarget.value
+    workflowType: "reference-edit", visualMode: els.studioVisualMode.value,
+    targetAssetId: studioState.selectedAsset.itemId, deliveryTargets: els.studioDeliveryTarget.value,
+    styleControl: {
+      styleCardId: studioState.selectedStyleId,
+      generationMode: els.studioGenerationMode?.value || "image-first",
+    }
   };
   try {
     const res = await fetch("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request) });
@@ -227,7 +134,7 @@ els.studioRefineForm.addEventListener("submit", async (e) => {
     const output = await pollJob(jobId);
     studioState.generatedOutput = mergeRefinedOutput(studioState.generatedOutput, output, els.studioRefineMode.value, studioState.selectedAsset);
     studioState.selectedAsset = outputAssets(studioState.generatedOutput).at(-1) || null;
-    studioState.canvasCards = buildCanvasCards(studioState.session?.inferredBrief || {}, studioState.generatedOutput, makeId);
+    studioState.canvasCards = [];
     renderCanvas(); loadOutputToEngine(studioState.generatedOutput); renderInspectorPackage(); renderInspectorAsset();
     els.studioRefineStatus.textContent = "Done.";
   } catch (err) { els.studioRefineStatus.textContent = err instanceof Error ? err.message : String(err); }
@@ -267,10 +174,25 @@ els.inspectorCopyCaption.addEventListener("click", () => copyText(studioState.ge
 els.inspectorCopyHashtags.addEventListener("click", () => copyText((studioState.generatedOutput?.hashtags || []).join(" "), "Hashtags"));
 
 // ── Product/mode change listeners ─────────────────────────────────────────────
+function syncBrandDefaults(brandId) {
+  const brand = getBrandById(brandId);
+  if (!brand) return;
+  // Populate visual modes from brand config
+  const modes = brand.visualModes || ["mixed"];
+  els.studioVisualMode.innerHTML = modes.map((m, i) => `<option value="${m}"${i === 0 ? " selected" : ""}>${m.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</option>`).join("");
+  // Auto-select brand's default style card
+  if (brand.defaultStyleCardId && studioState.stylePresets.some(s => s.id === brand.defaultStyleCardId)) {
+    studioState.selectedStyleId = brand.defaultStyleCardId;
+    studioState.userPickedStyle = false;
+    if (els.studioStylePreset) els.studioStylePreset.value = brand.defaultStyleCardId;
+  }
+}
+
 els.studioProductSelect.addEventListener("change", async () => {
   renderBrandEditor(els.studioProductSelect.value); renderReferenceChips();
   updateContentTypeSelector(els.studioProductSelect.value);
-  await refreshRoutePreview(); await createSession(els.studioProductSelect.value);
+  syncBrandDefaults(els.studioProductSelect.value);
+  await refreshRoutePreview();
 });
 els.studioVisualMode.addEventListener("change", () => { renderReferenceChips(); refreshRoutePreview(); });
 els.studioReferenceInput.addEventListener("input", renderReferenceChips);
@@ -283,25 +205,22 @@ if (els.studioStylePreset) {
   els.studioStylePreset.addEventListener("change", () => {
     const styleId = els.studioStylePreset.value;
     studioState.selectedStyleId = styleId;
-    const hasStyle = !!styleId;
-    if (els.studioStyleControls) els.studioStyleControls.classList.toggle("hidden", !hasStyle);
-    if (hasStyle) {
-      const style = studioState.stylePresets.find((s) => s.id === styleId);
-      if (style && els.studioStylePreviewBody) {
-        els.studioStylePreview.classList.remove("hidden");
-        const tags = style.visualTraits.tone.map((t) => `<span class="style-tag">${t}</span>`).join("");
-        const avoids = style.negativeConstraints.slice(0, 4).map((c) => `<span class="style-tag">${c}</span>`).join("");
-        els.studioStylePreviewBody.innerHTML = `
-          <div class="style-section"><div class="style-section-label">Intent</div>${style.intent}</div>
-          <div class="style-section"><div class="style-section-label">Tone</div>${tags}</div>
-          <div class="style-section"><div class="style-section-label">Image</div>${style.imageStyle}</div>
-          <div class="style-section"><div class="style-section-label">Layout</div>${style.layoutStyle}</div>
-          <div class="style-section"><div class="style-section-label">Avoids</div>${avoids}</div>
-        `;
-      }
-    } else if (els.studioStylePreview) {
-      els.studioStylePreview.classList.add("hidden");
+    studioState.userPickedStyle = true;
+    const style = studioState.stylePresets.find((s) => s.id === styleId);
+    if (style && els.studioStylePreviewBody) {
+      els.studioStylePreview.classList.remove("hidden");
+      const tags = style.visualTraits.tone.map((t) => `<span class="style-tag">${t}</span>`).join("");
+      const avoids = style.negativeConstraints.slice(0, 4).map((c) => `<span class="style-tag">${c}</span>`).join("");
+      els.studioStylePreviewBody.innerHTML = `
+        <div class="style-section"><div class="style-section-label">Intent</div>${style.intent}</div>
+        <div class="style-section"><div class="style-section-label">Tone</div>${tags}</div>
+        <div class="style-section"><div class="style-section-label">Image</div>${style.imageStyle}</div>
+        <div class="style-section"><div class="style-section-label">Layout</div>${style.layoutStyle}</div>
+        <div class="style-section"><div class="style-section-label">Avoids</div>${avoids}</div>
+      `;
     }
+  });
+}
   });
 }
 els.studioUploadTrigger?.addEventListener("click", () => els.studioReferenceFiles.click());
@@ -354,10 +273,16 @@ async function loadProducts() {
   els.studioProductSelect.value = "peppera";
   calEls.brandSelect.innerHTML = `<option value="">All brands</option>` + studioState.products.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
   calEls.libraryBrandFilter.innerHTML = `<option value="">All brands</option>` + studioState.brands.map((b) => `<option value="${b.id}">${b.name}</option>`).join("");
-  // Populate style preset selector
+  // Populate style preset selector — auto-select first preset
   if (els.studioStylePreset) {
-    els.studioStylePreset.innerHTML = `<option value="">None — use default</option>` +
+    els.studioStylePreset.innerHTML =
       studioState.stylePresets.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
+    if (studioState.stylePresets.length > 0) {
+      els.studioStylePreset.value = studioState.stylePresets[0].id;
+      studioState.selectedStyleId = studioState.stylePresets[0].id;
+      if (els.studioStyleControls) els.studioStyleControls.classList.remove("hidden");
+      els.studioSubmit.disabled = false;
+    }
   }
 }
 
@@ -382,10 +307,11 @@ async function bootstrap() {
   await loadProducts();
   renderBrandEditor("peppera");
   updateContentTypeSelector("peppera");
+  syncBrandDefaults("peppera");
   updateWorkflowUI();
   renderUploadedAssets();
   renderRoutePreview();
-  await Promise.all([createSession("peppera"), loadExistingUploads()]);
+  await loadExistingUploads();
 
   const stageEl = document.querySelector(".studio-canvas-stage");
   const inspector = document.getElementById("studio-inspector");

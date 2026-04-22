@@ -1,33 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildCanvasCards, getPlatformPublishLinks, getWorkflowPresets, getWorkspaceAssetUrl } from "./app-helpers.js";
-
-test("canvas cards include every generated asset with asset URLs", () => {
-  const cards = buildCanvasCards(
-    {
-      goal: "Get installs",
-      audience: "Busy home cooks",
-      offer: "Turn leftovers into dinner",
-      tone: "Relatable",
-      platform: "TikTok"
-    },
-    {
-      post_id: "peppera_tt_0013",
-      render_status: "skipped",
-      slides: Array.from({ length: 8 }, (_, index) => ({
-        slide_number: index + 1,
-        role: `role-${index + 1}`,
-        text: `Slide ${index + 1}`,
-        asset_path: `/tmp/slide-${String(index + 1).padStart(2, "0")}.jpg`
-      }))
-    },
-    (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 8)}`
-  );
-
-  const assetCards = cards.filter((card) => card.type === "asset");
-  assert.equal(assetCards.length, 8);
-  assert.equal(assetCards[0].assetUrl, "/api/assets/peppera_tt_0013/slide-01.jpg");
-});
+import { getPlatformPublishLinks, getWorkspaceAssetUrl } from "./app-helpers.js";
 
 test("workspace asset URL falls back to rendered slide path when needed", () => {
   const url = getWorkspaceAssetUrl(
@@ -50,43 +23,4 @@ test("publish links include direct TikTok and Instagram destinations", () => {
   assert.match(links[0].href, /tiktok\.com/);
   assert.match(links[1].href, /instagram\.com/);
   assert.match(links[2].href, /linkedin\.com/);
-});
-
-test("canvas cards include generated artifacts when workflow outputs do not have slides", () => {
-  const cards = buildCanvasCards(
-    {
-      goal: "Get installs",
-      audience: "Busy home cooks",
-      offer: "Turn leftovers into dinner",
-      tone: "Relatable",
-      platform: "TikTok"
-    },
-    {
-      post_id: "peppera_tt_0020",
-      render_status: "skipped",
-      slides: [],
-      artifacts: [
-        {
-          id: "artifact-1",
-          kind: "image",
-          role: "variant",
-          title: "Variant 1",
-          asset_path: "/tmp/variant-1.png"
-        }
-      ]
-    },
-    (prefix) => `${prefix}_${Math.random().toString(36).slice(2, 8)}`
-  );
-
-  const assetCards = cards.filter((card) => card.type === "asset");
-  assert.equal(assetCards.length, 1);
-  assert.equal(assetCards[0].assetUrl, "/api/assets/peppera_tt_0020/variant-1.png");
-});
-
-test("workflow presets surface all content workflows", () => {
-  const presets = getWorkflowPresets();
-  assert.deepEqual(
-    presets.map((preset) => preset.id),
-    ["slideshow", "linkedin-carousel", "linkedin-text", "mascot-variants", "reference-edit", "video-clip", "reel-package"]
-  );
 });

@@ -1,8 +1,7 @@
 import { els } from "./dom-refs.js";
 import { studioState } from "./state.js";
-import { buildCanvasCards } from "./app-helpers.js";
 import { CanvasEngine, downloadArtboard, downloadAllAsZip } from "./canvas-engine.js";
-import { getBrandById, showStatus, hideStatus, setCheckpoint, showCanvasProgress, hideCanvasProgress, makeId } from "./ui-utils.js";
+import { getBrandById, showStatus, hideStatus, showCanvasProgress, hideCanvasProgress, makeId } from "./ui-utils.js";
 import { buildReferenceAssets, renderRoutePreview } from "./references.js";
 import { outputAssets, renderInspectorPackage, renderInspectorAsset, renderCanvas } from "./inspector.js";
 
@@ -20,17 +19,6 @@ export async function pollJob(jobId, onUpdate) {
 }
 
 // ── Sync cards from brief ─────────────────────────────────────────────────────
-export function syncCardsFromBrief() {
-  studioState.canvasCards = buildCanvasCards(
-    studioState.session?.inferredBrief || {},
-    studioState.generatedOutput,
-    makeId
-  );
-  if (studioState.generatedOutput) {
-    studioState.selectedAsset = outputAssets(studioState.generatedOutput)[0] || null;
-  }
-}
-
 // ── Load output into CanvasEngine ─────────────────────────────────────────────
 export function loadOutputToEngine(output) {
   if (!output || !studioState.canvasEngine) return;
@@ -45,7 +33,7 @@ export function loadOutputToEngine(output) {
 // ── Core generation pipeline ──────────────────────────────────────────────────
 export async function runGeneration(rawIdea, notes) {
   const brandId = els.studioProductSelect.value;
-  const brief = studioState.session?.inferredBrief || {};
+  const brief = {};
   const workflowOverride =
     studioState.routePreview?.decision?.workflowType && studioState.routePreview.decision.workflowType !== studioState.workflowType
       ? studioState.workflowType : undefined;
@@ -76,13 +64,13 @@ export async function runGeneration(rawIdea, notes) {
     variantCount: studioState.workflowType === "mascot-variants" ? 4 : undefined,
     videoOptions: ["video-clip", "reel-package"].includes(studioState.workflowType)
       ? { duration: 5, aspectRatio: "9:16", withAudio: true, consistencyMode: "mascot-consistent" } : undefined,
-    styleControl: studioState.selectedStyleId ? {
+    styleControl: {
       styleCardId: studioState.selectedStyleId,
       generationMode: els.studioGenerationMode?.value || "image-first",
       textDensity: els.studioTextDensity?.value || undefined,
       imageTreatment: els.studioImageTreatment?.value || undefined,
       referenceLockStrength: els.studioReferenceLock?.value || "loose"
-    } : undefined
+    }
   };
 
   const res = await fetch("/api/generate", {
@@ -95,15 +83,12 @@ export async function runGeneration(rawIdea, notes) {
   return pollJob(jobId, (job) => {
     const stage = job.stage || job.status || "working";
     if (stage === "planning" || job.status === "running") {
-      setCheckpoint("strategy", "active");
       showCanvasProgress("Planning recipes and content…");
     }
     if (stage === "generating") {
-      setCheckpoint("strategy", "done"); setCheckpoint("hooks", "done"); setCheckpoint("visuals", "active");
       showCanvasProgress("Generating visuals…");
     }
     if (stage === "rendering") {
-      setCheckpoint("visuals", "done");
       showCanvasProgress("Rendering final slides…");
     }
     studioState.canvasLoadingStage = stage;
@@ -118,8 +103,7 @@ export function finishGeneration(output) {
   if (output.routing_decision) {
     studioState.routePreview = { decision: output.routing_decision, trace: output.routing_trace };
   }
-  setCheckpoint("visuals", "done");
-  setCheckpoint("finalPackage", "done");
+  hideCanvasProgress();
   hideCanvasProgress();
   hideStatus();
   loadOutputToEngine(output);

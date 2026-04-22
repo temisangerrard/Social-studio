@@ -131,6 +131,8 @@ export interface BrandProfile {
   contentTypes?: ContentTypeDefinition[];
   defaultContentType?: string;
   contentRecipes?: ContentRecipeDefinition[];
+  defaultStyleCardId?: string;
+  visualModes?: VisualMode[];
 }
 
 export interface BoardCard {
@@ -240,41 +242,6 @@ export interface BoardDocument {
   updatedAt: string;
 }
 
-export interface AssistantMessage {
-  id: string;
-  role: "assistant" | "user" | "system";
-  text: string;
-  createdAt: string;
-}
-
-export interface InferredBrief {
-  goal: string;
-  audience: string;
-  offer: string;
-  tone: string;
-  platform: string;
-}
-
-export interface CheckpointState {
-  strategy: "pending" | "active" | "done";
-  hooks: "pending" | "active" | "done";
-  visuals: "pending" | "active" | "done";
-  finalPackage: "pending" | "active" | "done";
-}
-
-export interface AssistantSession {
-  id: string;
-  productId: string;
-  status: "interviewing" | "generating" | "done";
-  currentQuestion: string;
-  messages: AssistantMessage[];
-  inferredBrief: InferredBrief;
-  checkpoints: CheckpointState;
-  workspaceCards: BoardCard[];
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface ProductContextSource {
   repo: string;
   localPath?: string;
@@ -321,7 +288,7 @@ export interface GenerationRequest {
   contentTypeId?: string;
   routingDecision?: RoutingDecision;
   routingTrace?: RoutingTrace;
-  styleControl?: StyleControlledRequest;
+  styleControl: StyleControlledRequest;
 }
 
 export interface StructuredRecipe {
@@ -558,7 +525,7 @@ export interface StructuredPromptOutput {
 }
 
 export interface StyleControlledRequest {
-  styleCardId?: string;
+  styleCardId: string;
   generationMode?: GenerationMode;
   textDensity?: TextDensity;
   referenceLockStrength?: ReferenceLockStrength;

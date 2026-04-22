@@ -650,17 +650,6 @@ textarea {
   height: 100%;
 }
 
-.gen-sidebar {
-  padding: 32px 28px;
-  border-right: 1px solid rgba(175, 179, 170, 0.2);
-  background: rgba(250, 249, 244, 0.92);
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  height: 100%;
-  overflow-y: auto;
-}
-
 .gen-heading {
   margin: 0;
   font-family: "Newsreader", serif;
@@ -1200,11 +1189,6 @@ textarea {
   .gen-shell {
     grid-template-columns: 1fr;
   }
-
-  .gen-sidebar {
-    border-right: 0;
-    border-bottom: 1px solid rgba(175, 179, 170, 0.2);
-  }
 }
 
 .gen-copy,
@@ -1522,14 +1506,6 @@ textarea {
   .gen-shell {
     grid-template-columns: 1fr;
     height: auto;
-  }
-
-  .gen-sidebar {
-    height: auto;
-    overflow-y: visible;
-    padding: 20px 16px;
-    border-right: 0;
-    border-bottom: 1px solid rgba(175, 179, 170, 0.2);
   }
 
   .gen-heading {

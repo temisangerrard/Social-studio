@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { createStorage } from "./storage.ts";
-import type { AssistantSession, BoardDocument, BrandProfile } from "./types.ts";
+import type { BoardDocument, BrandProfile } from "./types.ts";
 
 async function makeTempDir(): Promise<string> {
   return fs.mkdtemp(path.join(os.tmpdir(), "social-studio-storage-"));
@@ -85,41 +85,4 @@ test("storage persists boards with card layout data", async () => {
   const loaded = await storage.getBoard("board-01");
   assert.equal(loaded?.cards[0].x, 120);
   assert.equal(loaded?.cards[0].height, 180);
-});
-
-test("storage persists assistant sessions", async () => {
-  const root = await makeTempDir();
-  const storage = createStorage(root);
-
-  const session: AssistantSession = {
-    id: "session-1",
-    productId: "peppera",
-    status: "interviewing",
-    currentQuestion: "What are you trying to make today?",
-    messages: [
-      { id: "m1", role: "assistant", text: "What are you trying to make today?", createdAt: "2026-04-10T09:00:00.000Z" }
-    ],
-    inferredBrief: {
-      goal: "",
-      audience: "",
-      offer: "",
-      tone: "",
-      platform: ""
-    },
-    checkpoints: {
-      strategy: "pending",
-      hooks: "pending",
-      visuals: "pending",
-      finalPackage: "pending"
-    },
-    workspaceCards: [],
-    createdAt: "2026-04-10T09:00:00.000Z",
-    updatedAt: "2026-04-10T09:00:00.000Z"
-  };
-
-  await storage.saveAssistantSession(session);
-  const loaded = await storage.getAssistantSession("session-1");
-
-  assert.equal(loaded?.productId, "peppera");
-  assert.equal(loaded?.currentQuestion, "What are you trying to make today?");
 });

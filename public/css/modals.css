@@ -1,0 +1,73 @@
+/* ═══ Modals — asset preview dialogs ═══ */
+
+.asset-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.asset-modal__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(47, 52, 45, 0.5);
+}
+
+.asset-modal__dialog {
+  position: relative;
+  width: min(980px, calc(100vw - 48px));
+  margin: 40px auto;
+  padding: 20px;
+  border-radius: 24px;
+  background: rgba(250, 249, 244, 0.98);
+  box-shadow: var(--shadow-float);
+  display: grid;
+  gap: 16px;
+}
+
+.asset-modal__close {
+  justify-self: end;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.asset-modal__image {
+  display: block;
+  width: min(100%, 420px);
+  max-height: 70vh;
+  margin: 0 auto;
+  border-radius: 18px;
+  object-fit: contain;
+  box-shadow: var(--shadow-soft);
+}
+
+.asset-modal__video {
+  display: block;
+  width: min(100%, 420px);
+  max-height: 70vh;
+  margin: 0 auto;
+  border-radius: 18px;
+  box-shadow: var(--shadow-soft);
+  background: #000;
+}
+
+.asset-modal__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.asset-modal__title {
+  margin: 0;
+  font-family: "Newsreader", serif;
+  font-size: 1.5rem;
+  color: var(--brand-strong);
+}
+
+.asset-modal__actions {
+  display: flex;
+  gap: 10px;
+}

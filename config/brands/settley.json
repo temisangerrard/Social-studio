@@ -88,5 +88,7 @@
         { "role": "update", "type": "generated_image", "textFields": ["headline", "body", "metrics"], "imagePromptTemplate": "Investment performance visual with premium aesthetic", "layout": "image_focus" }
       ]
     }
-  ]
+  ],
+  "defaultStyleCardId": "founder-profile-spotlight",
+  "visualModes": ["product-led", "data-led", "mixed"]
 }

@@ -1,7 +1,7 @@
 import { els, calEls, adminEls } from "./dom-refs.js";
 import { studioState } from "./state.js";
 import { escapeHtml, titleCase } from "./app-helpers.js";
-import { showStatus, resetCheckpoints, setCheckpoint } from "./ui-utils.js";
+import { showStatus } from "./ui-utils.js";
 import { outputAssets, renderInspectorAsset, renderCanvas } from "./inspector.js";
 import { renderRoutePreview } from "./references.js";
 import { loadOutputToEngine } from "./generation.js";
@@ -219,8 +219,6 @@ export async function loadOutputIntoCanvas(postId) {
   studioState.workflowType = output.workflow_type || "slideshow";
   studioState.selectedAsset = outputAssets(output)[0] || null;
   if (output.routing_decision) { studioState.routePreview = { decision: output.routing_decision, trace: output.routing_trace }; renderRoutePreview(); }
-  resetCheckpoints();
-  ["strategy", "hooks", "visuals", "finalPackage"].forEach((s) => setCheckpoint(s, "done"));
   document.dispatchEvent(new CustomEvent("studio:switch-view", { detail: "studio" }));
   loadOutputToEngine(output);
   renderInspectorAsset();
