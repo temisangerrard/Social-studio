@@ -4,6 +4,7 @@ import { CanvasEngine, downloadArtboard, downloadAllAsZip } from "./canvas-engin
 import { getBrandById, showStatus, hideStatus, showCanvasProgress, hideCanvasProgress, makeId } from "./ui-utils.js";
 import { buildReferenceAssets, renderRoutePreview } from "./references.js";
 import { outputAssets, renderInspectorPackage, renderInspectorAsset, renderCanvas } from "./inspector.js";
+import { resolveGenerationRouting } from "./generation-request.js";
 
 // ── Poll job ──────────────────────────────────────────────────────────────────
 export async function pollJob(jobId, onUpdate) {
@@ -34,12 +35,13 @@ export function loadOutputToEngine(output) {
 export async function runGeneration(rawIdea, notes) {
   const brandId = els.studioProductSelect.value;
   const brief = {};
-  const workflowOverride =
-    studioState.routePreview?.decision?.workflowType && studioState.routePreview.decision.workflowType !== studioState.workflowType
-      ? studioState.workflowType : undefined;
-  const contentTypeOverride =
-    studioState.routePreview?.decision?.contentTypeId && els.studioContentTypeSelect?.value && els.studioContentTypeSelect.value !== studioState.routePreview.decision.contentTypeId
-      ? els.studioContentTypeSelect.value : undefined;
+  const generationRouting = resolveGenerationRouting({
+    selectedStyleId: studioState.selectedStyleId,
+    userPickedStyle: studioState.userPickedStyle,
+    workflowType: studioState.workflowType,
+    routeDecision: studioState.routePreview?.decision,
+    selectedContentTypeId: els.studioContentTypeSelect?.value
+  });
 
   const request = {
     brandProfileId: brandId,
@@ -55,12 +57,11 @@ export async function runGeneration(rawIdea, notes) {
     assetAnalyses: studioState.assetAnalyses,
     platformTargets: [els.studioPlatformSelect.value],
     goal: getBrandById(brandId)?.defaults?.goal || "awareness",
-    workflowType: studioState.routePreview?.decision?.workflowType || studioState.workflowType,
+    workflowType: generationRouting.workflowType,
     visualMode: els.studioVisualMode.value,
-    deliveryTargets: studioState.routePreview?.decision?.deliveryTargets || els.studioDeliveryTarget.value,
-    contentTypeId: studioState.routePreview?.decision?.contentTypeId || els.studioContentTypeSelect?.value || undefined,
-    routingOverride: workflowOverride || contentTypeOverride
-      ? { workflowType: workflowOverride, contentTypeId: contentTypeOverride } : undefined,
+    deliveryTargets: generationRouting.deliveryTargets || els.studioDeliveryTarget.value,
+    contentTypeId: generationRouting.contentTypeId,
+    routingOverride: generationRouting.routingOverride,
     variantCount: studioState.workflowType === "mascot-variants" ? 4 : undefined,
     videoOptions: ["video-clip", "reel-package"].includes(studioState.workflowType)
       ? { duration: 5, aspectRatio: "9:16", withAudio: true, consistencyMode: "mascot-consistent" } : undefined,
@@ -70,7 +71,7 @@ export async function runGeneration(rawIdea, notes) {
       textDensity: els.studioTextDensity?.value || undefined,
       imageTreatment: els.studioImageTreatment?.value || undefined,
       referenceLockStrength: els.studioReferenceLock?.value || "loose",
-      ugcBrief: studioState.workflowType?.startsWith("ugc-") ? {
+      ugcBrief: generationRouting.includeUgcBrief ? {
         hook: document.getElementById("ugc-hook")?.value?.trim() || undefined,
         problem: document.getElementById("ugc-problem")?.value?.trim() || undefined,
         productMoment: document.getElementById("ugc-product-moment")?.value?.trim() || undefined,

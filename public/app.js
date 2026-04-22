@@ -52,6 +52,31 @@ document.addEventListener("studio:switch-view", (e) => switchView(e.detail));
 initAssetModalListeners();
 
 // ── Messages ──────────────────────────────────────────────────────────────────
+function workflowTypeForStyle(styleId) {
+  if (styleId?.startsWith("ugc-faceless")) return "ugc-faceless";
+  if (styleId?.startsWith("ugc-voiceover")) return "ugc-voiceover";
+  return "slideshow";
+}
+
+function syncUgcUi(styleId, { hideBrief = true } = {}) {
+  const isUgc = styleId?.startsWith("ugc-");
+  const briefPanel = document.getElementById("ugc-brief-panel");
+  if (briefPanel && hideBrief) briefPanel.classList.add("hidden");
+  studioState.ugcBriefApproved = false;
+  els.studioSubmit.textContent = isUgc ? "Draft Brief" : "Generate";
+}
+
+function applyStyleSelection(styleId, { userPicked = true, syncSelect = true, hideBrief = true } = {}) {
+  studioState.selectedStyleId = styleId;
+  studioState.userPickedStyle = userPicked;
+  studioState.workflowType = workflowTypeForStyle(styleId);
+  if (syncSelect && els.studioStylePreset) {
+    els.studioStylePreset.value = styleId;
+  }
+  syncUgcUi(styleId, { hideBrief });
+  return studioState.stylePresets.find((item) => item.id === styleId);
+}
+
 // ── Quick form submit ─────────────────────────────────────────────────────────
 els.studioQuickForm.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -59,18 +84,20 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
   if (!idea) return;
   if (!studioState.selectedStyleId) { showStatus("Select a style preset first."); return; }
 
-  const isUgc = studioState.workflowType?.startsWith("ugc-");
+  const isUgc = studioState.selectedStyleId?.startsWith("ugc-");
   const briefPanel = document.getElementById("ugc-brief-panel");
 
   // UGC two-step: first click drafts the brief, second click generates
   if (isUgc && briefPanel && !studioState.ugcBriefApproved) {
     setButtonLoading(els.studioSubmit, "Drafting…");
+    let drafted = false;
     try {
       const res = await fetch("/api/ugc-brief", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idea, brandProfileId: els.studioProductSelect.value })
       });
       const brief = await res.json();
+      if (!res.ok) throw new Error(brief.error || "Brief generation failed.");
       document.getElementById("ugc-hook").value = brief.hook || "";
       document.getElementById("ugc-problem").value = brief.problem || "";
       document.getElementById("ugc-product-moment").value = brief.productMoment || "";
@@ -79,9 +106,12 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
       document.getElementById("ugc-tone-notes").value = brief.toneNotes || "";
       briefPanel.classList.remove("hidden");
       studioState.ugcBriefApproved = true;
-      els.studioSubmit.textContent = "Generate";
+      drafted = true;
     } catch (err) { showStatus(err instanceof Error ? err.message : "Brief generation failed."); }
-    finally { clearButtonLoading(els.studioSubmit); }
+    finally {
+      clearButtonLoading(els.studioSubmit);
+      if (drafted) els.studioSubmit.textContent = "Generate";
+    }
     return;
   }
 
@@ -104,8 +134,7 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
       });
       const match = await matchRes.json();
       if (match.styleCardId) {
-        studioState.selectedStyleId = match.styleCardId;
-        if (els.studioStylePreset) els.studioStylePreset.value = match.styleCardId;
+        applyStyleSelection(match.styleCardId, { userPicked: false, syncSelect: true, hideBrief: true });
       }
     } catch { /* keep current selection */ }
   }
@@ -217,9 +246,7 @@ function syncBrandDefaults(brandId) {
   els.studioVisualMode.innerHTML = modes.map((m, i) => `<option value="${m}"${i === 0 ? " selected" : ""}>${m.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</option>`).join("");
   // Auto-select brand's default style card
   if (brand.defaultStyleCardId && studioState.stylePresets.some(s => s.id === brand.defaultStyleCardId)) {
-    studioState.selectedStyleId = brand.defaultStyleCardId;
-    studioState.userPickedStyle = false;
-    if (els.studioStylePreset) els.studioStylePreset.value = brand.defaultStyleCardId;
+    applyStyleSelection(brand.defaultStyleCardId, { userPicked: false, syncSelect: true, hideBrief: true });
   }
   // Update UGC brief placeholders for this brand
   updateUgcPlaceholders(brand);
@@ -260,18 +287,7 @@ els.studioContentTypeSelect?.addEventListener("change", () => refreshRoutePrevie
 if (els.studioStylePreset) {
   els.studioStylePreset.addEventListener("change", () => {
     const styleId = els.studioStylePreset.value;
-    studioState.selectedStyleId = styleId;
-    studioState.userPickedStyle = true;
-    const style = studioState.stylePresets.find((s) => s.id === styleId);
-    // Auto-set workflow type for UGC presets
-    if (styleId.startsWith("ugc-faceless")) studioState.workflowType = "ugc-faceless";
-    else if (styleId.startsWith("ugc-voiceover")) studioState.workflowType = "ugc-voiceover";
-    else studioState.workflowType = "slideshow";
-    // Show/hide UGC brief panel
-    const briefPanel = document.getElementById("ugc-brief-panel");
-    if (briefPanel) briefPanel.classList.add("hidden"); // always hide on preset change, GLM fills it
-    studioState.ugcBriefApproved = false;
-    els.studioSubmit.textContent = styleId.startsWith("ugc-") ? "Draft Brief" : "Generate";
+    const style = applyStyleSelection(styleId, { userPicked: true, syncSelect: false, hideBrief: true });
     if (style && els.studioStylePreviewBody) {
       els.studioStylePreview.classList.remove("hidden");
       const isUgc = styleId.startsWith("ugc-");
@@ -408,8 +424,7 @@ async function loadProducts() {
     els.studioStylePreset.innerHTML =
       buildGroupedPresetOptions(studioState.stylePresets);
     if (studioState.stylePresets.length > 0) {
-      els.studioStylePreset.value = studioState.stylePresets[0].id;
-      studioState.selectedStyleId = studioState.stylePresets[0].id;
+      applyStyleSelection(studioState.stylePresets[0].id, { userPicked: false, syncSelect: true, hideBrief: true });
       if (els.studioStyleControls) els.studioStyleControls.classList.remove("hidden");
       els.studioSubmit.disabled = false;
     }
