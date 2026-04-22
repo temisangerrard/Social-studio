@@ -84,24 +84,37 @@
     min-height: 200px;
   }
 
-  /* Toolbar */
+  /* Toolbar — compact on mobile, hide selects */
   .studio-toolbar {
-    bottom: 16px;
-    left: 12px;
-    right: 12px;
+    bottom: 68px;
+    left: 8px;
+    right: 8px;
     transform: none;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    padding: 6px 8px;
+    gap: 6px;
+    border-radius: 12px;
+  }
+
+  .toolbar-input-group {
+    display: none;
+  }
+
+  .toolbar-divider {
+    display: none;
   }
 
   .toolbar-idea-input {
     min-width: 0;
-    flex: 1 1 100%;
-    order: 10;
+    flex: 1;
+    padding: 8px 10px;
+    font-size: 0.84rem;
   }
 
   .toolbar-generate-btn {
-    width: 100%;
-    order: 11;
+    padding: 8px 14px;
+    font-size: 0.72rem;
+    width: auto;
   }
 
   /* Drawer */
@@ -196,7 +209,4 @@
   }
 
   /* Push toolbar above tab bar */
-  .studio-toolbar {
-    bottom: 76px;
-  }
 }
