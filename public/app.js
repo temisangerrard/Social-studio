@@ -306,11 +306,13 @@ function hideStatus() {
 }
 
 function showChatStatus(text) {
+  if (!els.studioChatStatus) return;
   els.studioChatStatus.classList.remove("hidden");
   els.studioChatStatus.textContent = text;
 }
 
 function hideChatStatus() {
+  if (!els.studioChatStatus) return;
   els.studioChatStatus.classList.add("hidden");
 }
 
@@ -827,6 +829,7 @@ function syncCardsFromBrief() {
 
 // ── Messages ──────────────────────────────────────────────────────────────────
 function renderMessages() {
+  if (!els.studioMessageThread) return;
   els.studioMessageThread.innerHTML = "";
   const messages = (studioState.session?.messages || []).filter((m) => m.role !== "system");
   messages.forEach((msg) => {
@@ -1864,6 +1867,16 @@ async function loadOutputIntoCanvas(postId) {
 
 // ── Brand editor ──────────────────────────────────────────────────────────────
 function renderBrandEditor(brandId) {
+  if (
+    !els.brandMascotName ||
+    !els.brandMascotRole ||
+    !els.brandMascotVisualPrompt ||
+    !els.brandMascotRules ||
+    !els.brandMascotReferences
+  ) {
+    return;
+  }
+
   const brand = getBrandById(brandId);
   const mascot = brand?.mascot;
   els.brandMascotName.textContent = mascot?.name || "No mascot configured";

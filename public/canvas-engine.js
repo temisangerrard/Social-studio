@@ -213,17 +213,17 @@ function detectType(item) {
 
 /**
  * Build the asset URL for a slide or artifact.
- * Uses the same logic as app-helpers.js getWorkspaceAssetUrl / getArtifactPreviewUrl.
  *
  * @param {object} output - The PostMetadata object.
  * @param {object} item   - A slide or artifact.
  * @param {Array<object>} [slides] - Optional slides array for cross-referencing artifacts against slides.
+ * @param {number|null} [hintSlideNumber] - Fallback slide number when item lacks slide_number (e.g. artifacts).
  * @returns {string|null}
  */
-export function resolveAssetUrl(output, item, slides) {
+export function resolveAssetUrl(output, item, slides = [], hintSlideNumber = null) {
   if (!output || !item) return null;
 
-  // Artifact-style: has asset_path
+  // Direct asset_path on the item (set by FAL generation or mock SVG)
   if (item.asset_path) {
     const filename = item.asset_path.split("/").pop();
     if (filename && output.post_id) {
@@ -231,7 +231,7 @@ export function resolveAssetUrl(output, item, slides) {
     }
   }
 
-  // Artifact preview_path fallback
+  // preview_path fallback (same value as asset_path in current pipeline)
   if (item.preview_path) {
     const filename = item.preview_path.split("/").pop();
     if (filename && output.post_id) {
@@ -239,27 +239,23 @@ export function resolveAssetUrl(output, item, slides) {
     }
   }
 
-  // Cross-reference fallback: if the item has a slide_number and the output has
-  // a slides array, look up the corresponding slide's asset_path
-  const slideNumber = item.slide_number;
-  if (
-    Array.isArray(slides) &&
-    typeof slideNumber === "number" &&
-    !Number.isNaN(slideNumber) &&
-    output.post_id
-  ) {
+  // Artifacts don't carry slide_number — use the hint computed from index
+  const slideNumber = item.slide_number ?? hintSlideNumber;
+
+  // Cross-reference the matching slide's asset_path
+  if (Array.isArray(slides) && typeof slideNumber === "number" && !Number.isNaN(slideNumber)) {
     const matchingSlide = slides.find((s) => s.slide_number === slideNumber);
-    if (matchingSlide && matchingSlide.asset_path) {
+    if (matchingSlide?.asset_path) {
       const filename = matchingSlide.asset_path.split("/").pop();
-      if (filename) {
+      if (filename && output.post_id) {
         return `/api/assets/${output.post_id}/${filename}`;
       }
     }
   }
 
-  // Slide fallback: use rendered slide path when asset_path is missing
-  // (matches getWorkspaceAssetUrl logic in app-helpers.js)
   if (item.kind === "video") return null;
+
+  // Rendered slide PNG fallback (only when renderer actually ran)
   if (typeof slideNumber === "number" && !Number.isNaN(slideNumber) && output.render_status !== "skipped") {
     return `/api/slides/${output.post_id}/slide-${pad2(slideNumber)}.png`;
   }
@@ -284,8 +280,6 @@ export function buildArtboardDescriptors(output) {
   const items = (output.artifacts && output.artifacts.length)
     ? output.artifacts
     : (output.slides || []);
-
-  // Pass slides array to resolveAssetUrl for cross-referencing artifacts against slides
   const slides = output.slides || [];
 
   let x = STRIP_START_X;
@@ -295,7 +289,7 @@ export function buildArtboardDescriptors(output) {
     const role = item.role || "slide";
     const type = detectType(item);
     const label = `${pad2(slideNumber)} — ${capitalizeRole(role)}`;
-    const assetUrl = resolveAssetUrl(output, item, slides);
+    const assetUrl = resolveAssetUrl(output, item, slides, slideNumber);
 
     const descriptor = {
       id: item.id || `artboard-${pad2(slideNumber)}`,
@@ -745,8 +739,9 @@ export class PointerStateMachine {
 
     const artboard = this._findArtboard(e.target);
     this._lastPointer = { x: e.clientX, y: e.clientY };
+    const shouldPanViewport = e.pointerType === "touch";
 
-    if (artboard) {
+    if (artboard && !shouldPanViewport) {
       this.state = "dragging";
       this._dragTarget = artboard;
       this._dragOrigPos = {
@@ -2031,12 +2026,12 @@ export class CanvasEngine {
     this._transformEl.className = "canvas-transform";
     this._stageEl.appendChild(this._transformEl);
 
-    // Apply grid background
-    this._applyGridBackground();
-
     // Initialize subsystems
     this._transform = new TransformState();
     this._artboardManager = new ArtboardManager();
+
+    // Apply grid background after transform state exists.
+    this._applyGridBackground();
 
     const onTransformChange = () => {
       this._updateGridBackground();
