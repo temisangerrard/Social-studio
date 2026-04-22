@@ -156,7 +156,15 @@ export function initStylesListeners() {
     const presetSelect = document.getElementById("studio-style-preset");
     if (presetSelect) {
       // Refresh options so newly created styles are available
-      presetSelect.innerHTML = (studioState.stylePresets || []).map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
+      const presets = studioState.stylePresets || [];
+      const ugc = presets.filter((s) => s.id.startsWith("ugc-"));
+      const editorial = presets.filter((s) => !s.id.startsWith("ugc-") && s.source === "builtin");
+      const custom = presets.filter((s) => s.source !== "builtin");
+      let html = "";
+      if (editorial.length) html += `<optgroup label="Editorial">${editorial.map((s) => `<option value="${s.id}">${s.name}</option>`).join("")}</optgroup>`;
+      if (ugc.length) html += `<optgroup label="UGC / Faceless">${ugc.map((s) => `<option value="${s.id}">${s.name}</option>`).join("")}</optgroup>`;
+      if (custom.length) html += `<optgroup label="Custom">${custom.map((s) => `<option value="${s.id}">${s.name}</option>`).join("")}</optgroup>`;
+      presetSelect.innerHTML = html || presets.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
       presetSelect.value = id;
       presetSelect.dispatchEvent(new Event("change"));
     }

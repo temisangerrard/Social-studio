@@ -326,6 +326,18 @@ initBrandEditorListeners();
   });
 }
 
+// ── Grouped preset options ────────────────────────────────────────────────────
+function buildGroupedPresetOptions(presets) {
+  const ugc = presets.filter((s) => s.id.startsWith("ugc-"));
+  const editorial = presets.filter((s) => !s.id.startsWith("ugc-") && s.source === "builtin");
+  const custom = presets.filter((s) => s.source !== "builtin");
+  let html = "";
+  if (editorial.length) html += `<optgroup label="Editorial">${editorial.map((s) => `<option value="${s.id}">${s.name}</option>`).join("")}</optgroup>`;
+  if (ugc.length) html += `<optgroup label="UGC / Faceless">${ugc.map((s) => `<option value="${s.id}">${s.name}</option>`).join("")}</optgroup>`;
+  if (custom.length) html += `<optgroup label="Custom">${custom.map((s) => `<option value="${s.id}">${s.name}</option>`).join("")}</optgroup>`;
+  return html || presets.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
+}
+
 // ── Load products ─────────────────────────────────────────────────────────────
 async function loadProducts() {
   const [productsRes, brandsRes, stylesRes] = await Promise.all([fetch("/api/products"), fetch("/api/brands"), fetch("/api/styles")]);
@@ -339,7 +351,7 @@ async function loadProducts() {
   // Populate style preset selector — auto-select first preset
   if (els.studioStylePreset) {
     els.studioStylePreset.innerHTML =
-      studioState.stylePresets.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
+      buildGroupedPresetOptions(studioState.stylePresets);
     if (studioState.stylePresets.length > 0) {
       els.studioStylePreset.value = studioState.stylePresets[0].id;
       studioState.selectedStyleId = studioState.stylePresets[0].id;
