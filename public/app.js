@@ -364,6 +364,7 @@ async function bootstrap() {
       studioState.canvasEngine = new CanvasEngine(stageEl, {
         toolbarEl,
         onSelect: (artboardDesc) => {
+          const aiPrompt = document.getElementById("canvas-ai-prompt");
           if (artboardDesc) {
             studioState.selectedAsset = {
               itemId: artboardDesc.id, assetKind: artboardDesc.type, role: artboardDesc.role,
@@ -372,12 +373,13 @@ async function bootstrap() {
               slideNumber: artboardDesc.slideNumber, order: artboardDesc.order
             };
             applyBrandSelectionRing(artboardDesc);
-            renderInspectorPackage(); renderInspectorAsset(); populateDetailPanel(artboardDesc);
-            if (inspector) inspector.classList.remove("hidden");
+            // Show the canvas AI prompt bar
+            if (aiPrompt) aiPrompt.classList.remove("hidden");
           } else {
             studioState.selectedAsset = null;
             clearBrandSelectionRing(); renderInspectorAsset(); hideDetailPanel();
             if (inspector) inspector.classList.add("hidden");
+            if (aiPrompt) aiPrompt.classList.add("hidden");
           }
         },
         onReorder: (orderedIds) => { if (studioState.generatedOutput) studioState.generatedOutput._artboardOrder = orderedIds; },
@@ -395,30 +397,94 @@ async function bootstrap() {
 
       // Double-click → InlineEditor
       stageEl.addEventListener("dblclick", (e) => {
+        // Double-click on overlay → inline edit
         const overlay = e.target.closest(".canvas-overlay");
-        if (!overlay) return;
-        const bodyEl = overlay.querySelector(".canvas-overlay__body") || overlay;
-        studioState.canvasEngine._pointer.setEditingActive(true);
-        InlineEditor.activate(bodyEl, {
-          multiline: true, required: false,
-          onCommit: (text) => {
-            studioState.canvasEngine._pointer.setEditingActive(false);
-            const overlayId = overlay.dataset.overlayId;
-            const desc = studioState.canvasEngine._artboardManager.overlays.find((o) => o.id === overlayId);
-            if (desc) desc.text = text;
-            const output = studioState.generatedOutput;
-            const postId = output?.post_id;
-            if (postId && desc) {
-              if (desc.type === "caption") { output.caption = text; schedulePatch(postId, { caption: text }); }
-              else if (desc.type === "hook") { const hooks = studioState.canvasEngine._artboardManager.overlays.filter((o) => o.type === "hook").map((o) => o.text); output.hooks = hooks; schedulePatch(postId, { hooks }); }
-              else if (desc.type === "hashtag") { const hashtags = text.split(/\s+/).filter(Boolean); output.hashtags = hashtags; schedulePatch(postId, { hashtags }); }
-            }
-          },
-          onCancel: () => studioState.canvasEngine._pointer.setEditingActive(false)
-        });
+        if (overlay) {
+          const bodyEl = overlay.querySelector(".canvas-overlay__body") || overlay;
+          studioState.canvasEngine._pointer.setEditingActive(true);
+          InlineEditor.activate(bodyEl, {
+            multiline: true, required: false,
+            onCommit: (text) => {
+              studioState.canvasEngine._pointer.setEditingActive(false);
+              const overlayId = overlay.dataset.overlayId;
+              const desc = studioState.canvasEngine._artboardManager.overlays.find((o) => o.id === overlayId);
+              if (desc) desc.text = text;
+              const output = studioState.generatedOutput;
+              const postId = output?.post_id;
+              if (postId && desc) {
+                if (desc.type === "caption") { output.caption = text; schedulePatch(postId, { caption: text }); }
+                else if (desc.type === "hook") { const hooks = studioState.canvasEngine._artboardManager.overlays.filter((o) => o.type === "hook").map((o) => o.text); output.hooks = hooks; schedulePatch(postId, { hooks }); }
+                else if (desc.type === "hashtag") { const hashtags = text.split(/\s+/).filter(Boolean); output.hashtags = hashtags; schedulePatch(postId, { hashtags }); }
+              }
+            },
+            onCancel: () => studioState.canvasEngine._pointer.setEditingActive(false)
+          });
+          return;
+        }
+
+        // Double-click on artboard → open inspector
+        const artboardEl = e.target.closest(".canvas-artboard");
+        if (artboardEl && studioState.selectedAsset) {
+          const desc = studioState.canvasEngine._artboardManager.artboards.find((a) => a.id === artboardEl.dataset.artboardId);
+          if (desc) {
+            renderInspectorPackage(); renderInspectorAsset(); populateDetailPanel(desc);
+            if (inspector) inspector.classList.remove("hidden");
+          }
+        }
       });
     } catch (err) { console.error("[studio] CanvasEngine creation FAILED:", err); }
   }
+
+  // ── Canvas AI prompt — inline LLM helper ──────────────────────────────────
+  const aiForm = document.getElementById("canvas-ai-prompt");
+  const aiInput = document.getElementById("canvas-ai-input");
+  const aiSubmit = aiForm?.querySelector(".canvas-ai-submit");
+  const aiStatus = document.getElementById("canvas-ai-status");
+
+  if (aiForm) aiForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = aiInput?.value?.trim();
+    const sel = studioState.selectedAsset;
+    const postId = studioState.generatedOutput?.post_id;
+    if (!text || !sel || !postId) return;
+
+    aiSubmit.disabled = true;
+    aiSubmit.textContent = "Working…";
+    if (aiStatus) { aiStatus.textContent = ""; aiStatus.classList.add("hidden"); }
+
+    try {
+      if (sel.slideNumber != null) {
+        // Regenerate the selected slide with the user's instruction as the prompt
+        const result = await regenerateSlide(postId, sel.slideNumber, text);
+        if (result?.slide) {
+          // Swap the image in the DOM
+          const artboardId = sel.itemId;
+          const artboardEl = document.querySelector(`.canvas-artboard[data-artboard-id="${artboardId}"]`);
+          if (artboardEl) {
+            const img = artboardEl.querySelector("img");
+            if (img && result.slide.asset_path) {
+              const filename = result.slide.asset_path.split("/").pop();
+              img.src = `/api/assets/${postId}/${filename}?t=${Date.now()}`;
+            }
+          }
+          // Update in-memory
+          const slides = studioState.generatedOutput?.slides || [];
+          const idx = slides.findIndex((s) => (s.slide_number ?? 0) === sel.slideNumber);
+          if (idx >= 0) slides[idx] = { ...slides[idx], asset_path: result.slide.asset_path, image_prompt: text };
+        }
+        if (aiStatus) { aiStatus.textContent = "✓ Updated"; aiStatus.classList.remove("hidden"); }
+      } else {
+        if (aiStatus) { aiStatus.textContent = "Select a slide first"; aiStatus.classList.remove("hidden"); }
+      }
+      aiInput.value = "";
+      setTimeout(() => { if (aiStatus) aiStatus.classList.add("hidden"); }, 2000);
+    } catch (err) {
+      if (aiStatus) { aiStatus.textContent = err instanceof Error ? err.message : "Failed"; aiStatus.classList.remove("hidden"); }
+    } finally {
+      aiSubmit.disabled = false;
+      aiSubmit.textContent = "Ask AI";
+    }
+  });
 
   // Escape key: hide inspector
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && inspector && !inspector.classList.contains("hidden")) inspector.classList.add("hidden"); });
