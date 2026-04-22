@@ -19,9 +19,9 @@
         <span class="wordmark">Social Studio</span>
         <nav class="topnav">
           <a class="is-active" href="#" data-view="studio">Studio</a>
+          <a href="#" data-view="styles">Styles</a>
           <a href="#" data-view="calendar">Calendar</a>
           <a href="#" data-view="library">Library</a>
-          <a href="#" data-view="admin">Admin</a>
         </nav>
       </div>
       <div class="topbar__right">
@@ -419,6 +419,104 @@
         </div>
         <div id="library-list" class="library-list">
           <p class="library-empty">No past generations yet. Go to Studio to make your first post.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ STYLES VIEW ═══════════════════════════════════════════════════════ -->
+    <div id="view-styles" class="view view--styles hidden">
+      <div class="styles-container">
+        <div class="styles-header">
+          <div>
+            <p class="eyebrow">Style Library</p>
+            <h1 class="gen-heading">Visual presets</h1>
+            <p class="styles-subtitle">Choose a style before generating — or create one from reference posts.</p>
+          </div>
+          <button id="styles-create-btn" class="ghost-button" type="button">+ Create from references</button>
+        </div>
+
+        <div id="styles-grid" class="styles-grid">
+          <p class="styles-empty">Loading styles…</p>
+        </div>
+
+        <!-- Detail panel — shown when a style card is selected -->
+        <div id="styles-detail" class="styles-detail hidden">
+          <div class="styles-detail__header">
+            <div>
+              <p class="eyebrow" id="styles-detail-source"></p>
+              <h2 class="styles-detail__title" id="styles-detail-name"></h2>
+              <p class="styles-detail__intent" id="styles-detail-intent"></p>
+            </div>
+            <div class="styles-detail__actions">
+              <button id="styles-detail-use" class="primary-button" type="button">Use in Studio</button>
+              <button id="styles-detail-delete" class="ghost-button hidden" type="button">Delete</button>
+              <button id="styles-detail-close" class="ghost-button" type="button">Close</button>
+            </div>
+          </div>
+          <div class="styles-detail__body">
+            <div class="styles-detail__col">
+              <div class="styles-detail__section">
+                <p class="eyebrow">Image style</p>
+                <p class="styles-detail__value" id="styles-detail-image"></p>
+              </div>
+              <div class="styles-detail__section">
+                <p class="eyebrow">Layout style</p>
+                <p class="styles-detail__value" id="styles-detail-layout"></p>
+              </div>
+              <div class="styles-detail__section">
+                <p class="eyebrow">Copy style</p>
+                <p class="styles-detail__value" id="styles-detail-copy"></p>
+              </div>
+            </div>
+            <div class="styles-detail__col">
+              <div class="styles-detail__section">
+                <p class="eyebrow">Tone</p>
+                <div id="styles-detail-tone" class="styles-detail__tags"></div>
+              </div>
+              <div class="styles-detail__section">
+                <p class="eyebrow">Avoids</p>
+                <div id="styles-detail-avoids" class="styles-detail__tags"></div>
+              </div>
+              <div class="styles-detail__section">
+                <p class="eyebrow">Content rules</p>
+                <p class="styles-detail__value" id="styles-detail-rules"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create from references modal -->
+      <div id="styles-create-modal" class="asset-modal hidden">
+        <div class="asset-modal__scrim" data-close-styles-modal="true"></div>
+        <div class="asset-modal__dialog" role="dialog" aria-modal="true" aria-label="Create style from references">
+          <button id="styles-modal-close" class="asset-modal__close" type="button">Close</button>
+          <h2 style="font-family:'Newsreader',serif;font-size:1.6rem;color:var(--brand-strong);margin:0">Create style from references</h2>
+          <p style="color:var(--muted);margin:0;font-size:0.88rem">Upload 3–10 reference posts. The system will analyze typography, spacing, mood, layout patterns, and color treatment to create a reusable style preset.</p>
+          <form id="styles-create-form" class="pillar-form">
+            <div class="field-group">
+              <label class="field-label" for="styles-create-name">Style name</label>
+              <input id="styles-create-name" type="text" placeholder="e.g. Editorial Cultural Carousel" required />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="styles-create-intent">Intent / use case</label>
+              <input id="styles-create-intent" type="text" placeholder="e.g. Instagram carousel for cultural commentary" />
+            </div>
+            <div class="field-group">
+              <label class="field-label">Reference images</label>
+              <div id="styles-create-uploads" class="styles-create-uploads">
+                <label class="styles-upload-zone" for="styles-ref-files">
+                  <span>Drop images here or click to upload</span>
+                  <input id="styles-ref-files" type="file" multiple accept="image/*" class="hidden" />
+                </label>
+                <div id="styles-ref-thumbs" class="styles-ref-thumbs"></div>
+              </div>
+            </div>
+            <div class="gen-form__footer">
+              <span id="styles-create-status" class="assistant-status hidden"></span>
+              <button id="styles-create-submit" class="primary-button" type="submit">Analyze & Create</button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
