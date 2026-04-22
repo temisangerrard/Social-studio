@@ -57,7 +57,9 @@ function showDetail(styleId) {
   deleteBtn.classList.toggle("hidden", s.source === "builtin");
   deleteBtn.dataset.styleId = s.id;
 
-  document.getElementById("styles-detail-use").dataset.styleId = s.id;
+  const useBtn = document.getElementById("styles-detail-use");
+  useBtn.dataset.styleId = s.id;
+  useBtn.textContent = s.id.startsWith("ugc-") ? "Open in UGC" : "Use in Studio";
 }
 
 // ── Create from References ────────────────────────────────────────────────────
@@ -152,19 +154,22 @@ export function initStylesListeners() {
   document.getElementById("styles-detail-use")?.addEventListener("click", (e) => {
     const id = e.currentTarget.dataset.styleId;
     if (!id) return;
+    if (id.startsWith("ugc-")) {
+      document.dispatchEvent(new CustomEvent("studio:switch-view", { detail: "ugc" }));
+      return;
+    }
     studioState.selectedStyleId = id;
     const presetSelect = document.getElementById("studio-style-preset");
     if (presetSelect) {
       // Refresh options so newly created styles are available
       const presets = studioState.stylePresets || [];
-      const ugc = presets.filter((s) => s.id.startsWith("ugc-"));
       const editorial = presets.filter((s) => !s.id.startsWith("ugc-") && s.source === "builtin");
-      const custom = presets.filter((s) => s.source !== "builtin");
+      const custom = presets.filter((s) => !s.id.startsWith("ugc-") && s.source !== "builtin");
       let html = "";
       if (editorial.length) html += `<optgroup label="Editorial">${editorial.map((s) => `<option value="${s.id}">${s.name}</option>`).join("")}</optgroup>`;
-      if (ugc.length) html += `<optgroup label="UGC / Faceless">${ugc.map((s) => `<option value="${s.id}">${s.name}</option>`).join("")}</optgroup>`;
       if (custom.length) html += `<optgroup label="Custom">${custom.map((s) => `<option value="${s.id}">${s.name}</option>`).join("")}</optgroup>`;
-      presetSelect.innerHTML = html || presets.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
+      const studioPresets = presets.filter((s) => !s.id.startsWith("ugc-"));
+      presetSelect.innerHTML = html || studioPresets.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
       presetSelect.value = id;
       presetSelect.dispatchEvent(new Event("change"));
     }

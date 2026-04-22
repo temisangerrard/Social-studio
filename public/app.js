@@ -30,6 +30,7 @@ import { loadAdmin, initAdminListeners } from "./admin-view.js";
 import { loadStyles, initStylesListeners } from "./styles-view.js";
 import { renderBrandEditor, initBrandEditorListeners } from "./brand-editor.js";
 import { InlineEditor, schedulePatch } from "./inline-editor.js";
+import { loadUgc, initUgcListeners } from "./ugc.js";
 
 // ── View routing ──────────────────────────────────────────────────────────────
 const mobileTabs = Array.from(document.querySelectorAll(".mobile-tab[data-view]"));
@@ -38,6 +39,7 @@ function switchView(name) {
   Object.entries(els.views).forEach(([key, el]) => el.classList.toggle("hidden", key !== name));
   els.navLinks.forEach((link) => link.classList.toggle("is-active", link.dataset.view === name));
   mobileTabs.forEach((tab) => tab.classList.toggle("is-active", tab.dataset.view === name));
+  if (name === "ugc") loadUgc();
   if (name === "styles") loadStyles();
   if (name === "library") loadLibrary();
   if (name === "calendar") loadCalendar();
@@ -245,7 +247,7 @@ function syncBrandDefaults(brandId) {
   const modes = brand.visualModes || ["mixed"];
   els.studioVisualMode.innerHTML = modes.map((m, i) => `<option value="${m}"${i === 0 ? " selected" : ""}>${m.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</option>`).join("");
   // Auto-select brand's default style card
-  if (brand.defaultStyleCardId && studioState.stylePresets.some(s => s.id === brand.defaultStyleCardId)) {
+  if (brand.defaultStyleCardId && !brand.defaultStyleCardId.startsWith("ugc-") && studioState.stylePresets.some(s => s.id === brand.defaultStyleCardId)) {
     applyStyleSelection(brand.defaultStyleCardId, { userPicked: false, syncSelect: true, hideBrief: true });
   }
   // Update UGC brief placeholders for this brand
@@ -344,6 +346,7 @@ initLibraryListeners();
 initAdminListeners();
 initStylesListeners();
 initBrandEditorListeners();
+initUgcListeners();
 
 // ── UGC brief panel ───────────────────────────────────────────────────────────
 document.getElementById("ugc-brief-close")?.addEventListener("click", () => {
@@ -399,14 +402,13 @@ document.getElementById("ugc-brief-close")?.addEventListener("click", () => {
 
 // ── Grouped preset options ────────────────────────────────────────────────────
 function buildGroupedPresetOptions(presets) {
-  const ugc = presets.filter((s) => s.id.startsWith("ugc-"));
   const editorial = presets.filter((s) => !s.id.startsWith("ugc-") && s.source === "builtin");
-  const custom = presets.filter((s) => s.source !== "builtin");
+  const custom = presets.filter((s) => !s.id.startsWith("ugc-") && s.source !== "builtin");
   let html = "";
   if (editorial.length) html += `<optgroup label="Editorial">${editorial.map((s) => `<option value="${s.id}">${s.name}</option>`).join("")}</optgroup>`;
-  if (ugc.length) html += `<optgroup label="UGC / Faceless">${ugc.map((s) => `<option value="${s.id}">${s.name}</option>`).join("")}</optgroup>`;
   if (custom.length) html += `<optgroup label="Custom">${custom.map((s) => `<option value="${s.id}">${s.name}</option>`).join("")}</optgroup>`;
-  return html || presets.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
+  const studioPresets = presets.filter((s) => !s.id.startsWith("ugc-"));
+  return html || studioPresets.map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
 }
 
 // ── Load products ─────────────────────────────────────────────────────────────
@@ -416,6 +418,10 @@ async function loadProducts() {
   studioState.brands = await brandsRes.json();
   studioState.stylePresets = await stylesRes.json();
   els.studioProductSelect.innerHTML = studioState.brands.map((b) => `<option value="${b.id}">${b.name}</option>`).join("") + `<option value="__new__">+ New brand</option>`;
+  if (els.ugcBrandSelect) {
+    els.ugcBrandSelect.innerHTML = studioState.brands.map((b) => `<option value="${b.id}">${b.name}</option>`).join("");
+    els.ugcBrandSelect.value = studioState.brands[0]?.id || "peppera";
+  }
   els.studioProductSelect.value = studioState.brands[0]?.id || "peppera";
   calEls.brandSelect.innerHTML = `<option value="">All brands</option>` + studioState.products.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
   calEls.libraryBrandFilter.innerHTML = `<option value="">All brands</option>` + studioState.brands.map((b) => `<option value="${b.id}">${b.name}</option>`).join("");
@@ -423,8 +429,9 @@ async function loadProducts() {
   if (els.studioStylePreset) {
     els.studioStylePreset.innerHTML =
       buildGroupedPresetOptions(studioState.stylePresets);
-    if (studioState.stylePresets.length > 0) {
-      applyStyleSelection(studioState.stylePresets[0].id, { userPicked: false, syncSelect: true, hideBrief: true });
+    const studioPresets = studioState.stylePresets.filter((preset) => !preset.id.startsWith("ugc-"));
+    if (studioPresets.length > 0) {
+      applyStyleSelection(studioPresets[0].id, { userPicked: false, syncSelect: true, hideBrief: true });
       if (els.studioStyleControls) els.studioStyleControls.classList.remove("hidden");
       els.studioSubmit.disabled = false;
     }
