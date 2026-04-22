@@ -110,3 +110,10 @@
 #toolbar-upload-count.hidden {
   display: none !important;
 }
+
+.toolbar-select--style {
+  min-width: 160px;
+  font-weight: 700;
+  color: var(--highlight);
+  border-color: rgba(111, 92, 69, 0.25);
+}
