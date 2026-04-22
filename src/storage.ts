@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { AssistantSession, BoardDocument, BrandProfile, CalendarSlot, ContentPillar, StyleCard } from "./types.ts";
+import type { BoardDocument, BrandProfile, CalendarSlot, ContentPillar, StyleCard } from "./types.ts";
 
 interface Storage {
   listBrandProfiles(): Promise<BrandProfile[]>;
@@ -9,9 +9,6 @@ interface Storage {
   listBoards(): Promise<BoardDocument[]>;
   getBoard(id: string): Promise<BoardDocument | null>;
   saveBoard(board: BoardDocument): Promise<void>;
-  listAssistantSessions(): Promise<AssistantSession[]>;
-  getAssistantSession(id: string): Promise<AssistantSession | null>;
-  saveAssistantSession(session: AssistantSession): Promise<void>;
   listCalendarSlots(): Promise<CalendarSlot[]>;
   getCalendarSlot(id: string): Promise<CalendarSlot | null>;
   saveCalendarSlot(slot: CalendarSlot): Promise<void>;
@@ -66,7 +63,6 @@ async function listJsonDirectory<T>(dirPath: string): Promise<T[]> {
 export function createStorage(rootDir: string): Storage {
   const brandsDir = path.join(rootDir, "workspace", "brands");
   const boardsDir = path.join(rootDir, "workspace", "boards");
-  const sessionsDir = path.join(rootDir, "workspace", "sessions");
   const calendarDir = path.join(rootDir, "workspace", "calendar");
   const pillarsDir = path.join(rootDir, "workspace", "pillars");
   const stylesDir = path.join(rootDir, "workspace", "styles");
@@ -96,19 +92,6 @@ export function createStorage(rootDir: string): Storage {
 
     async saveBoard(board: BoardDocument) {
       await writeJsonFile(path.join(boardsDir, `${board.id}.json`), board);
-    },
-
-    async listAssistantSessions() {
-      const sessions = await listJsonDirectory<AssistantSession>(sessionsDir);
-      return sessions.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-    },
-
-    async getAssistantSession(id: string) {
-      return readJsonFile<AssistantSession>(path.join(sessionsDir, `${id}.json`));
-    },
-
-    async saveAssistantSession(session: AssistantSession) {
-      await writeJsonFile(path.join(sessionsDir, `${session.id}.json`), session);
     },
 
     async listCalendarSlots() {

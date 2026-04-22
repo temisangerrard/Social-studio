@@ -1,0 +1,310 @@
+/* ═══ Base — variables, resets, typography, shared components ═══ */
+
+:root {
+  --background: #faf9f4;
+  --surface: #ffffff;
+  --surface-soft: #f4f4ee;
+  --surface-muted: #edefe7;
+  --ink: #2f342d;
+  --muted: #5c6058;
+  --outline: #afb3aa;
+  --brand: #5f5e5b;
+  --brand-strong: #43433e;
+  --highlight: #6f5c45;
+  --accent: #fee4c6;
+  --shadow-soft: 0 4px 20px rgba(47, 52, 45, 0.04), 0 12px 40px rgba(47, 52, 45, 0.08);
+  --shadow-float: 0 18px 42px rgba(47, 52, 45, 0.12);
+  --topbar-h: 64px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--background);
+  color: var(--ink);
+  font-family: "Manrope", sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ── Topbar ────────────────────────────────────────────────────────────── */
+
+.topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: rgba(250, 249, 244, 0.84);
+  backdrop-filter: blur(18px);
+  z-index: 20;
+}
+
+.topbar__left,
+.topbar__right,
+.topnav {
+  display: flex;
+  align-items: center;
+}
+
+.topbar__left {
+  gap: 28px;
+}
+
+.topnav {
+  gap: 24px;
+}
+
+.topnav a {
+  text-decoration: none;
+  color: rgba(67, 67, 62, 0.56);
+  font-size: 0.92rem;
+}
+
+.topnav a.is-active {
+  color: var(--brand-strong);
+  font-weight: 700;
+}
+
+.wordmark,
+.canvas-empty h3 {
+  font-family: "Newsreader", serif;
+}
+
+.wordmark {
+  font-style: italic;
+  font-size: 1.7rem;
+  color: var(--brand-strong);
+}
+
+.topbar__right {
+  gap: 12px;
+}
+
+.product-pill,
+.avatar {
+  border-radius: 999px;
+  display: inline-grid;
+  place-items: center;
+}
+
+.product-pill {
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: var(--shadow-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  background: #1c6774;
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* ── Views ──────────────────────────────────────────────────────────────── */
+
+.view {
+  padding-top: var(--topbar-h);
+}
+
+/* ── Shared form components ────────────────────────────────────────────── */
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-group input,
+.field-group select,
+.field-group textarea {
+  width: 100%;
+  border: 1px solid rgba(175, 179, 170, 0.35);
+  background: rgba(255, 255, 255, 0.84);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: var(--ink);
+}
+
+.field-group textarea {
+  resize: vertical;
+}
+
+.field-label,
+.eyebrow {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ── Shared buttons ────────────────────────────────────────────────────── */
+
+.primary-button {
+  border: 0;
+  cursor: pointer;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--brand), #53524f);
+  color: #faf7f2;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  box-shadow: 0 12px 24px rgba(83, 82, 79, 0.22);
+}
+
+.primary-button.is-loading {
+  opacity: 0.78;
+  cursor: wait;
+}
+
+.primary-button.is-loading::after {
+  content: "";
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: btn-spin 0.65s linear infinite;
+  margin-left: 8px;
+  vertical-align: -2px;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ghost-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid rgba(95, 94, 91, 0.16);
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--brand-strong);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+/* ── Shared headings & footers ─────────────────────────────────────────── */
+
+.gen-heading {
+  margin: 0;
+  font-family: "Newsreader", serif;
+  font-size: clamp(2.2rem, 3.2vw, 3rem);
+  line-height: 0.95;
+  color: var(--brand-strong);
+}
+
+.gen-form__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+}
+
+/* ── Assistant status ──────────────────────────────────────────────────── */
+
+.assistant-status {
+  font-size: 0.84rem;
+  color: var(--muted);
+}
+
+.assistant-status--error {
+  color: #c0392b;
+  font-weight: 700;
+}
+
+.assistant-status--success {
+  color: #27ae60;
+  font-weight: 700;
+}
+
+/* ── Message thread ────────────────────────────────────────────────────── */
+
+.message-thread {
+  overflow-y: auto;
+  display: grid;
+  gap: 12px;
+  padding-right: 6px;
+}
+
+.message-bubble {
+  border-radius: 18px;
+  padding: 16px 18px;
+  max-width: 92%;
+  box-shadow: var(--shadow-soft);
+}
+
+.message-bubble--assistant {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.message-bubble--user {
+  margin-left: auto;
+  background: rgba(236, 225, 211, 0.72);
+}
+
+.message-bubble strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--brand-strong);
+}
+
+.message-bubble p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ── Checkbox & inline actions ─────────────────────────────────────────── */
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

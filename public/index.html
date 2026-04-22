@@ -11,7 +11,7 @@
       rel="stylesheet"
     />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <link rel="stylesheet" href="/app.css" />
+    <link rel="stylesheet" href="/css/index.css" />
   </head>
   <body>
     <header class="topbar">
@@ -40,12 +40,12 @@
         </div>
         <div id="canvas-empty" class="canvas-empty">
           <h3>What do you want to create?</h3>
-          <p>Describe your idea below and hit generate.</p>
+          <p>Choose a style, enter your idea, and hit generate.</p>
         </div>
         <!-- CANVAS AI PROMPT — floating bar when artboard is selected -->
         <form id="canvas-ai-prompt" class="canvas-ai-prompt hidden" autocomplete="off">
-          <input id="canvas-ai-input" type="text" placeholder="Make this more vibrant… / Add the mascot… / Change the hook…" />
-          <button type="submit" class="canvas-ai-submit">Ask AI</button>
+          <input id="canvas-ai-input" type="text" placeholder="Adjust the tone… / Swap the visual… / Try a different hook…" />
+          <button type="submit" class="canvas-ai-submit">Refine</button>
           <span id="canvas-ai-status" class="canvas-ai-status hidden"></span>
         </form>
       </div>
@@ -55,7 +55,7 @@
 
       <!-- FLOATING TOOLBAR — bottom center, always visible -->
       <form class="studio-toolbar" id="studio-quick-form" autocomplete="off">
-        <button id="toolbar-drawer-toggle" class="toolbar-btn" type="button" title="Settings">
+        <button id="toolbar-drawer-toggle" class="toolbar-btn" type="button" title="Creative Controls">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="8" cy="6" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/><circle cx="10" cy="18" r="2" fill="currentColor"/></svg>
         </button>
         <div class="toolbar-input-group">
@@ -76,7 +76,7 @@
         </label>
         <input id="toolbar-image-upload" type="file" multiple accept="image/*" class="hidden" />
         <span id="toolbar-upload-count" class="toolbar-upload-count hidden"></span>
-        <button id="studio-submit" class="toolbar-generate-btn" type="submit">Generate</button>
+        <button id="studio-submit" class="toolbar-generate-btn" type="submit" disabled>Generate</button>
         <button id="toolbar-download-all-btn" class="toolbar-btn hidden" type="button" title="Download all slides">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         </button>
@@ -90,25 +90,24 @@
       <!-- DRAWER — slides out from left, hidden by default -->
       <aside class="studio-drawer hidden" id="studio-drawer">
         <div class="studio-drawer__header">
-          <span class="studio-drawer__title">Generation settings</span>
+          <span class="studio-drawer__title">Creative Controls</span>
           <button id="drawer-close" class="studio-drawer__close" type="button">✕</button>
         </div>
         <div class="studio-drawer__body">
 
           <!-- Section: Style -->
           <div class="drawer-section">
-            <p class="drawer-section__label">Style</p>
+            <p class="drawer-section__label">Style Preset</p>
             <div class="drawer-section__fields">
               <div class="field-group">
-                <label class="field-label" for="studio-style-preset">Preset</label>
+                <label class="field-label" for="studio-style-preset">Choose style</label>
                 <select id="studio-style-preset">
-                  <option value="">None — use default</option>
                 </select>
               </div>
-              <div id="studio-style-controls" class="style-controls hidden">
+              <div id="studio-style-controls" class="style-controls">
                 <div class="field-row">
                   <div class="field-group">
-                    <label class="field-label" for="studio-generation-mode">Mode</label>
+                    <label class="field-label" for="studio-generation-mode">Layout Type</label>
                     <select id="studio-generation-mode">
                       <option value="image-first" selected>Image-first</option>
                       <option value="layout-first">Layout-first</option>
@@ -117,7 +116,7 @@
                     </select>
                   </div>
                   <div class="field-group">
-                    <label class="field-label" for="studio-image-treatment">Treatment</label>
+                    <label class="field-label" for="studio-image-treatment">Image Treatment</label>
                     <select id="studio-image-treatment">
                       <option value="">Auto</option>
                       <option value="photographic">Photographic</option>
@@ -129,7 +128,7 @@
                 </div>
                 <div class="field-row">
                   <div class="field-group">
-                    <label class="field-label" for="studio-text-density">Density</label>
+                    <label class="field-label" for="studio-text-density">Copy Density</label>
                     <select id="studio-text-density">
                       <option value="">Auto</option>
                       <option value="low">Low</option>
@@ -138,7 +137,7 @@
                     </select>
                   </div>
                   <div class="field-group">
-                    <label class="field-label" for="studio-reference-lock">Ref. lock</label>
+                    <label class="field-label" for="studio-reference-lock">Reference Lock</label>
                     <select id="studio-reference-lock">
                       <option value="loose" selected>Loose</option>
                       <option value="medium">Medium</option>
@@ -154,21 +153,18 @@
             </div>
           </div>
 
-          <!-- Section: Output -->
+          <!-- Section: Delivery -->
           <div class="drawer-section">
-            <p class="drawer-section__label">Output</p>
+            <p class="drawer-section__label">Delivery</p>
             <div class="drawer-section__fields">
               <div class="field-row">
                 <div class="field-group">
-                  <label class="field-label" for="studio-visual-mode">Visual</label>
+                  <label class="field-label" for="studio-visual-mode">Visual Direction</label>
                   <select id="studio-visual-mode">
-                    <option value="food-led" selected>Food-led</option>
-                    <option value="mascot-led">Mascot-led</option>
-                    <option value="mixed">Mixed</option>
                   </select>
                 </div>
                 <div class="field-group">
-                  <label class="field-label" for="studio-delivery-target">Delivery</label>
+                  <label class="field-label" for="studio-delivery-target">Platform</label>
                   <select id="studio-delivery-target">
                     <option value="instagram">Instagram</option>
                     <option value="tiktok">TikTok</option>
@@ -207,14 +203,11 @@
 
           <div id="studio-status" class="assistant-status hidden"></div>
 
-          <!-- Hidden elements needed by existing JS -->
+          <!-- Functional hidden elements used by JS -->
           <div class="hidden">
-            <div id="studio-workflow-presets"></div>
-            <p id="studio-workflow-summary"></p>
             <textarea id="studio-reference-input" rows="1"></textarea>
             <input id="studio-reference-files" type="file" multiple class="hidden" />
             <div id="studio-reference-chipset"></div>
-            <div id="studio-checkpoint-strip"></div>
           </div>
         </div>
       </aside>
@@ -231,7 +224,7 @@
           <p id="inspector-asset-hint" class="assistant-status"></p>
           <form id="studio-refine-form" class="refine-form">
             <label class="field-label" for="studio-refine-prompt">Refine this slide</label>
-            <textarea id="studio-refine-prompt" rows="3" placeholder="Describe what to change…"></textarea>
+            <textarea id="studio-refine-prompt" rows="3" placeholder="Change the visual direction, adjust copy, or try a different angle…"></textarea>
             <div class="gen-form__footer">
               <div id="studio-refine-status" class="assistant-status hidden"></div>
               <button id="studio-refine-submit" class="primary-button" type="submit">Regenerate</button>
@@ -239,7 +232,6 @@
           </form>
           <!-- Hidden fields needed by existing JS -->
           <div class="hidden">
-            <select id="studio-refine-visual-mode"><option value="food-led">Food-led</option></select>
             <select id="studio-refine-mode"><option value="branch">Branch</option><option value="replace">Replace</option></select>
           </div>
         </div>

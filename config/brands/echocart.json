@@ -13,9 +13,18 @@
     "surfaceColor": "#f0f7ff"
   },
   "defaults": {
-    "platformTargets": ["tiktok", "instagram"],
+    "platformTargets": [
+      "tiktok",
+      "instagram"
+    ],
     "goal": "awareness",
-    "hashtags": ["#EchoCart", "#VoiceAI", "#VoiceShopping", "#AICommerce", "#ShopByVoice"]
+    "hashtags": [
+      "#EchoCart",
+      "#VoiceAI",
+      "#VoiceShopping",
+      "#AICommerce",
+      "#ShopByVoice"
+    ]
   },
   "providers": {
     "plannerModel": "glm-4.5",
@@ -27,33 +36,113 @@
       "id": "product-demo",
       "name": "Product Demo",
       "imageStyle": "clean modern product UI mockup, minimalist tech aesthetic, soft blue tones, futuristic voice interface visual",
-      "platformTargets": ["tiktok", "instagram"],
+      "platformTargets": [
+        "tiktok",
+        "instagram"
+      ],
       "slideBlueprint": [
-        { "role": "problem", "type": "generated_image", "textFields": ["problemText"], "imagePromptTemplate": "Frustrated user shopping experience visual", "layout": "image_focus" },
-        { "role": "demo", "type": "generated_image", "textFields": ["demoText"], "imagePromptTemplate": "Voice shopping interface demo visual", "layout": "image_focus" },
-        { "role": "result", "type": "generated_image", "textFields": ["resultText"], "imagePromptTemplate": "Successful voice shopping result visual", "layout": "image_focus" },
-        { "role": "cta", "type": "text_only", "textFields": ["headline", "cta"], "imagePromptTemplate": null, "layout": "cta_banner" }
+        {
+          "role": "problem",
+          "type": "generated_image",
+          "textFields": [
+            "problemText"
+          ],
+          "imagePromptTemplate": "Frustrated user shopping experience visual",
+          "layout": "image_focus"
+        },
+        {
+          "role": "demo",
+          "type": "generated_image",
+          "textFields": [
+            "demoText"
+          ],
+          "imagePromptTemplate": "Voice shopping interface demo visual",
+          "layout": "image_focus"
+        },
+        {
+          "role": "result",
+          "type": "generated_image",
+          "textFields": [
+            "resultText"
+          ],
+          "imagePromptTemplate": "Successful voice shopping result visual",
+          "layout": "image_focus"
+        },
+        {
+          "role": "cta",
+          "type": "text_only",
+          "textFields": [
+            "headline",
+            "cta"
+          ],
+          "imagePromptTemplate": null,
+          "layout": "cta_banner"
+        }
       ]
     },
     {
       "id": "feature-announcement",
       "name": "Feature Announcement",
       "imageStyle": "clean modern product UI mockup, minimalist tech aesthetic, soft blue tones, futuristic voice interface visual",
-      "platformTargets": ["tiktok", "instagram"],
+      "platformTargets": [
+        "tiktok",
+        "instagram"
+      ],
       "slideBlueprint": [
-        { "role": "announcement", "type": "generated_image", "textFields": ["headline", "subtitle"], "imagePromptTemplate": "Feature announcement hero visual with tech aesthetic", "layout": "image_focus" }
+        {
+          "role": "announcement",
+          "type": "generated_image",
+          "textFields": [
+            "headline",
+            "subtitle"
+          ],
+          "imagePromptTemplate": "Feature announcement hero visual with tech aesthetic",
+          "layout": "image_focus"
+        }
       ]
     },
     {
       "id": "comparison",
       "name": "Comparison",
       "imageStyle": "clean modern product UI mockup, minimalist tech aesthetic, soft blue tones, futuristic voice interface visual",
-      "platformTargets": ["tiktok", "instagram"],
+      "platformTargets": [
+        "tiktok",
+        "instagram"
+      ],
       "slideBlueprint": [
-        { "role": "before", "type": "generated_image", "textFields": ["beforeText"], "imagePromptTemplate": "Traditional shopping experience visual, cluttered UI", "layout": "image_focus" },
-        { "role": "after", "type": "generated_image", "textFields": ["afterText"], "imagePromptTemplate": "Voice-first shopping experience visual, clean minimal UI", "layout": "image_focus" },
-        { "role": "benefit", "type": "generated_image", "textFields": ["benefitText"], "imagePromptTemplate": "Side-by-side comparison showing improvement", "layout": "image_focus" }
+        {
+          "role": "before",
+          "type": "generated_image",
+          "textFields": [
+            "beforeText"
+          ],
+          "imagePromptTemplate": "Traditional shopping experience visual, cluttered UI",
+          "layout": "image_focus"
+        },
+        {
+          "role": "after",
+          "type": "generated_image",
+          "textFields": [
+            "afterText"
+          ],
+          "imagePromptTemplate": "Voice-first shopping experience visual, clean minimal UI",
+          "layout": "image_focus"
+        },
+        {
+          "role": "benefit",
+          "type": "generated_image",
+          "textFields": [
+            "benefitText"
+          ],
+          "imagePromptTemplate": "Side-by-side comparison showing improvement",
+          "layout": "image_focus"
+        }
       ]
     }
+  ],
+  "defaultStyleCardId": "magazine-info-slide",
+  "visualModes": [
+    "product-led",
+    "lifestyle"
   ]
 }

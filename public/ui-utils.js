@@ -1,5 +1,5 @@
 import { els } from "./dom-refs.js";
-import { studioState, WORKFLOW_PRESETS } from "./state.js";
+import { studioState } from "./state.js";
 
 export function makeId(prefix) {
   return `${prefix}_${crypto.randomUUID()}`;
@@ -16,30 +16,6 @@ export function showStatus(text) {
 
 export function hideStatus() {
   els.studioStatus.classList.add("hidden");
-}
-
-export function showChatStatus(text) {
-  if (!els.studioChatStatus) return;
-  els.studioChatStatus.classList.remove("hidden");
-  els.studioChatStatus.textContent = text;
-}
-
-export function hideChatStatus() {
-  if (!els.studioChatStatus) return;
-  els.studioChatStatus.classList.add("hidden");
-}
-
-export function setCheckpoint(step, status) {
-  els.studioCheckpoints.forEach((node) => {
-    if (node.dataset.step !== step) return;
-    node.classList.remove("is-active", "is-done");
-    if (status === "active") node.classList.add("is-active");
-    if (status === "done") node.classList.add("is-done");
-  });
-}
-
-export function resetCheckpoints() {
-  els.studioCheckpoints.forEach((node) => node.classList.remove("is-active", "is-done"));
 }
 
 export function showCanvasProgress(text) {
@@ -70,10 +46,6 @@ export async function copyText(value, label) {
   await navigator.clipboard.writeText(value);
   showStatus(`${label} copied.`);
   setTimeout(() => hideStatus(), 1400);
-}
-
-export function getWorkflowPreset(id) {
-  return WORKFLOW_PRESETS.find((p) => p.id === id) || WORKFLOW_PRESETS[0];
 }
 
 export function capitalizeFirst(str) {

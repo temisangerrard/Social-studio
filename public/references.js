@@ -1,7 +1,7 @@
 import { els } from "./dom-refs.js";
-import { studioState, WORKFLOW_PRESETS } from "./state.js";
+import { studioState } from "./state.js";
 import { escapeHtml } from "./app-helpers.js";
-import { getBrandById, getWorkflowPreset } from "./ui-utils.js";
+import { getBrandById } from "./ui-utils.js";
 
 function parseReferenceLines(raw) {
   return String(raw || "").split("\n").map((v) => v.trim()).filter(Boolean)
@@ -136,16 +136,5 @@ export function updateContentTypeSelector(brandId) {
 }
 
 export function updateWorkflowUI() {
-  const preset = getWorkflowPreset(studioState.workflowType);
-  els.studioWorkflowSummary.textContent = preset.summary;
-  els.studioWorkflowPresets.innerHTML = WORKFLOW_PRESETS.map((p) =>
-    `<button type="button" class="workflow-preset${p.id === studioState.workflowType ? " is-active" : ""}" data-workflow-id="${p.id}">
-      <p class="workflow-preset__title">${escapeHtml(p.label)}</p>
-      <p class="workflow-preset__summary">${escapeHtml(p.summary)}</p>
-    </button>`
-  ).join("");
-  els.studioWorkflowPresets.querySelectorAll("[data-workflow-id]").forEach((btn) => {
-    btn.addEventListener("click", () => { studioState.workflowType = btn.dataset.workflowId; updateWorkflowUI(); });
-  });
   renderReferenceChips();
 }

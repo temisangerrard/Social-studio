@@ -1,0 +1,49 @@
+/* ═══ Style Controls — preset picker, preview ═══ */
+
+.style-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(111, 92, 69, 0.04);
+  border: 1px solid rgba(111, 92, 69, 0.08);
+}
+
+.style-preview {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(175, 179, 170, 0.18);
+}
+
+.style-preview__body {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
+.style-preview__body .style-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  margin: 2px 4px 2px 0;
+  border-radius: 6px;
+  background: rgba(111, 92, 69, 0.08);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--highlight);
+}
+
+.style-preview__body .style-section {
+  margin-top: 8px;
+}
+
+.style-preview__body .style-section-label {
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}

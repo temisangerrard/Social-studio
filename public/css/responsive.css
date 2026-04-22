@@ -1,0 +1,183 @@
+/* ═══ Responsive — all breakpoints consolidated ═══ */
+
+/* ── 1120px — sidebar collapse ─────────────────────────────────────────── */
+
+@media (max-width: 1120px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── 900px — 2-column grids ────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .library-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .calendar-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .calendar-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ── 720px — single-column workflow ────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── 640px — mobile ────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  :root {
+    --topbar-h: 56px;
+  }
+
+  /* Topbar */
+  .topbar {
+    padding: 0 16px;
+  }
+
+  .topbar__left {
+    gap: 16px;
+  }
+
+  .topnav {
+    gap: 16px;
+  }
+
+  .wordmark {
+    font-size: 1.35rem;
+  }
+
+  .topnav a {
+    font-size: 0.82rem;
+  }
+
+  /* Buttons */
+  .primary-button {
+    padding: 14px 20px;
+    font-size: 0.78rem;
+    width: 100%;
+  }
+
+  .gen-form__footer {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .ghost-button {
+    padding: 12px 14px;
+    font-size: 0.7rem;
+  }
+
+  /* Message thread */
+  .message-thread {
+    flex: 1;
+    min-height: 200px;
+  }
+
+  /* Toolbar */
+  .studio-toolbar {
+    bottom: 16px;
+    left: 12px;
+    right: 12px;
+    transform: none;
+    flex-wrap: wrap;
+  }
+
+  .toolbar-idea-input {
+    min-width: 0;
+    flex: 1 1 100%;
+    order: 10;
+  }
+
+  .toolbar-generate-btn {
+    width: 100%;
+    order: 11;
+  }
+
+  /* Drawer */
+  .studio-drawer {
+    width: 100%;
+  }
+
+  .brand-editor {
+    display: none;
+  }
+
+  /* Inspector */
+  .studio-inspector {
+    display: none;
+  }
+
+  .canvas-fab-inspector {
+    display: grid;
+  }
+
+  .studio-inspector--overlay {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .inspector-overlay-close {
+    display: block;
+  }
+
+  .view--studio .studio-inspector {
+    width: calc(100% - 24px);
+    left: 12px;
+    right: 12px;
+    top: calc(var(--topbar-h) + 12px);
+    bottom: 80px;
+    border-radius: 14px;
+  }
+
+  /* Library */
+  .library-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .library-container {
+    padding: 24px 16px;
+  }
+
+  .library-filters {
+    flex-direction: column;
+  }
+
+  /* Calendar */
+  .calendar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pillars-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Modals */
+  .asset-modal__dialog {
+    width: calc(100vw - 24px);
+    margin: 12px auto;
+    border-radius: 18px;
+  }
+
+  .asset-modal__meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

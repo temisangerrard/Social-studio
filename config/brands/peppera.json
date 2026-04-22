@@ -96,5 +96,7 @@
         { "role": "recipe", "type": "generated_image", "textFields": ["recipeName"], "imagePromptTemplate": "Food photo of {recipeName} featuring {ingredientName}", "layout": "recipe_card" }
       ]
     }
-  ]
+  ],
+  "defaultStyleCardId": "editorial-cultural-carousel",
+  "visualModes": ["mascot-led", "food-led", "mixed"]
 }

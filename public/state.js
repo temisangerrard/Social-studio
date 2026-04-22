@@ -1,11 +1,6 @@
-import { getWorkflowPresets } from "./app-helpers.js";
-
-export const WORKFLOW_PRESETS = getWorkflowPresets();
-
 export const studioState = {
   products: [],
   brands: [],
-  session: null,
   canvasCards: [],
   generatedOutput: null,
   selectedAsset: null,
@@ -17,7 +12,8 @@ export const studioState = {
   downloading: false,
   canvasEngine: null,
   stylePresets: [],
-  selectedStyleId: ""
+  selectedStyleId: "",
+  userPickedStyle: false
 };
 
 export const calendarState = {

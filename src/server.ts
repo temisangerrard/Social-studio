@@ -3,14 +3,12 @@ import path from "node:path";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
-import { createInitialAssistantSession, generateAssistantReply } from "./assistant.ts";
 import { explainRoutingTree, buildRoutingTrace, routeGenerationRequest } from "./routing.ts";
-import type { AssistantMessage } from "./types.ts";
 import { analyzeUploadedAsset, filePathToDataUrl } from "./upload-intake.ts";
-import { runPipelineFromBrief, runPipelineFromRequest } from "./pipeline.ts";
+import { runPipelineFromRequest } from "./pipeline.ts";
 import { defaultProductRegistry, registerBrandDescription, resolveProductContext } from "./product-context.ts";
 import { createStorage } from "./storage.ts";
-import type { AssistantSession, BatchGenerationRequest, BoardDocument, BrandProfile, CalendarSlot, ContentPillar, GenerationRequest, PostMetadata, StyleCard, UploadedAsset, AssetAnalysis } from "./types.ts";
+import type { BatchGenerationRequest, BoardDocument, BrandProfile, CalendarSlot, ContentPillar, GenerationRequest, PostMetadata, StyleCard, UploadedAsset, AssetAnalysis } from "./types.ts";
 import { listBuiltinPresets, resolveStyleCard } from "./style-library.ts";
 import { ingestReferencesAndCreateStyleCard } from "./reference-ingestion.ts";
 import { buildPreviewPlan, buildStructuredPrompt } from "./creative-director.ts";
@@ -96,7 +94,6 @@ interface Job {
   status: "pending" | "running" | "done" | "failed";
   stage: "queued" | "planning" | "generating" | "rendering" | "done" | "failed";
   progress?: string;
-  brief?: Record<string, unknown>;
   request?: GenerationRequest;
   result?: PostMetadata;
   error?: string;
@@ -431,35 +428,6 @@ function normalizeBoard(input: Record<string, unknown>): BoardDocument {
   };
 }
 
-function normalizeAssistantSession(input: Record<string, unknown>): AssistantSession {
-  const session = input as unknown as Partial<AssistantSession>;
-  const now = new Date().toISOString();
-
-  return {
-    id: session.id ?? makeId("session"),
-    productId: session.productId ?? "peppera",
-    status: session.status ?? "interviewing",
-    currentQuestion: session.currentQuestion ?? "What are you trying to make today?",
-    messages: session.messages ?? [],
-    inferredBrief: session.inferredBrief ?? {
-      goal: "",
-      audience: "",
-      offer: "",
-      tone: "",
-      platform: ""
-    },
-    checkpoints: session.checkpoints ?? {
-      strategy: "pending",
-      hooks: "pending",
-      visuals: "pending",
-      finalPackage: "pending"
-    },
-    workspaceCards: session.workspaceCards ?? [],
-    createdAt: session.createdAt ?? now,
-    updatedAt: now
-  };
-}
-
 async function startGeneration(body: Record<string, unknown>): Promise<{ jobId: string; status: string }> {
   const jobId = makeId("gen");
   const job: Job = {
@@ -471,12 +439,7 @@ async function startGeneration(body: Record<string, unknown>): Promise<{ jobId: 
   jobs.set(jobId, job);
   await saveJob(job);
 
-  const isLegacyBrief = typeof body.product === "string" && typeof body.idea === "string";
-  if (isLegacyBrief) {
-    job.brief = body;
-  } else {
-    job.request = body as unknown as GenerationRequest;
-  }
+  job.request = body as unknown as GenerationRequest;
 
   void (async () => {
     job.status = "running";
@@ -484,15 +447,6 @@ async function startGeneration(body: Record<string, unknown>): Promise<{ jobId: 
     await saveJob(job);
 
     try {
-      if (job.brief) {
-        const result = await runPipelineFromBrief(job.brief as any, OUTPUTS_ROOT);
-        job.result = result;
-        job.status = "done";
-        job.stage = "done";
-        await saveJob(job);
-        return;
-      }
-
       const request = job.request!;
       const brand = await storage.getBrandProfile(request.brandProfileId);
       if (!brand) {
@@ -539,73 +493,6 @@ async function handleRequest(req: Request): Promise<Response> {
   if (url.pathname.startsWith("/api/products/") && url.pathname.endsWith("/context") && req.method === "GET") {
     const productId = url.pathname.replace("/api/products/", "").replace("/context", "");
     return json(await resolveProductContext(productId));
-  }
-
-  if (url.pathname === "/api/assistant/sessions" && req.method === "GET") {
-    return json(await storage.listAssistantSessions());
-  }
-
-  if (url.pathname === "/api/assistant/sessions" && req.method === "POST") {
-    const body = await parseJsonBody(req);
-    const productId = typeof body.productId === "string" ? body.productId : "peppera";
-    const context = await resolveProductContext(productId);
-    const session = createInitialAssistantSession(productId, context);
-    await storage.saveAssistantSession(session);
-    return json(session);
-  }
-
-  if (url.pathname.startsWith("/api/assistant/sessions/") && req.method === "GET") {
-    const sessionId = url.pathname.slice("/api/assistant/sessions/".length);
-    const session = await storage.getAssistantSession(sessionId);
-    return session ? json(session) : json({ error: "Session not found" }, { status: 404 });
-  }
-
-  if (url.pathname.startsWith("/api/assistant/sessions/") && url.pathname.endsWith("/reply") && req.method === "POST") {
-    const sessionId = url.pathname.slice("/api/assistant/sessions/".length).replace(/\/reply$/, "");
-    const session = await storage.getAssistantSession(sessionId);
-    if (!session) {
-      return json({ error: "Session not found" }, { status: 404 });
-    }
-
-    const body = await parseJsonBody(req);
-    const text = typeof body.text === "string" ? body.text.trim() : "";
-    if (!text) {
-      return json({ error: "text is required" }, { status: 400 });
-    }
-
-    const nowStr = new Date().toISOString();
-    const userMsg: AssistantMessage = { id: makeId("msg"), role: "user", text, createdAt: nowStr };
-    session.messages.push(userMsg);
-
-    const brand = await storage.getBrandProfile(session.productId);
-    const { reply, updatedBrief, shouldGenerate } = await generateAssistantReply(session, text, brand);
-
-    const assistantMsg: AssistantMessage = { id: makeId("msg"), role: "assistant", text: reply, createdAt: new Date().toISOString() };
-    session.messages.push(assistantMsg);
-    session.inferredBrief = updatedBrief;
-    session.currentQuestion = reply;
-    session.updatedAt = new Date().toISOString();
-
-    await storage.saveAssistantSession(session);
-    return json({ session, shouldGenerate });
-  }
-
-  if (url.pathname.startsWith("/api/assistant/sessions/") && req.method === "POST") {
-    const sessionId = url.pathname.slice("/api/assistant/sessions/".length);
-    const existing = await storage.getAssistantSession(sessionId);
-    if (!existing) {
-      return json({ error: "Session not found" }, { status: 404 });
-    }
-
-    const body = await parseJsonBody(req);
-    const updated = normalizeAssistantSession({
-      ...existing,
-      ...body,
-      id: sessionId,
-      createdAt: existing.createdAt
-    });
-    await storage.saveAssistantSession(updated);
-    return json(updated);
   }
 
   if (url.pathname === "/api/brands" && req.method === "POST") {
@@ -723,7 +610,10 @@ async function handleRequest(req: Request): Promise<Response> {
       uploadedAssets: Array.isArray(body.uploadedAssets) ? (body.uploadedAssets as UploadedAsset[]) : [],
       assetAnalyses: Array.isArray(body.assetAnalyses) ? (body.assetAnalyses as AssetAnalysis[]) : [],
       deliveryTargets: body.deliveryTargets as GenerationRequest["deliveryTargets"] | undefined,
-      routingOverride: body.routingOverride as GenerationRequest["routingOverride"] | undefined
+      routingOverride: body.routingOverride as GenerationRequest["routingOverride"] | undefined,
+      styleControl: body.styleControl && typeof body.styleControl === "object"
+        ? (body.styleControl as GenerationRequest["styleControl"])
+        : { styleCardId: listBuiltinPresets()[0].id, generationMode: "image-first" as const }
     };
 
     const assetAnalyses = request.assetAnalyses && request.assetAnalyses.length > 0
@@ -1118,6 +1008,51 @@ async function handleRequest(req: Request): Promise<Response> {
     return json({ plan, structured });
   }
 
+  if (url.pathname === "/api/styles/match" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const idea = typeof body.idea === "string" ? body.idea.trim() : "";
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    if (!idea) return json({ error: "idea is required" }, { status: 400 });
+    const brand = await storage.getBrandProfile(brandId);
+    const custom = await storage.listStyleCards();
+    const builtins = listBuiltinPresets();
+    const customIds = new Set(custom.map(c => c.id));
+    const allStyles = [...custom, ...builtins.filter(b => !customIds.has(b.id))];
+
+    const apiKey = process.env.GLM_API_KEY;
+    const apiUrl = process.env.GLM_API_URL ?? "https://open.bigmodel.cn/api/paas/v4/chat/completions";
+    const model = process.env.GLM_MODEL ?? "glm-4.5";
+
+    if (!apiKey) {
+      // Fallback: return brand default or first preset
+      const fallbackId = brand?.defaultStyleCardId || allStyles[0]?.id;
+      return json({ styleCardId: fallbackId, reason: "No LLM available — using brand default", scores: [] });
+    }
+
+    const styleList = allStyles.map(s => `- ${s.id}: ${s.intent}. Image: ${s.imageStyle}. Layout: ${s.layoutStyle}. Tone: ${s.visualTraits.tone.join(", ")}`).join("\n");
+    try {
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model, temperature: 0.3, response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: `You match content ideas to visual style presets. Given an idea and a brand context, pick the best style preset and explain why. Return JSON: { "styleCardId": "...", "reason": "...", "scores": [{"id":"...","score":0-100},...] }` },
+            { role: "user", content: `Brand: ${brand?.name || brandId} — ${brand?.description || ""}\nTone: ${brand?.tone || ""}\nAudience: ${brand?.audience || ""}\n\nIdea: ${idea}\n\nAvailable styles:\n${styleList}\n\nPick the best style for this idea and brand. Score all styles 0-100.` }
+          ]
+        })
+      });
+      const data = await res.json() as { choices?: { message?: { content?: string } }[] };
+      const content = data.choices?.[0]?.message?.content ?? "{}";
+      const parsed = JSON.parse(content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, ""));
+      const matchedId = typeof parsed.styleCardId === "string" && allStyles.some(s => s.id === parsed.styleCardId) ? parsed.styleCardId : (brand?.defaultStyleCardId || allStyles[0]?.id);
+      return json({ styleCardId: matchedId, reason: parsed.reason || "Best match", scores: Array.isArray(parsed.scores) ? parsed.scores : [] });
+    } catch (err) {
+      const fallbackId = brand?.defaultStyleCardId || allStyles[0]?.id;
+      return json({ styleCardId: fallbackId, reason: "LLM error — using brand default", scores: [] });
+    }
+  }
+
   // --- Content Pillars API ---
 
   if (url.pathname === "/api/pillars" && req.method === "GET") {
@@ -1187,7 +1122,11 @@ async function handleRequest(req: Request): Promise<Response> {
       goal: "installs",
       workflowType: "slideshow",
       visualMode: visualMode as GenerationRequest["visualMode"],
-      deliveryTargets: platform as GenerationRequest["deliveryTargets"]
+      deliveryTargets: platform as GenerationRequest["deliveryTargets"],
+      styleControl: {
+        styleCardId: typeof body.styleCardId === "string" ? body.styleCardId : listBuiltinPresets()[0].id,
+        generationMode: "image-first",
+      }
     };
     return json(await startGeneration(request as unknown as Record<string, unknown>));
   }
