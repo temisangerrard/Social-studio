@@ -1,0 +1,161 @@
+/* ═══ UI Polish — Emil Kowalski design engineering principles ═══════════════
+   Custom easing, :active press feedback, hover media queries,
+   stagger animations, reduced-motion support.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Custom easing curves ──────────────────────────────────────────────────── */
+
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* ── Button press feedback ─────────────────────────────────────────────────── */
+
+.primary-button,
+.ghost-button,
+.toolbar-btn,
+.toolbar-generate-btn {
+  transition: transform 160ms var(--ease-out), background 160ms var(--ease-out);
+}
+
+.primary-button:active,
+.ghost-button:active,
+.toolbar-btn:active,
+.toolbar-generate-btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Card hover — gated behind pointer: fine ───────────────────────────────── */
+
+.library-card,
+.styles-card,
+.calendar-slot,
+.canvas-artboard {
+  transition: transform 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .library-card:hover,
+  .styles-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-float);
+  }
+
+  .calendar-slot:hover {
+    box-shadow: var(--shadow-soft);
+    transform: translateY(-1px);
+  }
+
+  .canvas-artboard:hover {
+    box-shadow: 0 8px 32px rgba(47, 52, 45, 0.14);
+  }
+
+  .toolbar-btn:hover {
+    background: var(--surface-soft);
+  }
+
+  .toolbar-generate-btn:hover {
+    background: var(--highlight);
+  }
+}
+
+/* ── Drawer / Inspector panel transitions — use custom curves ──────────────── */
+
+.studio-drawer {
+  transition: transform 250ms var(--ease-drawer);
+}
+
+.view--studio .studio-inspector {
+  transition: transform 300ms var(--ease-drawer), opacity 200ms var(--ease-out);
+}
+
+/* ── Stagger animations for card grids ─────────────────────────────────────── */
+
+@keyframes staggerFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.styles-card,
+.library-card {
+  animation: staggerFadeIn 300ms var(--ease-out) both;
+}
+
+.styles-card:nth-child(1), .library-card:nth-child(1) { animation-delay: 0ms; }
+.styles-card:nth-child(2), .library-card:nth-child(2) { animation-delay: 40ms; }
+.styles-card:nth-child(3), .library-card:nth-child(3) { animation-delay: 80ms; }
+.styles-card:nth-child(4), .library-card:nth-child(4) { animation-delay: 120ms; }
+.styles-card:nth-child(5), .library-card:nth-child(5) { animation-delay: 160ms; }
+.styles-card:nth-child(6), .library-card:nth-child(6) { animation-delay: 200ms; }
+.styles-card:nth-child(n+7), .library-card:nth-child(n+7) { animation-delay: 240ms; }
+
+/* ── Mobile tab bar — press feedback ───────────────────────────────────────── */
+
+.mobile-tab {
+  transition: color 120ms var(--ease-out), transform 120ms var(--ease-out);
+}
+
+.mobile-tab:active {
+  transform: scale(0.92);
+}
+
+/* ── Modal enter — scale from 0.95, not 0 ──────────────────────────────────── */
+
+.asset-modal__dialog {
+  animation: modalEnter 200ms var(--ease-out) both;
+}
+
+@keyframes modalEnter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ── Canvas progress pill — enter from top ─────────────────────────────────── */
+
+.canvas-progress-pill:not(.hidden) {
+  animation: pillSlideIn 250ms var(--ease-out) both;
+}
+
+@keyframes pillSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ── Reduced motion ────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .library-card,
+  .styles-card,
+  .calendar-slot,
+  .canvas-artboard {
+    animation: none;
+  }
+}
