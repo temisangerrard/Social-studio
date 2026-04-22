@@ -158,7 +158,9 @@ function renderLibrary() {
     });
     card.appendChild(delBtn);
 
-    card.addEventListener("click", () => { window.open(`/?view=studio&postId=${encodeURIComponent(item.postId)}`, "_blank"); });
+    card.addEventListener("click", async () => {
+      await loadOutputIntoCanvas(item.postId);
+    });
     grid.appendChild(card);
   });
 
