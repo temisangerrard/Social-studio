@@ -2,6 +2,7 @@ export const els = {
   navLinks: Array.from(document.querySelectorAll(".topnav a[data-view]")),
   views: {
     studio: document.getElementById("view-studio"),
+    styles: document.getElementById("view-styles"),
     calendar: document.getElementById("view-calendar"),
     library: document.getElementById("view-library"),
     admin: document.getElementById("view-admin")

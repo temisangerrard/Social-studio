@@ -27,6 +27,7 @@ import {
 import { loadCalendar, initCalendarListeners } from "./calendar-view.js";
 import { loadLibrary, initLibraryListeners, loadOutputIntoCanvas } from "./library-view.js";
 import { loadAdmin, initAdminListeners } from "./admin-view.js";
+import { loadStyles, initStylesListeners } from "./styles-view.js";
 import { renderBrandEditor, initBrandEditorListeners } from "./brand-editor.js";
 import { InlineEditor, schedulePatch } from "./inline-editor.js";
 
@@ -34,6 +35,7 @@ import { InlineEditor, schedulePatch } from "./inline-editor.js";
 function switchView(name) {
   Object.entries(els.views).forEach(([key, el]) => el.classList.toggle("hidden", key !== name));
   els.navLinks.forEach((link) => link.classList.toggle("is-active", link.dataset.view === name));
+  if (name === "styles") loadStyles();
   if (name === "library") loadLibrary();
   if (name === "calendar") loadCalendar();
   if (name === "admin") loadAdmin();
@@ -261,6 +263,7 @@ onAssetDeleted(() => { renderReferenceChips(); refreshRoutePreview(); });
 initCalendarListeners();
 initLibraryListeners();
 initAdminListeners();
+initStylesListeners();
 initBrandEditorListeners();
 
 // ── Load products ─────────────────────────────────────────────────────────────
