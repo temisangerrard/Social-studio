@@ -32,7 +32,7 @@ async function loadSlideImages(outputDir: string): Promise<{ name: string; buf: 
 }
 
 // ── PDF carousel export ───────────────────────────────────────────────────────
-export async function exportPdf(outputDir: string): Promise<Buffer> {
+export async function exportPdf(outputDir: string): Promise<Uint8Array> {
   const slides = await loadSlideImages(outputDir);
   if (!slides.length) throw new Error("No slides found to export.");
 
@@ -62,7 +62,7 @@ export async function exportPdf(outputDir: string): Promise<Buffer> {
       printBackground: true,
       margin: { top: "0", right: "0", bottom: "0", left: "0" },
     });
-    return Buffer.from(pdf);
+    return new Uint8Array(Buffer.from(pdf));
   } finally {
     await browser.close();
   }
@@ -78,7 +78,7 @@ async function resizeImage(buf: Buffer, w: number, h: number, name: string): Pro
 export async function exportZip(
   outputDir: string,
   platforms: string[] = ["instagram", "tiktok", "linkedin"]
-): Promise<Buffer> {
+): Promise<Uint8Array> {
   const slides = await loadSlideImages(outputDir);
   if (!slides.length) throw new Error("No slides found to export.");
 
@@ -104,5 +104,5 @@ export async function exportZip(
 
   await archive.finalize();
   await new Promise<void>((resolve) => writable.on("finish", resolve));
-  return Buffer.concat(chunks);
+  return new Uint8Array(Buffer.concat(chunks));
 }

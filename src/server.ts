@@ -870,11 +870,11 @@ async function handleRequest(req: Request): Promise<Response> {
         const { exportPdf, exportZip } = await import("./export.ts");
         if (format === "pdf") {
           const buf = await exportPdf(outputDir);
-          return new Response(buf, { status: 200, headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${id}-carousel.pdf"` } });
+          return new Response(buf as any, { status: 200, headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${id}-carousel.pdf"` } });
         } else {
           const platforms = url.searchParams.getAll("platform");
           const buf = await exportZip(outputDir, platforms.length ? platforms : undefined);
-          return new Response(buf, { status: 200, headers: { "Content-Type": "application/zip", "Content-Disposition": `attachment; filename="${id}-platforms.zip"` } });
+          return new Response(buf as any, { status: 200, headers: { "Content-Type": "application/zip", "Content-Disposition": `attachment; filename="${id}-platforms.zip"` } });
         }
       } catch (err: any) {
         return json({ error: err.message || "Export failed" }, { status: 500 });
