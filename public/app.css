@@ -2500,6 +2500,69 @@ textarea {
 
 /* ── Zoom Controls (legacy — now inline in toolbar, see below) ──────────── */
 
+/* ── Canvas AI Prompt ──────────────────────────────────────────────────────── */
+
+.canvas-ai-prompt {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(250, 249, 244, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(47, 52, 45, 0.14), 0 2px 8px rgba(47, 52, 45, 0.08);
+  border: 1px solid rgba(175, 179, 170, 0.18);
+  min-width: 400px;
+  max-width: 600px;
+}
+
+.canvas-ai-prompt input {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: var(--ink);
+  outline: none;
+  min-width: 0;
+}
+
+.canvas-ai-prompt input::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.canvas-ai-submit {
+  border: 0;
+  background: var(--highlight);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition-property: background, transform;
+  transition-duration: 150ms;
+  transition-timing-function: ease;
+}
+
+.canvas-ai-submit:hover { background: var(--brand); }
+.canvas-ai-submit:active { transform: scale(0.96); }
+.canvas-ai-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.canvas-ai-status {
+  font-size: 0.72rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 /* ── Connector SVG ─────────────────────────────────────────────────────────── */
 
 .canvas-connector-svg {

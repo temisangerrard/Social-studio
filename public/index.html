@@ -42,6 +42,12 @@
           <h3>What do you want to create?</h3>
           <p>Describe your idea below and hit generate.</p>
         </div>
+        <!-- CANVAS AI PROMPT — floating bar when artboard is selected -->
+        <form id="canvas-ai-prompt" class="canvas-ai-prompt hidden" autocomplete="off">
+          <input id="canvas-ai-input" type="text" placeholder="Make this more vibrant… / Add the mascot… / Change the hook…" />
+          <button type="submit" class="canvas-ai-submit">Ask AI</button>
+          <span id="canvas-ai-status" class="canvas-ai-status hidden"></span>
+        </form>
       </div>
 
       <!-- INLINE ROUTE PREVIEW — compact bar above toolbar -->
