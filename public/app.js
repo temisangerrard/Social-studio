@@ -238,6 +238,30 @@ els.studioRefineForm.addEventListener("submit", async (e) => {
 els.studioDownloadAllBtn.addEventListener("click", downloadAllAssets);
 document.getElementById("toolbar-download-all-btn")?.addEventListener("click", downloadAllAssets);
 
+// ── Export buttons ────────────────────────────────────────────────────────────
+async function triggerExport(format) {
+  const postId = studioState.generatedOutput?.post_id;
+  if (!postId) return;
+  const btn = document.getElementById(`toolbar-export-${format}`);
+  if (btn) { btn.disabled = true; btn.textContent = "…"; }
+  try {
+    const url = format === "pdf"
+      ? `/api/outputs/${postId}/export/pdf`
+      : `/api/outputs/${postId}/export/zip?platform=instagram&platform=tiktok&platform=linkedin`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Export failed");
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = format === "pdf" ? `${postId}-carousel.pdf` : `${postId}-platforms.zip`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch (err) { showStatus(err instanceof Error ? err.message : "Export failed."); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = format.toUpperCase(); } }
+}
+document.getElementById("toolbar-export-pdf")?.addEventListener("click", () => triggerExport("pdf"));
+document.getElementById("toolbar-export-zip")?.addEventListener("click", () => triggerExport("zip"));
+
 // ── Copy buttons ──────────────────────────────────────────────────────────────
 els.inspectorCopyCaption.addEventListener("click", () => copyText(studioState.generatedOutput?.caption || "", "Caption"));
 els.inspectorCopyHashtags.addEventListener("click", () => copyText((studioState.generatedOutput?.hashtags || []).join(" "), "Hashtags"));

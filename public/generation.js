@@ -38,6 +38,8 @@ export function loadOutputToEngine(output) {
   studioState.canvasEngine.loadOutput(output);
   const dlAllBtn = document.getElementById("toolbar-download-all-btn");
   if (dlAllBtn) dlAllBtn.classList.remove("hidden");
+  document.getElementById("toolbar-export-pdf")?.classList.remove("hidden");
+  document.getElementById("toolbar-export-zip")?.classList.remove("hidden");
 }
 
 // ── Core generation pipeline ──────────────────────────────────────────────────
