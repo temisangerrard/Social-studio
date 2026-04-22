@@ -41,7 +41,8 @@ export async function exportPdf(outputDir: string): Promise<Uint8Array> {
   const slideHeight = 627;
   const htmlSlides = slides.map((s) => {
     const b64 = s.buf.toString("base64");
-    const mime = s.name.endsWith(".svg") ? "image/svg+xml" : "image/png";
+    const ext = s.name.split(".").pop()?.toLowerCase() || "png";
+    const mime = { svg: "image/svg+xml", jpg: "image/jpeg", jpeg: "image/jpeg", webp: "image/webp", png: "image/png" }[ext] || "image/png";
     return `<div class="slide"><img src="data:${mime};base64,${b64}" /></div>`;
   }).join("\n");
 
