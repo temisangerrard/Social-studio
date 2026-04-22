@@ -222,6 +222,9 @@ if (els.studioStylePreset) {
     if (styleId.startsWith("ugc-faceless")) studioState.workflowType = "ugc-faceless";
     else if (styleId.startsWith("ugc-voiceover")) studioState.workflowType = "ugc-voiceover";
     else studioState.workflowType = "slideshow";
+    // Show/hide UGC brief panel
+    const briefPanel = document.getElementById("ugc-brief-panel");
+    if (briefPanel) briefPanel.classList.toggle("hidden", !styleId.startsWith("ugc-"));
     if (style && els.studioStylePreviewBody) {
       els.studioStylePreview.classList.remove("hidden");
       const isUgc = styleId.startsWith("ugc-");
@@ -278,6 +281,11 @@ initLibraryListeners();
 initAdminListeners();
 initStylesListeners();
 initBrandEditorListeners();
+
+// ── UGC brief panel ───────────────────────────────────────────────────────────
+document.getElementById("ugc-brief-close")?.addEventListener("click", () => {
+  document.getElementById("ugc-brief-panel")?.classList.add("hidden");
+});
 
 // ── Create brand modal ────────────────────────────────────────────────────────
 {

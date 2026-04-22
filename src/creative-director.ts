@@ -30,25 +30,27 @@ function inferVisualAngle(style: StyleCard, topic: string): string {
   return `${toneJoin} visual treatment for: ${topic}. Image style: ${style.imageStyle}. Composition: ${style.visualTraits.composition.join(", ")}`;
 }
 
-function inferSlideNarrative(style: StyleCard, topic: string, slideCount: number): string[] {
+function inferSlideNarrative(style: StyleCard, topic: string, slideCount: number, control: StyleControlledRequest): string[] {
   // UGC presets get a proper spoken script structure
   if (style.id.startsWith("ugc-faceless")) {
+    const b = control.ugcBrief ?? {};
     return [
-      `Hook: attention-grabbing opening line about ${topic} — stop the scroll`,
-      `Problem: the frustration or pain point that ${topic} solves — make it relatable`,
-      `Discovery: introduce the product/solution — "I found this thing that..."`,
+      b.hook || `Hook: attention-grabbing opening line about ${topic} — stop the scroll`,
+      b.problem || `Problem: the frustration or pain point that ${topic} solves — make it relatable`,
+      `Discovery: ${b.productMoment || `introduce the product/solution — "I found this thing that..."`}`,
       `Demo: show how it works — product in action, screen recording, or result`,
-      `Benefit: the transformation or outcome — what changed after using it`,
-      `CTA: tell them what to do — "link in bio" / "try it" / "comment if you want this"`,
+      b.outcome || `Benefit: the transformation or outcome — what changed after using it`,
+      b.cta || `CTA: tell them what to do — "link in bio" / "try it" / "comment if you want this"`,
     ];
   }
   if (style.id.startsWith("ugc-voiceover")) {
+    const b = control.ugcBrief ?? {};
     return [
-      `Scene 1: set the context — "so I've been using ${topic} for a week now..."`,
-      `Scene 2: the honest experience — what it's actually like, first impressions`,
-      `Scene 3: the moment it clicked — the specific thing that made it worth it`,
-      `Scene 4: who it's for and who should skip it — authentic recommendation`,
-      `Scene 5: final verdict and CTA — "honestly, if you [need], just try it"`,
+      b.hook || `Scene 1: set the context — "so I've been using ${topic} for a week now..."`,
+      b.problem || `Scene 2: the honest experience — what it's actually like, first impressions`,
+      b.productMoment || `Scene 3: the moment it clicked — the specific thing that made it worth it`,
+      b.outcome || `Scene 4: who it's for and who should skip it — authentic recommendation`,
+      b.cta || `Scene 5: final verdict and CTA — "honestly, if you [need], just try it"`,
     ];
   }
 
@@ -82,7 +84,7 @@ export function buildCreativeBrief(input: DirectorInput): CreativeBrief {
     styleName: style.name,
     topic,
     visualAngle: inferVisualAngle(style, topic),
-    slideNarrative: inferSlideNarrative(style, topic, 5),
+    slideNarrative: inferSlideNarrative(style, topic, 5, control),
     imageBrief: `${style.imageStyle}. Treatment: ${style.visualTraits.imageTreatment.join(", ")}. Avoid: ${style.negativeConstraints.slice(0, 5).join(", ")}`,
     layoutBrief: `${style.layoutStyle}. Layout: ${style.visualTraits.layout.join(", ")}`,
     copyDensity: density,
