@@ -890,7 +890,7 @@ export class PointerStateMachine {
       };
       artboard.classList.add("canvas-artboard--dragging");
       if (this._onDragStart) this._onDragStart(artboard);
-      artboard.setPointerCapture(e.pointerId);
+      this._stageEl.setPointerCapture(e.pointerId);
     } else {
       this.state = "panning";
       this._stageEl.setPointerCapture(e.pointerId);
