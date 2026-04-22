@@ -45,24 +45,30 @@ export async function generateVoiceover(
   const voiceId = options.voiceId || DEFAULT_VOICE;
   const url = `${API_BASE}/text-to-speech/${voiceId}`;
 
-  const res = await fetchWithTimeout(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "xi-api-key": apiKey,
-    },
-    body: JSON.stringify({
-      text,
-      model_id: options.modelId || DEFAULT_MODEL,
-      output_format: "mp3_44100_128",
-      voice_settings: {
-        stability: options.stability ?? 0.5,
-        similarity_boost: options.similarityBoost ?? 0.75,
-        style: options.style ?? 0.3,
-        use_speaker_boost: true,
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "xi-api-key": apiKey,
       },
-    }),
-  });
+      body: JSON.stringify({
+        text,
+        model_id: options.modelId || DEFAULT_MODEL,
+        output_format: "mp3_44100_128",
+        voice_settings: {
+          stability: options.stability ?? 0.5,
+          similarity_boost: options.similarityBoost ?? 0.75,
+          style: options.style ?? 0.3,
+          use_speaker_boost: true,
+        },
+      }),
+    });
+  } catch (error) {
+    console.warn(`[voice] ElevenLabs request failed: ${error instanceof Error ? error.message : error}, falling back to mock`);
+    return writeMockAudio(text, outputDir, filename);
+  }
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");

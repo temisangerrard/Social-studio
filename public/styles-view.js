@@ -154,7 +154,12 @@ export function initStylesListeners() {
     if (!id) return;
     studioState.selectedStyleId = id;
     const presetSelect = document.getElementById("studio-style-preset");
-    if (presetSelect) { presetSelect.value = id; presetSelect.dispatchEvent(new Event("change")); }
+    if (presetSelect) {
+      // Refresh options so newly created styles are available
+      presetSelect.innerHTML = (studioState.stylePresets || []).map((s) => `<option value="${s.id}">${s.name}</option>`).join("");
+      presetSelect.value = id;
+      presetSelect.dispatchEvent(new Event("change"));
+    }
     document.dispatchEvent(new CustomEvent("studio:switch-view", { detail: "studio" }));
   });
 

@@ -282,7 +282,9 @@ function normalizeRequest(input: unknown): GenerationRequest {
       request.workflowType === "video-clip" ||
       request.workflowType === "reel-package" ||
       request.workflowType === "linkedin-carousel" ||
-      request.workflowType === "linkedin-text"
+      request.workflowType === "linkedin-text" ||
+      request.workflowType === "ugc-faceless" ||
+      request.workflowType === "ugc-voiceover"
         ? request.workflowType
         : "slideshow",
     visualMode:
