@@ -709,11 +709,11 @@ export async function runPipelineFromRequest(
       variant_group: null,
     }));
 
-    // Generate voiceover script from slide text
-    const voiceoverScript = plan.slides
+    // Generate voiceover script from slide narrative (not generic slide text)
+    const voiceoverScript = metadata.slides
       .map((s: any) => s.text)
-      .filter(Boolean)
-      .join(". ");
+      .filter((t: string) => t && !t.startsWith("Content slide"))
+      .join("\n\n");
 
     const voiceResult = await generateVoiceover(
       voiceoverScript,

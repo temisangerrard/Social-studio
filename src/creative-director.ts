@@ -31,6 +31,27 @@ function inferVisualAngle(style: StyleCard, topic: string): string {
 }
 
 function inferSlideNarrative(style: StyleCard, topic: string, slideCount: number): string[] {
+  // UGC presets get a proper spoken script structure
+  if (style.id.startsWith("ugc-faceless")) {
+    return [
+      `Hook: attention-grabbing opening line about ${topic} — stop the scroll`,
+      `Problem: the frustration or pain point that ${topic} solves — make it relatable`,
+      `Discovery: introduce the product/solution — "I found this thing that..."`,
+      `Demo: show how it works — product in action, screen recording, or result`,
+      `Benefit: the transformation or outcome — what changed after using it`,
+      `CTA: tell them what to do — "link in bio" / "try it" / "comment if you want this"`,
+    ];
+  }
+  if (style.id.startsWith("ugc-voiceover")) {
+    return [
+      `Scene 1: set the context — "so I've been using ${topic} for a week now..."`,
+      `Scene 2: the honest experience — what it's actually like, first impressions`,
+      `Scene 3: the moment it clicked — the specific thing that made it worth it`,
+      `Scene 4: who it's for and who should skip it — authentic recommendation`,
+      `Scene 5: final verdict and CTA — "honestly, if you [need], just try it"`,
+    ];
+  }
+
   const narrative: string[] = [];
   if (style.contentRules.headlineRequired) narrative.push("Opening hook / headline slide");
   const bodySlides = Math.max(1, slideCount - (style.contentRules.headlineRequired ? 2 : 1));
@@ -138,9 +159,34 @@ function slideImagePrompt(
   brand: BrandProfile,
   slideRole: SlideRole,
   topic: string,
-  control: StyleControlledRequest
+  control: StyleControlledRequest,
+  slideIndex: number
 ): string | null {
   if (!style.generationRequirements.needsImage && slideRole !== "hook") return null;
+
+  // UGC: scene-specific visual direction
+  if (style.id.startsWith("ugc-faceless")) {
+    const scenes: Record<number, string> = {
+      0: `POV shot of someone scrolling their phone, notification or app screen visible, relatable everyday moment, vertical 9:16, ${topic}`,
+      1: `Close-up of a frustrated person's hands or a messy/cluttered scene representing the problem ${topic} solves, authentic texture, vertical 9:16`,
+      2: `Clean product shot or app interface of ${brand.name}, hero angle, soft natural lighting, minimal background, vertical 9:16`,
+      3: `Screen recording style or hands-on demo of ${brand.name} in use, showing the key feature, vertical 9:16`,
+      4: `Before/after or transformation result from using ${brand.name}, bright optimistic lighting, vertical 9:16`,
+      5: `${brand.name} logo or product with a clear call-to-action overlay zone, clean composition, vertical 9:16`,
+    };
+    return `${scenes[slideIndex] ?? scenes[2]}. AVOID: ${style.negativeConstraints.slice(0, 4).join(", ")}`;
+  }
+
+  if (style.id.startsWith("ugc-voiceover")) {
+    const scenes: Record<number, string> = {
+      0: `Lifestyle POV shot, first-person perspective, cozy or everyday setting related to ${topic}, authentic imperfect lighting, vertical 9:16`,
+      1: `Close-up detail shot of ${brand.name} product or interface, natural light, slightly shallow depth of field, vertical 9:16`,
+      2: `Reaction moment or "aha" expression, warm tones, genuine feeling, ${brand.name} visible in background, vertical 9:16`,
+      3: `Real-world context shot showing who uses ${brand.name}, lifestyle setting, diverse and authentic, vertical 9:16`,
+      4: `Final hero shot of ${brand.name}, clean but not corporate, approachable and trustworthy, vertical 9:16`,
+    };
+    return `${scenes[slideIndex] ?? scenes[1]}. AVOID: ${style.negativeConstraints.slice(0, 4).join(", ")}`;
+  }
 
   const parts = [
     style.imageStyle,
@@ -166,7 +212,7 @@ export function generateSlidesFromStyle(input: DirectorInput): Slide[] {
   return brief.slideNarrative.map((narrative, i) => {
     const role = roleForIndex(i, slideCount, style);
     const needsImage = style.generationRequirements.needsImage || role === "hook";
-    const imgPrompt = needsImage ? slideImagePrompt(style, brand, role, topic, control) : null;
+    const imgPrompt = needsImage ? slideImagePrompt(style, brand, role, topic, control, i) : null;
 
     return {
       slide_number: i + 1,
