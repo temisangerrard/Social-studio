@@ -103,7 +103,11 @@ export async function exportZip(
     }
   }
 
+  const done = new Promise<void>((resolve, reject) => {
+    writable.on("finish", resolve);
+    archive.on("error", reject);
+  });
   await archive.finalize();
-  await new Promise<void>((resolve) => writable.on("finish", resolve));
+  await done;
   return new Uint8Array(Buffer.concat(chunks));
 }
