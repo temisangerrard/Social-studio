@@ -1,6 +1,7 @@
 import { els } from "./dom-refs.js";
 import { ugcState } from "./ugc-state.js";
 import { buildUgcDraftRequest, buildUgcGenerateRequest } from "./ugc-request.js";
+import { buildUgcOutputActions } from "./ugc-output.js";
 
 function setText(id, value) {
   const el = document.getElementById(id);
@@ -59,6 +60,14 @@ function renderOutput() {
     ? `<audio class="ugc-output__audio" controls src="${output.audioUrl}"></audio>`
     : "";
   const beats = (output.script?.beatSheet || []).map((beat) => `<li>${beat}</li>`).join("");
+  const actions = buildUgcOutputActions({
+    postId: output.postId,
+    platform: output.platform,
+    videoUrl: output.videoUrl,
+    audioUrl: output.audioUrl
+  }).map((action) => `
+    <a class="ghost-button ugc-output__action" href="${action.href}" ${action.download ? "download" : 'target="_blank" rel="noreferrer"'}>${action.label}</a>
+  `).join("");
 
   els.ugcOutput.innerHTML = `
     <div class="ugc-output__card">
@@ -68,6 +77,7 @@ function renderOutput() {
       </div>
       ${video}
       ${audio}
+      <div class="ugc-output__actions">${actions}</div>
       <p class="ugc-output__script">${output.script?.fullScript || ""}</p>
       <ul class="ugc-output__beats">${beats}</ul>
     </div>

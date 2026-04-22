@@ -67,6 +67,16 @@
   color: var(--brand-strong);
 }
 
+.ugc-output__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.ugc-output__action {
+  text-decoration: none;
+}
+
 .ugc-output__beats {
   margin: 0;
   padding-left: 18px;

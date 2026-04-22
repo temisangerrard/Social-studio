@@ -1,3 +1,4 @@
+import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { BrandProfile, Platform, PostMetadata, UploadedAsset } from "./types.ts";
@@ -132,6 +133,18 @@ export async function generateUgcPackage(params: UgcGenerateParams): Promise<{
     "ugc-voiceover",
     { voiceId }
   );
+
+  metadata.voiceover = {
+    script: script.fullScript,
+    audioPath: voiceResult.audioPath,
+    voiceId: voiceResult.voiceId,
+    durationEstimate: voiceResult.durationEstimate
+  };
+  await fs.writeFile(path.join(metadata.output_dir, "ugc-script.json"), `${JSON.stringify(script, null, 2)}\n`, "utf8");
+  await fs.writeFile(path.join(metadata.output_dir, "ugc-script.txt"), `${script.fullScript}\n`, "utf8");
+  await fs.writeFile(path.join(metadata.output_dir, "beat-sheet.txt"), `${script.beatSheet.join("\n")}\n`, "utf8");
+  await fs.writeFile(path.join(metadata.output_dir, "on-screen-text.txt"), `${script.onScreenText.join("\n")}\n`, "utf8");
+  await fs.writeFile(path.join(metadata.output_dir, "metadata.json"), `${JSON.stringify(metadata, null, 2)}\n`, "utf8");
 
   const videoArtifact = (metadata.artifacts || []).find((artifact) => artifact.kind === "video");
 

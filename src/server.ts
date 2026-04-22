@@ -803,16 +803,19 @@ async function handleRequest(req: Request): Promise<Response> {
     const postId = url.pathname.slice("/api/outputs/".length);
 
     // Export endpoints: /api/outputs/:postId/export/pdf and /export/zip
-    const exportMatch = postId.match(/^([^/]+)\/export\/(pdf|zip)$/);
+    const exportMatch = postId.match(/^([^/]+)\/export\/(pdf|zip|package)$/);
     if (exportMatch) {
       const [, id, format] = exportMatch;
       const outputDir = path.join(OUTPUTS_ROOT, id);
       try { await fs.access(outputDir); } catch { return json({ error: "Output not found" }, { status: 404 }); }
       try {
-        const { exportPdf, exportZip } = await import("./export.ts");
+        const { exportPdf, exportZip, exportPackageZip } = await import("./export.ts");
         if (format === "pdf") {
           const buf = await exportPdf(outputDir);
           return new Response(buf as any, { status: 200, headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${id}-carousel.pdf"` } });
+        } else if (format === "package") {
+          const buf = await exportPackageZip(outputDir);
+          return new Response(buf as any, { status: 200, headers: { "Content-Type": "application/zip", "Content-Disposition": `attachment; filename="${id}-ugc-package.zip"` } });
         } else {
           const platforms = url.searchParams.getAll("platform");
           const buf = await exportZip(outputDir, platforms.length ? platforms : undefined);
