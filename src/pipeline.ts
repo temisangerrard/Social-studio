@@ -532,12 +532,15 @@ export async function runPipelineFromRequest(
     },
     contentType: contentType ?? undefined
   });
-  const workflowType = shouldPreferRouting ? routingDecision.workflowType : resolveWorkflowType(request);
+  const isUgcWorkflow = request.workflowType === "ugc-faceless" || request.workflowType === "ugc-voiceover";
+  const hasExplicitStyle = isUgcWorkflow || (!!requestInput.styleControl?.styleCardId);
+  const workflowType = hasExplicitStyle ? resolveWorkflowType(request) : (shouldPreferRouting ? routingDecision.workflowType : resolveWorkflowType(request));
   const deliveryTargets = shouldPreferRouting ? routingDecision.deliveryTargets : resolveDeliveryTargets(request);
 
   const isPepperaCarousel =
-    routingDecision.routeFamily === "recipe" ||
-    ((brandProfile.id === "peppera" || brandProfile.name === "Peppera") && workflowType === "slideshow");
+    !hasExplicitStyle &&
+    (routingDecision.routeFamily === "recipe" ||
+    ((brandProfile.id === "peppera" || brandProfile.name === "Peppera") && workflowType === "slideshow"));
 
   const brief: ContentBrief = {
     product: brandProfile.name,
@@ -706,11 +709,11 @@ export async function runPipelineFromRequest(
       variant_group: null,
     }));
 
-    // Generate voiceover script from slide text
-    const voiceoverScript = plan.slides
+    // Generate voiceover script from slide narrative (not generic slide text)
+    const voiceoverScript = metadata.slides
       .map((s: any) => s.text)
-      .filter(Boolean)
-      .join(". ");
+      .filter((t: string) => t && !t.startsWith("Content slide"))
+      .join("\n\n");
 
     const voiceResult = await generateVoiceover(
       voiceoverScript,

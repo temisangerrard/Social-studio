@@ -192,6 +192,22 @@ function syncBrandDefaults(brandId) {
     studioState.userPickedStyle = false;
     if (els.studioStylePreset) els.studioStylePreset.value = brand.defaultStyleCardId;
   }
+  // Update UGC brief placeholders for this brand
+  updateUgcPlaceholders(brand);
+}
+
+function updateUgcPlaceholders(brand) {
+  const n = brand.name;
+  const desc = (brand.description || "").split(".")[0]; // first sentence
+  const set = (id, text) => { const el = document.getElementById(id); if (el) el.placeholder = text; };
+  set("ugc-hook", `e.g. I didn't know ${n} could do this until last week…`);
+  set("ugc-problem", `e.g. the problem ${n} solves for your audience`);
+  set("ugc-product-moment", `e.g. how ${n} shows up — the key feature or moment`);
+  set("ugc-outcome", `e.g. what changed after using ${n}`);
+  set("ugc-cta", `e.g. try ${n} — link in bio`);
+  set("ugc-tone-notes", `e.g. ${brand.tone || "casual, direct"}`);
+  // Also update the main idea input placeholder
+  els.studioIdeaInput.placeholder = `${desc || n} content idea…`;
 }
 
 els.studioProductSelect.addEventListener("change", async () => {
@@ -222,6 +238,9 @@ if (els.studioStylePreset) {
     if (styleId.startsWith("ugc-faceless")) studioState.workflowType = "ugc-faceless";
     else if (styleId.startsWith("ugc-voiceover")) studioState.workflowType = "ugc-voiceover";
     else studioState.workflowType = "slideshow";
+    // Show/hide UGC brief panel
+    const briefPanel = document.getElementById("ugc-brief-panel");
+    if (briefPanel) briefPanel.classList.toggle("hidden", !styleId.startsWith("ugc-"));
     if (style && els.studioStylePreviewBody) {
       els.studioStylePreview.classList.remove("hidden");
       const isUgc = styleId.startsWith("ugc-");
@@ -278,6 +297,11 @@ initLibraryListeners();
 initAdminListeners();
 initStylesListeners();
 initBrandEditorListeners();
+
+// ── UGC brief panel ───────────────────────────────────────────────────────────
+document.getElementById("ugc-brief-close")?.addEventListener("click", () => {
+  document.getElementById("ugc-brief-panel")?.classList.add("hidden");
+});
 
 // ── Create brand modal ────────────────────────────────────────────────────────
 {

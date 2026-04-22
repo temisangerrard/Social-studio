@@ -530,10 +530,20 @@ export interface StructuredPromptOutput {
   renderSpec: RenderSpec;
 }
 
+export interface UgcBrief {
+  hook?: string;
+  problem?: string;
+  productMoment?: string;
+  outcome?: string;
+  cta?: string;
+  toneNotes?: string;
+}
+
 export interface StyleControlledRequest {
   styleCardId: string;
   generationMode?: GenerationMode;
   textDensity?: TextDensity;
   referenceLockStrength?: ReferenceLockStrength;
   imageTreatment?: ImageTreatment;
+  ugcBrief?: UgcBrief;
 }
