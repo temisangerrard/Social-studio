@@ -321,6 +321,7 @@ export interface GenerationRequest {
   contentTypeId?: string;
   routingDecision?: RoutingDecision;
   routingTrace?: RoutingTrace;
+  styleControl?: StyleControlledRequest;
 }
 
 export interface StructuredRecipe {
@@ -480,4 +481,86 @@ export interface BatchGenerationRequest {
   brandProfileId: string;
   visualMode?: VisualMode;
   deliveryTargets?: DeliveryTarget;
+}
+
+// ── Style-Controlled Creative Pipeline ────────────────────────────────────────
+
+export type GenerationMode = "image-first" | "layout-first" | "reference-match" | "brand-adapted";
+export type TextDensity = "low" | "medium" | "high";
+export type ReferenceLockStrength = "loose" | "medium" | "tight";
+export type ImageTreatment = "photographic" | "illustrated" | "collage" | "monochrome";
+
+export interface StyleVisualTraits {
+  layout: string[];
+  typography: string[];
+  colorMode: string;
+  imageTreatment: string[];
+  composition: string[];
+  tone: string[];
+}
+
+export interface StyleContentRules {
+  maxTextWordsPerSlide: number;
+  headlineRequired: boolean;
+  bodyRequired: boolean;
+  captionStyle: string;
+  avoid: string[];
+}
+
+export interface StyleGenerationRequirements {
+  needsImage: boolean;
+  needsLayoutEngine: boolean;
+  needsTypographyPairing: boolean;
+}
+
+export interface StyleCard {
+  id: string;
+  name: string;
+  intent: string;
+  imageStyle: string;
+  layoutStyle: string;
+  copyStyle: string;
+  visualTraits: StyleVisualTraits;
+  contentRules: StyleContentRules;
+  generationRequirements: StyleGenerationRequirements;
+  negativeConstraints: string[];
+  source: "builtin" | "extracted" | "custom";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreativeBrief {
+  styleCardId: string;
+  styleName: string;
+  topic: string;
+  visualAngle: string;
+  slideNarrative: string[];
+  imageBrief: string;
+  layoutBrief: string;
+  copyDensity: TextDensity;
+  typographyMood: string;
+  renderRecommendation: string;
+}
+
+export interface RenderSpec {
+  aspectRatio: string;
+  safeMargins: number;
+  textAlignment: string;
+  imageCrop: string;
+}
+
+export interface StructuredPromptOutput {
+  creativeBrief: CreativeBrief;
+  imagePrompt: string;
+  layoutPrompt: string;
+  textOverlayRules: string;
+  renderSpec: RenderSpec;
+}
+
+export interface StyleControlledRequest {
+  styleCardId?: string;
+  generationMode?: GenerationMode;
+  textDensity?: TextDensity;
+  referenceLockStrength?: ReferenceLockStrength;
+  imageTreatment?: ImageTreatment;
 }

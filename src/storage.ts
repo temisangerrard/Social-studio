@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { AssistantSession, BoardDocument, BrandProfile, CalendarSlot, ContentPillar } from "./types.ts";
+import type { AssistantSession, BoardDocument, BrandProfile, CalendarSlot, ContentPillar, StyleCard } from "./types.ts";
 
 interface Storage {
   listBrandProfiles(): Promise<BrandProfile[]>;
@@ -20,6 +20,10 @@ interface Storage {
   getContentPillar(id: string): Promise<ContentPillar | null>;
   saveContentPillar(pillar: ContentPillar): Promise<void>;
   deleteContentPillar(id: string): Promise<void>;
+  listStyleCards(): Promise<StyleCard[]>;
+  getStyleCard(id: string): Promise<StyleCard | null>;
+  saveStyleCard(card: StyleCard): Promise<void>;
+  deleteStyleCard(id: string): Promise<void>;
 }
 
 async function readJsonFile<T>(filePath: string): Promise<T | null> {
@@ -65,6 +69,7 @@ export function createStorage(rootDir: string): Storage {
   const sessionsDir = path.join(rootDir, "workspace", "sessions");
   const calendarDir = path.join(rootDir, "workspace", "calendar");
   const pillarsDir = path.join(rootDir, "workspace", "pillars");
+  const stylesDir = path.join(rootDir, "workspace", "styles");
 
   return {
     async listBrandProfiles() {
@@ -143,6 +148,27 @@ export function createStorage(rootDir: string): Storage {
     async deleteContentPillar(id: string) {
       try {
         await fs.unlink(path.join(pillarsDir, `${id}.json`));
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
+    },
+
+    async listStyleCards() {
+      const cards = await listJsonDirectory<StyleCard>(stylesDir);
+      return cards.sort((a, b) => a.name.localeCompare(b.name));
+    },
+
+    async getStyleCard(id: string) {
+      return readJsonFile<StyleCard>(path.join(stylesDir, `${id}.json`));
+    },
+
+    async saveStyleCard(card: StyleCard) {
+      await writeJsonFile(path.join(stylesDir, `${card.id}.json`), card);
+    },
+
+    async deleteStyleCard(id: string) {
+      try {
+        await fs.unlink(path.join(stylesDir, `${id}.json`));
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
       }

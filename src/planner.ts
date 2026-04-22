@@ -541,6 +541,12 @@ export function assignUploadedAssetsToSlides(slides: Slide[], request: Generatio
       if (targetIdx !== -1) {
         result[targetIdx] = { ...result[targetIdx], uploaded_asset_url: upload.url };
       }
+    } else {
+      // Unclassified upload — assign to first slide without an uploaded asset
+      const freeIdx = result.findIndex((s) => !s.uploaded_asset_url);
+      if (freeIdx !== -1) {
+        result[freeIdx] = { ...result[freeIdx], uploaded_asset_url: upload.url };
+      }
     }
   }
 
