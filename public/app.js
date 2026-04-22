@@ -59,6 +59,35 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
   if (!idea) return;
   if (!studioState.selectedStyleId) { showStatus("Select a style preset first."); return; }
 
+  const isUgc = studioState.workflowType?.startsWith("ugc-");
+  const briefPanel = document.getElementById("ugc-brief-panel");
+
+  // UGC two-step: first click drafts the brief, second click generates
+  if (isUgc && briefPanel && !studioState.ugcBriefApproved) {
+    setButtonLoading(els.studioSubmit, "Drafting…");
+    try {
+      const res = await fetch("/api/ugc-brief", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idea, brandProfileId: els.studioProductSelect.value })
+      });
+      const brief = await res.json();
+      document.getElementById("ugc-hook").value = brief.hook || "";
+      document.getElementById("ugc-problem").value = brief.problem || "";
+      document.getElementById("ugc-product-moment").value = brief.productMoment || "";
+      document.getElementById("ugc-outcome").value = brief.outcome || "";
+      document.getElementById("ugc-cta").value = brief.cta || "";
+      document.getElementById("ugc-tone-notes").value = brief.toneNotes || "";
+      briefPanel.classList.remove("hidden");
+      studioState.ugcBriefApproved = true;
+      els.studioSubmit.textContent = "Generate";
+    } catch (err) { showStatus(err instanceof Error ? err.message : "Brief generation failed."); }
+    finally { clearButtonLoading(els.studioSubmit); }
+    return;
+  }
+
+  // Reset for next run
+  if (isUgc) studioState.ugcBriefApproved = false;
+
   setButtonLoading(els.studioSubmit, "Planning…");
   showStatus("Planning content strategy…");
   const routeInlineEl = document.getElementById("studio-route-inline");
@@ -240,7 +269,9 @@ if (els.studioStylePreset) {
     else studioState.workflowType = "slideshow";
     // Show/hide UGC brief panel
     const briefPanel = document.getElementById("ugc-brief-panel");
-    if (briefPanel) briefPanel.classList.toggle("hidden", !styleId.startsWith("ugc-"));
+    if (briefPanel) briefPanel.classList.add("hidden"); // always hide on preset change, GLM fills it
+    studioState.ugcBriefApproved = false;
+    els.studioSubmit.textContent = styleId.startsWith("ugc-") ? "Draft Brief" : "Generate";
     if (style && els.studioStylePreviewBody) {
       els.studioStylePreview.classList.remove("hidden");
       const isUgc = styleId.startsWith("ugc-");
