@@ -308,3 +308,50 @@ textarea {
   flex-wrap: wrap;
   gap: 10px;
 }
+
+/* ── Mobile tab bar (hidden on desktop, shown via responsive.css) ──────── */
+
+.mobile-tabs {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  height: 60px;
+  background: rgba(250, 249, 244, 0.97);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(175, 179, 170, 0.15);
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 8px;
+}
+
+.mobile-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: color 0.12s, background 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-tab svg {
+  opacity: 0.5;
+  transition: opacity 0.12s;
+}
+
+.mobile-tab.is-active {
+  color: var(--brand-strong);
+}
+
+.mobile-tab.is-active svg {
+  opacity: 1;
+}

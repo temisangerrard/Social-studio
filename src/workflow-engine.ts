@@ -129,6 +129,14 @@ export function buildWorkflowRecipe(request: GenerationRequest): WorkflowRecipe 
     };
   }
 
+  if (workflowType === "ugc-faceless" || workflowType === "ugc-voiceover") {
+    return {
+      workflowType,
+      operation: "image-generate",
+      model: "fal-ai/flux/schnell"
+    };
+  }
+
   return {
     workflowType,
     operation: "image-generate",

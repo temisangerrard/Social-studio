@@ -1,7 +1,7 @@
 export type Platform = "tiktok" | "instagram" | "linkedin";
 export type DeliveryTarget = "tiktok" | "instagram" | "linkedin" | "both" | "all";
 export type PostFormat = "slideshow" | "carousel" | "text-only";
-export type WorkflowType = "slideshow" | "mascot-variants" | "reference-edit" | "video-clip" | "reel-package" | "linkedin-carousel" | "linkedin-text";
+export type WorkflowType = "slideshow" | "mascot-variants" | "reference-edit" | "video-clip" | "reel-package" | "linkedin-carousel" | "linkedin-text" | "ugc-faceless" | "ugc-voiceover";
 export type VisualMode = "mascot-led" | "food-led" | "mixed";
 export type ConsistencyMode = "prompt-led" | "mascot-consistent";
 export type AssetType = "food_photo" | "product_photo" | "person_photo" | "screenshot" | "logo" | "document" | "unknown";
@@ -376,6 +376,12 @@ export interface PostMetadata {
   slides: Slide[];
   artifacts?: GeneratedArtifact[];
   reel_package?: ReelPackageDraft | null;
+  voiceover?: {
+    script: string;
+    audioPath: string | null;
+    voiceId: string;
+    durationEstimate: number;
+  } | null;
   output_dir: string;
   assets_dir: string;
   slides_dir: string;

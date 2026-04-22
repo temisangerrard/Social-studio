@@ -16,6 +16,7 @@ import {
 } from "./workflow-engine.ts";
 import { generateSlidesFromStyle, buildStructuredPrompt } from "./creative-director.ts";
 import { listBuiltinPresets, resolveStyleCard } from "./style-library.ts";
+import { generateVoiceover } from "./voice-generator.ts";
 import type {
   BrandProfile,
   ContentBrief,
@@ -281,7 +282,9 @@ function normalizeRequest(input: unknown): GenerationRequest {
       request.workflowType === "video-clip" ||
       request.workflowType === "reel-package" ||
       request.workflowType === "linkedin-carousel" ||
-      request.workflowType === "linkedin-text"
+      request.workflowType === "linkedin-text" ||
+      request.workflowType === "ugc-faceless" ||
+      request.workflowType === "ugc-voiceover"
         ? request.workflowType
         : "slideshow",
     visualMode:
@@ -675,6 +678,58 @@ export async function runPipelineFromRequest(
     }
   } else if (workflowType === "linkedin-text") {
     metadata.render_status = "skipped";
+  } else if (workflowType === "ugc-faceless" || workflowType === "ugc-voiceover") {
+    // UGC: generate slides (visuals) + voiceover audio
+    const finalSlides = plan.slides;
+    finalSlides.forEach((s: any, i: number) => { s.slide_number = i + 1; });
+
+    const slidesWithAssets = await imageGenerator(finalSlides, {
+      assetsDir,
+      falKey: process.env.FAL_KEY,
+      falModel: process.env.FAL_MODEL ?? brandProfile.providers.imageModel,
+      brandName: brandProfile.name,
+      brandColors: {
+        primaryColor: brandProfile.visual.primaryColor,
+        secondaryColor: brandProfile.visual.secondaryColor
+      },
+    });
+    metadata.slides = slidesWithAssets;
+    metadata.artifacts = slidesWithAssets.map((slide, index) => ({
+      id: `slide-${String(index + 1).padStart(2, "0")}`,
+      kind: "image" as const,
+      role: slide.role,
+      title: slide.text,
+      prompt: slide.image_prompt ?? slide.text,
+      asset_path: slide.asset_path ?? null,
+      preview_path: slide.asset_path ?? null,
+      source_asset_id: null,
+      variant_group: null,
+    }));
+
+    // Generate voiceover script from slide text
+    const voiceoverScript = plan.slides
+      .map((s: any) => s.text)
+      .filter(Boolean)
+      .join(". ");
+
+    const voiceResult = await generateVoiceover(
+      voiceoverScript,
+      assetsDir,
+      "voiceover"
+    );
+    metadata.voiceover = {
+      script: voiceoverScript,
+      audioPath: voiceResult.audioPath,
+      voiceId: voiceResult.voiceId,
+      durationEstimate: voiceResult.durationEstimate,
+    };
+
+    try {
+      await renderer(metadata);
+    } catch (error) {
+      metadata.render_status = "skipped";
+      metadata.render_error = error instanceof Error ? error.message : String(error);
+    }
   } else if (workflowType === "mascot-variants") {
     const count = resolveVariantCount(request);
     const variantAngles = ["hero framing", "playful kitchen pose", "product showcase", "reaction moment", "overhead layout", "close-up expression", "editorial composition", "social cover composition"];
