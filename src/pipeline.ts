@@ -532,12 +532,14 @@ export async function runPipelineFromRequest(
     },
     contentType: contentType ?? undefined
   });
-  const workflowType = shouldPreferRouting ? routingDecision.workflowType : resolveWorkflowType(request);
+  const isUgcWorkflow = request.workflowType === "ugc-faceless" || request.workflowType === "ugc-voiceover";
+  const workflowType = isUgcWorkflow ? request.workflowType : (shouldPreferRouting ? routingDecision.workflowType : resolveWorkflowType(request));
   const deliveryTargets = shouldPreferRouting ? routingDecision.deliveryTargets : resolveDeliveryTargets(request);
 
   const isPepperaCarousel =
-    routingDecision.routeFamily === "recipe" ||
-    ((brandProfile.id === "peppera" || brandProfile.name === "Peppera") && workflowType === "slideshow");
+    !isUgcWorkflow &&
+    (routingDecision.routeFamily === "recipe" ||
+    ((brandProfile.id === "peppera" || brandProfile.name === "Peppera") && workflowType === "slideshow"));
 
   const brief: ContentBrief = {
     product: brandProfile.name,
