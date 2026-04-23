@@ -4,6 +4,31 @@ export type PostFormat = "slideshow" | "carousel" | "text-only";
 export type WorkflowType = "slideshow" | "mascot-variants" | "reference-edit" | "video-clip" | "reel-package" | "linkedin-carousel" | "linkedin-text" | "ugc-faceless" | "ugc-voiceover";
 export type VisualMode = "mascot-led" | "food-led" | "mixed";
 export type ConsistencyMode = "prompt-led" | "mascot-consistent";
+
+// ── Video Strategy System ─────────────────────────────────────────────────────
+
+export type VideoStrategy =
+  | "storyboard-to-video"   // GPT Image 2 storyboard grid → Seedance 2.0 image-to-video
+  | "seedance-multishot"    // Seedance 2.0 text-to-video with Shot 1/2/3 labels + native audio
+  | "seedance-reference"    // Seedance 2.0 reference-to-video with brand assets
+  | "kling-text"            // Kling 3.0 text-to-video (single shot)
+  | "image-to-video";       // Animate an existing image via Seedance 2.0 or Kling i2v
+
+export interface VideoStrategyConfig {
+  strategy: VideoStrategy;
+  duration: number;           // seconds (4-15 for Seedance, 5/10 for Kling)
+  aspectRatio: "9:16" | "16:9" | "1:1";
+  resolution?: "480p" | "720p";
+  generateAudio: boolean;
+  /** For storyboard-to-video: number of panels in the grid (default 9 = 3×3) */
+  storyboardPanels?: number;
+  /** For image-to-video: source image URL or path */
+  sourceImageUrl?: string;
+  /** For seedance-reference: reference image URLs (up to 9) */
+  referenceImageUrls?: string[];
+  /** For seedance-reference: reference audio URL */
+  referenceAudioUrl?: string;
+}
 export type AssetType = "food_photo" | "product_photo" | "person_photo" | "screenshot" | "logo" | "document" | "unknown";
 export type ContentRouteFamily = "carousel" | "edited-image" | "recipe" | "flyer" | "linkedin-post" | "infographic";
 export type ContentHint = ContentRouteFamily;
@@ -283,6 +308,7 @@ export interface GenerationRequest {
   };
   targetAssetId?: string;
   videoOptions?: VideoOptions;
+  videoStrategy?: VideoStrategyConfig;
   variantCount?: number;
   deliveryTargets?: DeliveryTarget;
   contentTypeId?: string;

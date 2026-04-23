@@ -17,6 +17,8 @@ import {
 import { generateSlidesFromStyle, buildStructuredPrompt } from "./creative-director.ts";
 import { listBuiltinPresets, resolveStyleCard } from "./style-library.ts";
 import { generateVoiceover } from "./voice-generator.ts";
+import { stitchVideo } from "./video-stitcher.ts";
+import { executeVideoStrategy, resolveVideoStrategy } from "./video-strategies.ts";
 import type {
   BrandProfile,
   ContentBrief,
@@ -304,6 +306,9 @@ function normalizeRequest(input: unknown): GenerationRequest {
             consistencyMode: videoOptions.consistencyMode === "mascot-consistent" ? "mascot-consistent" : "prompt-led"
           }
         : undefined,
+    videoStrategy: request.videoStrategy && typeof request.videoStrategy === "object"
+      ? (request.videoStrategy as GenerationRequest["videoStrategy"])
+      : undefined,
     variantCount: typeof request.variantCount === "number" ? request.variantCount : undefined,
     deliveryTargets:
       request.deliveryTargets === "tiktok" || request.deliveryTargets === "instagram" || request.deliveryTargets === "both" || request.deliveryTargets === "linkedin" || request.deliveryTargets === "all"
@@ -704,44 +709,33 @@ export async function runPipelineFromRequest(
   } else if (workflowType === "linkedin-text") {
     metadata.render_status = "skipped";
   } else if (workflowType === "ugc-faceless" || workflowType === "ugc-voiceover") {
-    // UGC: generate slides (visuals) + voiceover audio
-    const finalSlides = plan.slides;
-    finalSlides.forEach((s: any, i: number) => { s.slide_number = i + 1; });
+    // UGC: multi-strategy AI video generation + voiceover
+    const scenes = plan.slides
+      .filter((s: any) => s.text && !s.text.startsWith("Content slide"))
+      .map((s: any, i: number) => ({
+        prompt: s.image_prompt || s.text,
+        title: s.text,
+        role: s.role || `scene-${i + 1}`,
+      }));
 
-    const slidesWithAssets = await imageGenerator(finalSlides, {
+    // Resolve video strategy (auto-selects based on brand/uploads/context)
+    const strategyConfig = resolveVideoStrategy(request, brandProfile);
+    console.log(`[pipeline] UGC video strategy: ${strategyConfig.strategy}`);
+
+    const strategyResult = await executeVideoStrategy({
+      scenes,
+      config: strategyConfig,
       assetsDir,
       falKey: process.env.FAL_KEY,
-      falModel: process.env.FAL_MODEL ?? brandProfile.providers.imageModel,
-      brandName: brandProfile.name,
-      brandColors: {
-        primaryColor: brandProfile.visual.primaryColor,
-        secondaryColor: brandProfile.visual.secondaryColor
-      },
+      brand: brandProfile,
+      request,
     });
-    metadata.slides = slidesWithAssets;
-    metadata.artifacts = slidesWithAssets.map((slide, index) => ({
-      id: `slide-${String(index + 1).padStart(2, "0")}`,
-      kind: "image" as const,
-      role: slide.role,
-      title: slide.text,
-      prompt: slide.image_prompt ?? slide.text,
-      asset_path: slide.asset_path ?? null,
-      preview_path: slide.asset_path ?? null,
-      source_asset_id: null,
-      variant_group: null,
-    }));
+    metadata.artifacts = strategyResult.artifacts;
 
-    // Generate voiceover script from slide narrative (not generic slide text)
-    const voiceoverScript = metadata.slides
-      .map((s: any) => s.text)
-      .filter((t: string) => t && !t.startsWith("Content slide"))
-      .join("\n\n");
-
-    const voiceResult = await generateVoiceover(
-      voiceoverScript,
-      assetsDir,
-      "voiceover"
-    );
+    // Generate voiceover (Seedance generates native audio, but we still want
+    // a separate ElevenLabs voiceover for the narration track)
+    const voiceoverScript = scenes.map((s) => s.title).join("\n\n");
+    const voiceResult = await generateVoiceover(voiceoverScript, assetsDir, "voiceover");
     metadata.voiceover = {
       script: voiceoverScript,
       audioPath: voiceResult.audioPath,
@@ -749,12 +743,8 @@ export async function runPipelineFromRequest(
       durationEstimate: voiceResult.durationEstimate,
     };
 
-    try {
-      await renderer(metadata);
-    } catch (error) {
-      metadata.render_status = "skipped";
-      metadata.render_error = error instanceof Error ? error.message : String(error);
-    }
+    metadata.slides = scenes.map((s: any, i: number) => ({ ...s, slide_number: i + 1 }));
+    metadata.render_status = "skipped";
   } else if (workflowType === "mascot-variants") {
     const count = resolveVariantCount(request);
     const variantAngles = ["hero framing", "playful kitchen pose", "product showcase", "reaction moment", "overhead layout", "close-up expression", "editorial composition", "social cover composition"];
