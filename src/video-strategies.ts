@@ -89,17 +89,14 @@ export function defaultVideoStrategy(): VideoStrategyConfig {
 export function resolveVideoStrategy(request: GenerationRequest, brand: BrandProfile): VideoStrategyConfig {
   if (request.videoStrategy) return request.videoStrategy;
 
-  // Auto-select based on context
-  const hasUploads = (request.uploadedAssets?.length ?? 0) > 0;
-  const hasMascotRefs = (brand.mascot?.referenceImages?.length ?? 0) > 0;
-
   // If user uploaded an image, animate it
+  const hasUploads = (request.uploadedAssets?.length ?? 0) > 0;
   if (hasUploads) {
     const firstImage = request.uploadedAssets?.find((a) => a.mimeType.startsWith("image/"));
     if (firstImage) {
       return {
         strategy: "image-to-video",
-        duration: 10,
+        duration: 15,
         aspectRatio: "9:16",
         resolution: "720p",
         generateAudio: true,
@@ -108,22 +105,10 @@ export function resolveVideoStrategy(request: GenerationRequest, brand: BrandPro
     }
   }
 
-  // If brand has mascot/product references, use reference-to-video
-  if (hasMascotRefs) {
-    return {
-      strategy: "seedance-reference",
-      duration: 10,
-      aspectRatio: "9:16",
-      resolution: "720p",
-      generateAudio: true,
-      referenceImageUrls: brand.mascot!.referenceImages.slice(0, 9),
-    };
-  }
-
-  // Default: storyboard-to-video for best quality
+  // Default: GPT Image 2 storyboard grid → Seedance 2.0 image-to-video
   return {
     strategy: "storyboard-to-video",
-    duration: 10,
+    duration: 15,
     aspectRatio: "9:16",
     resolution: "720p",
     generateAudio: true,
@@ -145,13 +130,22 @@ async function runStoryboardToVideo(params: {
   const cols = Math.ceil(Math.sqrt(panels));
 
   // Step 1: Generate storyboard grid via GPT Image 2
-  const storyboardPrompt = [
-    `Create a ${cols}×${cols} storyboard grid for a short video.`,
-    `Brand: ${brand.name}. Style: ${brand.tone}.`,
+  const storyboardPrompt = config.storyboardPrompt || [
+    `Create a ${cols}×${cols} storyboard grid (${panels} panels) for a vertical 9:16 short-form video ad.`,
+    `Brand: ${brand.name} — ${brand.description || ""}.`,
+    `Visual tone: ${brand.tone || "bold, modern"}.`,
+    `Brand colors: ${brand.visual.primaryColor} primary, ${brand.visual.secondaryColor} secondary.`,
+    brand.mascot ? `Character: ${brand.mascot.name} — ${brand.mascot.description}. ${brand.mascot.visualPrompt}.` : "",
     `Story: ${prompt}`,
-    `Each panel should show a distinct scene moment, numbered 1-${panels}.`,
-    `Clean panels with clear visual progression. Cinematic composition.`,
-  ].join(" ");
+    `Panel 1: Hook — grab attention immediately with a bold visual or question.`,
+    `Panel 2-3: Setup — show the problem or starting situation.`,
+    `Panel 4-6: Action — the key moments, product in use, transformation happening.`,
+    `Panel 7-8: Payoff — the result, the reveal, the satisfying outcome.`,
+    `Panel 9: CTA — brand logo or call to action, clean and memorable.`,
+    `Style: Each panel is a distinct camera shot. Use varied angles — close-ups, overhead, wide shots.`,
+    `Panels should have clear visual progression and cinematic composition.`,
+    `No text overlays in the panels. Pure visual storytelling.`,
+  ].filter(Boolean).join(" ");
 
   let storyboardPath: string | null = null;
   try {
@@ -170,8 +164,21 @@ async function runStoryboardToVideo(params: {
   }
 
   // Step 2: Use storyboard as input to Seedance 2.0 image-to-video
+  const videoPromptText = config.videoPrompt || [
+    `Animate this storyboard into a cinematic vertical video.`,
+    `Move through each panel as a distinct shot with smooth transitions.`,
+    `Shot 1: Hook — fast cut, attention-grabbing opening.`,
+    `Shot 2-3: Setup — camera reveals the situation, slow dolly or pan.`,
+    `Shot 4-6: Action — dynamic movement, close-ups of key moments, handheld energy.`,
+    `Shot 7-8: Payoff — satisfying reveal, slow push-in on the result.`,
+    `Shot 9: CTA — clean hold on the final frame.`,
+    `Story context: ${prompt}`,
+    `Sound: natural ambient audio matching each scene — kitchen sounds, sizzling, plating.`,
+    `Pacing: start fast, slow in the middle for the key moment, end clean.`,
+  ].join(" ");
+
   const videoInput: Record<string, unknown> = {
-    prompt: `Animate this storyboard into a cinematic video. ${prompt}. Smooth transitions between scenes.`,
+    prompt: videoPromptText,
     duration: String(config.duration),
     aspect_ratio: config.aspectRatio,
     resolution: config.resolution ?? "720p",
@@ -203,9 +210,22 @@ async function runSeedanceMultishot(params: {
 }): Promise<string> {
   const { scenes, config, assetsDir, falKey } = params;
 
-  // Build multi-shot prompt with labeled shots
-  const shotPrompt = scenes
-    .map((s, i) => `Shot ${i + 1}: ${s.prompt}`)
+  // Build multi-shot prompt with cinematic direction per shot
+  const shotPrompt = config.videoPrompt || scenes
+    .map((s, i) => {
+      const cameraHints = [
+        "close-up, fast cut",
+        "medium shot, slow pan",
+        "overhead angle, steady",
+        "tracking shot, handheld energy",
+        "wide shot, dolly in",
+        "extreme close-up, rack focus",
+        "pull-back reveal",
+        "static hold, clean composition",
+      ];
+      const camera = cameraHints[i % cameraHints.length];
+      return `Shot ${i + 1}: ${s.prompt}. Camera: ${camera}.`;
+    })
     .join(" ");
 
   const result = await submitAndPoll(MODELS.seedanceText, {
@@ -237,9 +257,9 @@ async function runSeedanceReference(params: {
 
   // Build prompt with @Image1, @Image2 tags
   const refTags = refs.map((_, i) => `@Image${i + 1}`).join(", ");
-  const fullPrompt = refs.length > 0
-    ? `${refTags} are the brand reference images. ${prompt}`
-    : prompt;
+  const fullPrompt = config.videoPrompt || (refs.length > 0
+    ? `${refTags} are the brand reference images. Keep the character and product visually consistent with these references. ${prompt}. Cinematic camera movement, smooth transitions between scenes.`
+    : `${prompt}. Cinematic camera movement, smooth transitions between scenes.`);
 
   const input: Record<string, unknown> = {
     prompt: fullPrompt,
@@ -277,8 +297,9 @@ async function runKlingText(params: {
 }): Promise<string> {
   const { prompt, config, assetsDir, falKey } = params;
 
+  const klingPrompt = config.videoPrompt || `${prompt}. Cinematic composition, smooth motion, high production value.`;
   const result = await submitAndPoll(MODELS.klingText, {
-    prompt,
+    prompt: klingPrompt,
     duration: config.duration <= 5 ? 5 : 10,
     aspect_ratio: config.aspectRatio,
     generate_audio: config.generateAudio,
@@ -306,8 +327,9 @@ async function runImageToVideo(params: {
   if (!imageUrl) throw new Error("image-to-video requires sourceImageUrl");
 
   // Prefer Seedance 2.0 for image-to-video (better quality + audio)
+  const animatePrompt = config.videoPrompt || `Animate this image into a cinematic video. ${prompt}. Slow camera push-in, subtle motion on the subject, natural ambient sound.`;
   const result = await submitAndPoll(MODELS.seedanceImage, {
-    prompt,
+    prompt: animatePrompt,
     image_url: imageUrl,
     duration: String(config.duration),
     aspect_ratio: config.aspectRatio,
