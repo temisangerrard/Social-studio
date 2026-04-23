@@ -18,6 +18,7 @@ import { generateSlidesFromStyle, buildStructuredPrompt } from "./creative-direc
 import { listBuiltinPresets, resolveStyleCard } from "./style-library.ts";
 import { generateVoiceover } from "./voice-generator.ts";
 import { stitchVideo } from "./video-stitcher.ts";
+import { executeVideoStrategy, resolveVideoStrategy } from "./video-strategies.ts";
 import type {
   BrandProfile,
   ContentBrief,
@@ -305,6 +306,9 @@ function normalizeRequest(input: unknown): GenerationRequest {
             consistencyMode: videoOptions.consistencyMode === "mascot-consistent" ? "mascot-consistent" : "prompt-led"
           }
         : undefined,
+    videoStrategy: request.videoStrategy && typeof request.videoStrategy === "object"
+      ? (request.videoStrategy as GenerationRequest["videoStrategy"])
+      : undefined,
     variantCount: typeof request.variantCount === "number" ? request.variantCount : undefined,
     deliveryTargets:
       request.deliveryTargets === "tiktok" || request.deliveryTargets === "instagram" || request.deliveryTargets === "both" || request.deliveryTargets === "linkedin" || request.deliveryTargets === "all"
@@ -705,32 +709,32 @@ export async function runPipelineFromRequest(
   } else if (workflowType === "linkedin-text") {
     metadata.render_status = "skipped";
   } else if (workflowType === "ugc-faceless" || workflowType === "ugc-voiceover") {
-    // UGC: generate real AI video clips via Kling + voiceover audio
-    const scenes = plan.slides.filter((s: any) => s.text && !s.text.startsWith("Content slide"));
-    const scenePrompts = scenes.map((s: any, i: number) => ({
-      prompt: s.image_prompt || s.text,
-      title: s.text,
-      role: s.role || `scene-${i + 1}`,
-    }));
+    // UGC: multi-strategy AI video generation + voiceover
+    const scenes = plan.slides
+      .filter((s: any) => s.text && !s.text.startsWith("Content slide"))
+      .map((s: any, i: number) => ({
+        prompt: s.image_prompt || s.text,
+        title: s.text,
+        role: s.role || `scene-${i + 1}`,
+      }));
 
-    // Generate video clips in parallel
-    const clipRequest: GenerationRequest = { ...request, workflowType: "video-clip" };
-    metadata.artifacts = await Promise.all(
-      scenePrompts.map((scene, index) =>
-        createVideoArtifact({
-          prompt: scene.prompt,
-          title: scene.title,
-          role: scene.role,
-          artifactId: `ugc-clip-${index + 1}`,
-          assetsDir,
-          brandProfile,
-          request: clipRequest,
-        })
-      )
-    );
+    // Resolve video strategy (auto-selects based on brand/uploads/context)
+    const strategyConfig = resolveVideoStrategy(request, brandProfile);
+    console.log(`[pipeline] UGC video strategy: ${strategyConfig.strategy}`);
 
-    // Generate voiceover
-    const voiceoverScript = scenes.map((s: any) => s.text).join("\n\n");
+    const strategyResult = await executeVideoStrategy({
+      scenes,
+      config: strategyConfig,
+      assetsDir,
+      falKey: process.env.FAL_KEY,
+      brand: brandProfile,
+      request,
+    });
+    metadata.artifacts = strategyResult.artifacts;
+
+    // Generate voiceover (Seedance generates native audio, but we still want
+    // a separate ElevenLabs voiceover for the narration track)
+    const voiceoverScript = scenes.map((s) => s.title).join("\n\n");
     const voiceResult = await generateVoiceover(voiceoverScript, assetsDir, "voiceover");
     metadata.voiceover = {
       script: voiceoverScript,
