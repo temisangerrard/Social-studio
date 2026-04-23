@@ -109,6 +109,7 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
     studioState.canvasLoadingStage = null;
     hideCanvasProgress();
     clearButtonLoading(els.studioSubmit);
+    els.studioSubmit.disabled = false;
     showCanvasProgress(err instanceof Error ? err.message : String(err));
   }
 });
@@ -367,7 +368,7 @@ async function loadProducts() {
   const [productsRes, brandsRes, stylesRes] = await Promise.all([fetch("/api/products"), fetch("/api/brands"), fetch("/api/styles")]);
   studioState.products = await productsRes.json();
   studioState.brands = await brandsRes.json();
-  studioState.stylePresets = await stylesRes.json();
+  studioState.stylePresets = await stylesRes.json().catch(() => []);
   els.studioProductSelect.innerHTML = studioState.brands.map((b) => `<option value="${b.id}">${b.name}</option>`).join("") + `<option value="__new__">+ New brand</option>`;
   els.studioProductSelect.value = studioState.brands[0]?.id || "peppera";
   calEls.brandSelect.innerHTML = `<option value="">All brands</option>` + studioState.products.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
@@ -380,9 +381,10 @@ async function loadProducts() {
       els.studioStylePreset.value = studioState.stylePresets[0].id;
       studioState.selectedStyleId = studioState.stylePresets[0].id;
       if (els.studioStyleControls) els.studioStyleControls.classList.remove("hidden");
-      els.studioSubmit.disabled = false;
     }
   }
+  // Always enable the submit button after loading — even if styles are empty
+  els.studioSubmit.disabled = false;
 }
 
 // ── Mobile inspector ──────────────────────────────────────────────────────────

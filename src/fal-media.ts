@@ -12,7 +12,7 @@ function sanitizeFilename(value: string): string {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
-async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 12000): Promise<Response> {
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = 60000): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -76,7 +76,7 @@ async function submitFalJob(model: string, input: unknown, falKey: string): Prom
 }
 
 async function downloadToFile(url: string, outputPath: string): Promise<void> {
-  const response = await fetchWithTimeout(url, {});
+  const response = await fetchWithTimeout(url, {}, 120000);
   if (!response.ok) {
     throw new Error(`asset download failed (${response.status})`);
   }
@@ -170,10 +170,17 @@ export async function generateFalVideoAsset(params: {
           negative_prompt: "blur, distort, and low quality"
         };
 
-  const result = await submitFalJob(recipe.model, input, falKey);
+  let result: any;
+  try {
+    result = await submitFalJob(recipe.model, input, falKey);
+  } catch (error) {
+    console.warn(`[fal-media] Video job failed: ${error instanceof Error ? error.message : error}`);
+    return null;
+  }
   const video = firstVideoUrl(result);
   if (!video?.url) {
-    throw new Error("fal video result missing URL");
+    console.warn("[fal-media] fal video result missing URL");
+    return null;
   }
 
   const ext = video.file_name?.split(".").pop() || "mp4";
