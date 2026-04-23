@@ -116,6 +116,28 @@ export function resolveVideoStrategy(request: GenerationRequest, brand: BrandPro
   };
 }
 
+// ── Panel beat generator ───────────────────────────────────────────────────────
+
+function buildPanelBeats(panels: number): string[] {
+  const beats: Array<{ label: string; desc: string }> = [
+    { label: "Hook", desc: "grab attention immediately with a bold visual or question" },
+    { label: "Setup", desc: "show the problem or starting situation" },
+    { label: "Context", desc: "establish the world, environment, or character" },
+    { label: "Action", desc: "the key moment, product in use, transformation happening" },
+    { label: "Escalation", desc: "build tension or momentum" },
+    { label: "Climax", desc: "the peak moment, the big reveal" },
+    { label: "Payoff", desc: "the satisfying result or outcome" },
+    { label: "Resolution", desc: "wrap up, show the benefit" },
+    { label: "CTA", desc: "brand logo or call to action, clean and memorable" },
+  ];
+  const selected = beats.slice(0, panels);
+  // If fewer beats than panels, repeat "Action" for middle panels
+  while (selected.length < panels) {
+    selected.splice(selected.length - 1, 0, { label: "Action", desc: "continuation of the key sequence" });
+  }
+  return selected.map((b, i) => `Panel ${i + 1}: ${b.label} — ${b.desc}.`);
+}
+
 // ── Strategy: GPT Image 2 storyboard → Seedance 2.0 image-to-video ───────────
 
 async function runStoryboardToVideo(params: {
@@ -130,6 +152,7 @@ async function runStoryboardToVideo(params: {
   const cols = Math.ceil(Math.sqrt(panels));
 
   // Step 1: Generate storyboard grid via GPT Image 2
+  const panelBeats = buildPanelBeats(panels);
   const storyboardPrompt = config.storyboardPrompt || [
     `Create a ${cols}×${cols} storyboard grid (${panels} panels) for a vertical 9:16 short-form video ad.`,
     `Brand: ${brand.name} — ${brand.description || ""}.`,
@@ -137,11 +160,7 @@ async function runStoryboardToVideo(params: {
     `Brand colors: ${brand.visual.primaryColor} primary, ${brand.visual.secondaryColor} secondary.`,
     brand.mascot ? `Character: ${brand.mascot.name} — ${brand.mascot.description}. ${brand.mascot.visualPrompt}.` : "",
     `Story: ${prompt}`,
-    `Panel 1: Hook — grab attention immediately with a bold visual or question.`,
-    `Panel 2-3: Setup — show the problem or starting situation.`,
-    `Panel 4-6: Action — the key moments, product in use, transformation happening.`,
-    `Panel 7-8: Payoff — the result, the reveal, the satisfying outcome.`,
-    `Panel 9: CTA — brand logo or call to action, clean and memorable.`,
+    ...panelBeats,
     `Style: Each panel is a distinct camera shot. Use varied angles — close-ups, overhead, wide shots.`,
     `Panels should have clear visual progression and cinematic composition.`,
     `No text overlays in the panels. Pure visual storytelling.`,
@@ -167,13 +186,12 @@ async function runStoryboardToVideo(params: {
   const videoPromptText = config.videoPrompt || [
     `Animate this storyboard into a cinematic vertical video.`,
     `Move through each panel as a distinct shot with smooth transitions.`,
-    `Shot 1: Hook — fast cut, attention-grabbing opening.`,
-    `Shot 2-3: Setup — camera reveals the situation, slow dolly or pan.`,
-    `Shot 4-6: Action — dynamic movement, close-ups of key moments, handheld energy.`,
-    `Shot 7-8: Payoff — satisfying reveal, slow push-in on the result.`,
-    `Shot 9: CTA — clean hold on the final frame.`,
+    ...buildPanelBeats(panels).map((beat, i) => {
+      const cameras = ["fast cut", "slow dolly", "pan right", "handheld energy", "tracking shot", "push-in", "pull-back reveal", "overhead", "static hold"];
+      return beat.replace(/\.$/, "") + `. Camera: ${cameras[i % cameras.length]}.`;
+    }),
     `Story context: ${prompt}`,
-    `Sound: natural ambient audio matching each scene — kitchen sounds, sizzling, plating.`,
+    `Sound: natural ambient audio matching each scene.`,
     `Pacing: start fast, slow in the middle for the key moment, end clean.`,
   ].join(" ");
 
@@ -257,9 +275,8 @@ async function runSeedanceReference(params: {
 
   // Build prompt with @Image1, @Image2 tags
   const refTags = refs.map((_, i) => `@Image${i + 1}`).join(", ");
-  const fullPrompt = config.videoPrompt || (refs.length > 0
-    ? `${refTags} are the brand reference images. Keep the character and product visually consistent with these references. ${prompt}. Cinematic camera movement, smooth transitions between scenes.`
-    : `${prompt}. Cinematic camera movement, smooth transitions between scenes.`);
+  const refPrefix = refs.length > 0 ? `${refTags} are the brand reference images. ` : "";
+  const fullPrompt = refPrefix + (config.videoPrompt || `Keep the character and product visually consistent with these references. ${prompt}. Cinematic camera movement, smooth transitions between scenes.`);
 
   const input: Record<string, unknown> = {
     prompt: fullPrompt,
