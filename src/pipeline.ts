@@ -17,6 +17,7 @@ import {
 import { generateSlidesFromStyle, buildStructuredPrompt } from "./creative-director.ts";
 import { listBuiltinPresets, resolveStyleCard } from "./style-library.ts";
 import { generateVoiceover } from "./voice-generator.ts";
+import { stitchVideo } from "./video-stitcher.ts";
 import type {
   BrandProfile,
   ContentBrief,
@@ -754,6 +755,51 @@ export async function runPipelineFromRequest(
     } catch (error) {
       metadata.render_status = "skipped";
       metadata.render_error = error instanceof Error ? error.message : String(error);
+    }
+
+    // Stitch rendered slides + voiceover into a video
+    const renderedSlides = metadata.slides
+      .map((s) => path.join(slidesDir, `slide-${String(s.slide_number).padStart(2, "0")}.png`));
+    const validSlides: string[] = [];
+    for (const p of renderedSlides) {
+      try { await fs.access(p); validSlides.push(p); } catch { /* skip missing */ }
+    }
+    // Fall back to generated asset images if renderer didn't produce PNGs
+    if (validSlides.length === 0) {
+      for (const s of metadata.slides) {
+        if (s.asset_path) { try { await fs.access(s.asset_path); validSlides.push(s.asset_path); } catch { /* skip */ } }
+      }
+    }
+    if (validSlides.length > 0) {
+      try {
+        const audioFile = voiceResult.audioPath.endsWith(".mp3") ? voiceResult.audioPath : null;
+        const { videoPath, durationSeconds } = await stitchVideo({
+          imagePaths: validSlides,
+          audioPath: audioFile,
+          audioDuration: voiceResult.durationEstimate,
+          outputDir: assetsDir,
+          filename: "ugc-video",
+        });
+        metadata.artifacts = [
+          ...(metadata.artifacts ?? []),
+          {
+            id: "ugc-video",
+            kind: "video" as const,
+            role: "ugc-video",
+            title: `${brandProfile.name} UGC Video`,
+            prompt: request.rawIdea,
+            asset_path: videoPath,
+            preview_path: videoPath,
+            source_asset_id: null,
+            variant_group: null,
+          },
+        ];
+        if (metadata.voiceover) {
+          metadata.voiceover.durationEstimate = durationSeconds;
+        }
+      } catch (err) {
+        console.warn(`[pipeline] Video stitching failed: ${err instanceof Error ? err.message : err}`);
+      }
     }
   } else if (workflowType === "mascot-variants") {
     const count = resolveVariantCount(request);
