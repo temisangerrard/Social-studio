@@ -39,6 +39,6 @@ export function resolveGenerationRouting({
           ...(contentTypeOverride ? { contentTypeId: contentTypeOverride } : {})
         }
       : undefined,
-    includeUgcBrief: isUgcStyle(selectedStyleId) && manualWorkflowType.startsWith("ugc-")
+    includeUgcBrief: false
   };
 }
