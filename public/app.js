@@ -32,6 +32,13 @@ import { renderBrandEditor, initBrandEditorListeners } from "./brand-editor.js";
 import { InlineEditor, schedulePatch } from "./inline-editor.js";
 import { loadUgc, initUgcListeners } from "./ugc.js";
 import { addUploadsToLibrary, selectUploadForRun } from "./upload-scope.js";
+import {
+  approveCreativeBrief,
+  buildCreativeBrief,
+  currentCreativeBriefSignature,
+  initCreativeBriefListeners,
+  invalidateCreativeBrief
+} from "./creative-brief.js";
 
 // ── View routing ──────────────────────────────────────────────────────────────
 const mobileTabs = Array.from(document.querySelectorAll(".mobile-tab[data-view]"));
@@ -60,7 +67,18 @@ function workflowTypeForStyle(styleId) {
 }
 
 function syncStudioSubmitUi() {
-  els.studioSubmit.textContent = "Generate";
+  const approved = studioState.creativeBriefApproved && studioState.creativeBriefSignature === currentCreativeBriefSignature();
+  els.studioSubmit.textContent = approved ? "GENERATE" : "DRAFT BRIEF";
+}
+
+async function generateApprovedStudioIdea(idea, notes) {
+  setButtonLoading(els.studioSubmit, "Generating…");
+  showCanvasProgress("Generating from approved creative direction…");
+  const output = await runGeneration(idea, notes);
+  finishGeneration(output);
+  clearButtonLoading(els.studioSubmit);
+  renderInspectorPackage();
+  syncStudioSubmitUi();
 }
 
 function firstStudioStyleId() {
@@ -99,6 +117,24 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
 
   if (studioState.selectedStyleId?.startsWith("ugc-")) {
     openDedicatedUgcTab(idea);
+    return;
+  }
+
+  const currentSignature = currentCreativeBriefSignature();
+  const hasApprovedBrief = studioState.creativeBriefApproved && studioState.creativeBriefSignature === currentSignature;
+  if (!hasApprovedBrief) {
+    setButtonLoading(els.studioSubmit, "Briefing…");
+    showCanvasProgress("Building creative directions…");
+    try {
+      await buildCreativeBrief();
+      document.getElementById("studio-drawer")?.classList.remove("hidden");
+      showCanvasProgress("Review the Creative Director brief, then approve to generate.");
+      clearButtonLoading(els.studioSubmit);
+      syncStudioSubmitUi();
+    } catch (err) {
+      clearButtonLoading(els.studioSubmit);
+      showCanvasProgress(err instanceof Error ? err.message : String(err));
+    }
     return;
   }
 
@@ -150,10 +186,7 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
         } else { uploadQueue.clear(); }
       } catch (uploadErr) { console.error("[studio] Upload error:", uploadErr); showStatus("Upload failed — files kept in queue for retry."); }
     }
-    const output = await runGeneration(idea, els.studioNotesInput.value.trim());
-    finishGeneration(output);
-    clearButtonLoading(els.studioSubmit);
-    renderInspectorPackage();
+    await generateApprovedStudioIdea(idea, els.studioNotesInput.value.trim());
   } catch (err) {
     studioState.canvasLoadingStage = null;
     hideCanvasProgress();
@@ -258,6 +291,7 @@ function updateUgcPlaceholders(brand) {
 }
 
 els.studioProductSelect.addEventListener("change", async () => {
+  invalidateCreativeBrief(); syncStudioSubmitUi();
   if (els.studioProductSelect.value === "__new__") {
     document.getElementById("brand-create-modal").classList.remove("hidden");
     els.studioProductSelect.value = studioState.brands[0]?.id || "peppera";
@@ -270,9 +304,9 @@ els.studioProductSelect.addEventListener("change", async () => {
 });
 els.studioVisualMode.addEventListener("change", () => { renderReferenceChips(); refreshRoutePreview(); });
 els.studioReferenceInput.addEventListener("input", renderReferenceChips);
-els.studioIdeaInput.addEventListener("input", () => refreshRoutePreview());
+els.studioIdeaInput.addEventListener("input", () => { invalidateCreativeBrief(); syncStudioSubmitUi(); refreshRoutePreview(); });
 els.studioNotesInput.addEventListener("input", () => refreshRoutePreview());
-els.studioPlatformSelect.addEventListener("change", () => refreshRoutePreview());
+els.studioPlatformSelect.addEventListener("change", () => { invalidateCreativeBrief(); syncStudioSubmitUi(); refreshRoutePreview(); });
 els.studioContentTypeSelect?.addEventListener("change", () => refreshRoutePreview());
 // ── Style preset change listener ──────────────────────────────────────────────
 if (els.studioStylePreset) {
@@ -340,6 +374,9 @@ initAdminListeners();
 initStylesListeners();
 initBrandEditorListeners();
 initUgcListeners();
+initCreativeBriefListeners({
+  generateApproved: () => els.studioQuickForm?.requestSubmit()
+});
 
 // ── Create brand modal ────────────────────────────────────────────────────────
 {
@@ -425,6 +462,7 @@ async function loadProducts() {
   }
   // Always enable the submit button after loading — even if styles are empty
   els.studioSubmit.disabled = false;
+  syncStudioSubmitUi();
 }
 
 // ── Mobile inspector ──────────────────────────────────────────────────────────

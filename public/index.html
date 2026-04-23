@@ -118,6 +118,25 @@
         </div>
         <div class="studio-drawer__body">
 
+          <!-- Section: Creative Director -->
+          <div class="drawer-section creative-brief">
+            <div class="drawer-section__header">
+              <div>
+                <p class="drawer-section__label">Creative Director</p>
+                <p class="creative-brief__hint">Turn a rough idea into directions, beats, visuals, and production assets before generation.</p>
+              </div>
+              <button id="creative-brief-build" class="drawer-section__action" type="button">Build brief</button>
+            </div>
+            <div id="creative-brief-panel" class="creative-brief__panel">
+              <p class="drawer-empty-hint">Enter an idea, then build a creative brief to review directions before generating.</p>
+            </div>
+            <div id="creative-brief-actions" class="creative-brief__actions hidden">
+              <input id="creative-brief-feedback" class="creative-brief__feedback" type="text" placeholder="Refine: less ad-like, funnier, more premium…" />
+              <button id="creative-brief-refine" class="ghost-button" type="button">Refine</button>
+              <button id="creative-brief-approve" class="primary-button" type="button">Approve & Generate</button>
+            </div>
+          </div>
+
           <!-- Section: Style -->
           <div class="drawer-section">
             <p class="drawer-section__label">Style Controls</p>

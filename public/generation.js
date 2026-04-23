@@ -6,6 +6,7 @@ import { buildReferenceAssets, renderRoutePreview } from "./references.js";
 import { outputAssets, renderInspectorPackage, renderInspectorAsset, renderCanvas } from "./inspector.js";
 import { resolveGenerationRouting } from "./generation-request.js";
 import { activeAssetAnalyses, activeUploadedAssets } from "./upload-scope.js";
+import { approvedCreativePlanForGeneration } from "./creative-brief.js";
 
 // ── Poll job ──────────────────────────────────────────────────────────────────
 export async function pollJob(jobId, onUpdate) {
@@ -65,6 +66,7 @@ export async function runGeneration(rawIdea, notes) {
     deliveryTargets: generationRouting.deliveryTargets || els.studioDeliveryTarget.value,
     contentTypeId: generationRouting.contentTypeId,
     routingOverride: generationRouting.routingOverride,
+    ...approvedCreativePlanForGeneration(studioState),
     variantCount: studioState.workflowType === "mascot-variants" ? 4 : undefined,
     videoOptions: ["video-clip", "reel-package"].includes(studioState.workflowType)
       ? { duration: 5, aspectRatio: "9:16", withAudio: true, consistencyMode: "mascot-consistent" } : undefined,

@@ -15,7 +15,10 @@ export const studioState = {
   stylePresets: [],
   selectedStyleId: "",
   userPickedStyle: false,
-  ugcBriefApproved: false
+  ugcBriefApproved: false,
+  creativeProject: null,
+  creativeBriefApproved: false,
+  creativeBriefSignature: ""
 };
 
 export const calendarState = {
