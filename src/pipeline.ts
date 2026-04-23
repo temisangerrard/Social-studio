@@ -705,44 +705,33 @@ export async function runPipelineFromRequest(
   } else if (workflowType === "linkedin-text") {
     metadata.render_status = "skipped";
   } else if (workflowType === "ugc-faceless" || workflowType === "ugc-voiceover") {
-    // UGC: generate slides (visuals) + voiceover audio
-    const finalSlides = plan.slides;
-    finalSlides.forEach((s: any, i: number) => { s.slide_number = i + 1; });
-
-    const slidesWithAssets = await imageGenerator(finalSlides, {
-      assetsDir,
-      falKey: process.env.FAL_KEY,
-      falModel: process.env.FAL_MODEL ?? brandProfile.providers.imageModel,
-      brandName: brandProfile.name,
-      brandColors: {
-        primaryColor: brandProfile.visual.primaryColor,
-        secondaryColor: brandProfile.visual.secondaryColor
-      },
-    });
-    metadata.slides = slidesWithAssets;
-    metadata.artifacts = slidesWithAssets.map((slide, index) => ({
-      id: `slide-${String(index + 1).padStart(2, "0")}`,
-      kind: "image" as const,
-      role: slide.role,
-      title: slide.text,
-      prompt: slide.image_prompt ?? slide.text,
-      asset_path: slide.asset_path ?? null,
-      preview_path: slide.asset_path ?? null,
-      source_asset_id: null,
-      variant_group: null,
+    // UGC: generate real AI video clips via Kling + voiceover audio
+    const scenes = plan.slides.filter((s: any) => s.text && !s.text.startsWith("Content slide"));
+    const scenePrompts = scenes.map((s: any, i: number) => ({
+      prompt: s.image_prompt || s.text,
+      title: s.text,
+      role: s.role || `scene-${i + 1}`,
     }));
 
-    // Generate voiceover script from slide narrative (not generic slide text)
-    const voiceoverScript = metadata.slides
-      .map((s: any) => s.text)
-      .filter((t: string) => t && !t.startsWith("Content slide"))
-      .join("\n\n");
-
-    const voiceResult = await generateVoiceover(
-      voiceoverScript,
-      assetsDir,
-      "voiceover"
+    // Generate video clips in parallel
+    const clipRequest: GenerationRequest = { ...request, workflowType: "video-clip" };
+    metadata.artifacts = await Promise.all(
+      scenePrompts.map((scene, index) =>
+        createVideoArtifact({
+          prompt: scene.prompt,
+          title: scene.title,
+          role: scene.role,
+          artifactId: `ugc-clip-${index + 1}`,
+          assetsDir,
+          brandProfile,
+          request: clipRequest,
+        })
+      )
     );
+
+    // Generate voiceover
+    const voiceoverScript = scenes.map((s: any) => s.text).join("\n\n");
+    const voiceResult = await generateVoiceover(voiceoverScript, assetsDir, "voiceover");
     metadata.voiceover = {
       script: voiceoverScript,
       audioPath: voiceResult.audioPath,
@@ -750,57 +739,8 @@ export async function runPipelineFromRequest(
       durationEstimate: voiceResult.durationEstimate,
     };
 
-    try {
-      await renderer(metadata);
-    } catch (error) {
-      metadata.render_status = "skipped";
-      metadata.render_error = error instanceof Error ? error.message : String(error);
-    }
-
-    // Stitch rendered slides + voiceover into a video
-    const renderedSlides = metadata.slides
-      .map((s) => path.join(slidesDir, `slide-${String(s.slide_number).padStart(2, "0")}.png`));
-    const validSlides: string[] = [];
-    for (const p of renderedSlides) {
-      try { await fs.access(p); validSlides.push(p); } catch { /* skip missing */ }
-    }
-    // Fall back to generated asset images if renderer didn't produce PNGs
-    if (validSlides.length === 0) {
-      for (const s of metadata.slides) {
-        if (s.asset_path) { try { await fs.access(s.asset_path); validSlides.push(s.asset_path); } catch { /* skip */ } }
-      }
-    }
-    if (validSlides.length > 0) {
-      try {
-        const audioFile = voiceResult.audioPath.endsWith(".mp3") ? voiceResult.audioPath : null;
-        const { videoPath, durationSeconds } = await stitchVideo({
-          imagePaths: validSlides,
-          audioPath: audioFile,
-          audioDuration: voiceResult.durationEstimate,
-          outputDir: assetsDir,
-          filename: "ugc-video",
-        });
-        metadata.artifacts = [
-          ...(metadata.artifacts ?? []),
-          {
-            id: "ugc-video",
-            kind: "video" as const,
-            role: "ugc-video",
-            title: `${brandProfile.name} UGC Video`,
-            prompt: request.rawIdea,
-            asset_path: videoPath,
-            preview_path: videoPath,
-            source_asset_id: null,
-            variant_group: null,
-          },
-        ];
-        if (metadata.voiceover) {
-          metadata.voiceover.durationEstimate = durationSeconds;
-        }
-      } catch (err) {
-        console.warn(`[pipeline] Video stitching failed: ${err instanceof Error ? err.message : err}`);
-      }
-    }
+    metadata.slides = scenes.map((s: any, i: number) => ({ ...s, slide_number: i + 1 }));
+    metadata.render_status = "skipped";
   } else if (workflowType === "mascot-variants") {
     const count = resolveVariantCount(request);
     const variantAngles = ["hero framing", "playful kitchen pose", "product showcase", "reaction moment", "overhead layout", "close-up expression", "editorial composition", "social cover composition"];
