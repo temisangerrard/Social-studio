@@ -50,15 +50,15 @@ async function generateUgcBrief(idea: string, brand: BrandProfile): Promise<Reco
 
 function normalizeUgcScriptInput(body: Record<string, unknown>, brand: BrandProfile): UgcScriptDraft {
   return normalizeUgcDraft({
-    hook: body.hook,
-    problem: body.problem,
-    productMoment: body.productMoment,
-    outcome: body.outcome,
-    cta: body.cta,
-    toneNotes: body.toneNotes,
-    fullScript: body.fullScript,
-    beatSheet: body.beatSheet,
-    onScreenText: body.onScreenText
+    hook: typeof body.hook === "string" ? body.hook : undefined,
+    problem: typeof body.problem === "string" ? body.problem : undefined,
+    productMoment: typeof body.productMoment === "string" ? body.productMoment : undefined,
+    outcome: typeof body.outcome === "string" ? body.outcome : undefined,
+    cta: typeof body.cta === "string" ? body.cta : undefined,
+    toneNotes: typeof body.toneNotes === "string" ? body.toneNotes : undefined,
+    fullScript: typeof body.fullScript === "string" ? body.fullScript : undefined,
+    beatSheet: Array.isArray(body.beatSheet) ? body.beatSheet.filter((item): item is string => typeof item === "string") : undefined,
+    onScreenText: Array.isArray(body.onScreenText) ? body.onScreenText.filter((item): item is string => typeof item === "string") : undefined
   }, brand);
 }
 

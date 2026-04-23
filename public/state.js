@@ -6,6 +6,7 @@ export const studioState = {
   selectedAsset: null,
   uploadedAssets: [],
   assetAnalyses: [],
+  selectedUploadAssetIds: new Set(),
   routePreview: null,
   workflowType: "slideshow",
   canvasLoadingStage: null,

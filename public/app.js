@@ -31,6 +31,7 @@ import { loadStyles, initStylesListeners } from "./styles-view.js";
 import { renderBrandEditor, initBrandEditorListeners } from "./brand-editor.js";
 import { InlineEditor, schedulePatch } from "./inline-editor.js";
 import { loadUgc, initUgcListeners } from "./ugc.js";
+import { addUploadsToLibrary, selectUploadForRun } from "./upload-scope.js";
 
 // ── View routing ──────────────────────────────────────────────────────────────
 const mobileTabs = Array.from(document.querySelectorAll(".mobile-tab[data-view]"));
@@ -150,7 +151,14 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
       showStatus("Uploading images…");
       try {
         const uploadResults = await uploadQueue.uploadAll();
-        for (const result of uploadResults) { if (studioState.canvasEngine) studioState.canvasEngine.addUploadedArtboard(result); }
+        for (const result of uploadResults) {
+          addUploadsToLibrary(studioState, [result], { selectForRun: true });
+          try {
+            const analysis = await analyzeUploadedAssetRecord(result);
+            studioState.assetAnalyses = [...studioState.assetAnalyses.filter((item) => item.assetId !== analysis.assetId), analysis];
+          } catch { /* keep uploaded asset selected; server can still fall back to unknown asset type */ }
+          if (studioState.canvasEngine) studioState.canvasEngine.addUploadedArtboard(result);
+        }
         const failedItems = uploadQueue.files.filter((item) => item.status === "error");
         if (failedItems.length > 0) {
           const mimeErrors = failedItems.filter((item) => item.error && /unsupported|mime|400/i.test(item.error));
@@ -317,10 +325,8 @@ els.studioReferenceFiles.addEventListener("change", async () => {
       const res = await fetch("/api/uploads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ filename: file.name, dataUrl }) });
       const uploadedAsset = await res.json();
       const analysis = await analyzeUploadedAssetRecord(uploadedAsset);
-      studioState.uploadedAssets.push(uploadedAsset);
+      addUploadsToLibrary(studioState, [uploadedAsset], { selectForRun: true });
       studioState.assetAnalyses = [...studioState.assetAnalyses.filter((item) => item.assetId !== analysis.assetId), analysis];
-      const current = els.studioReferenceInput.value.trim();
-      els.studioReferenceInput.value = [current, uploadedAsset.url].filter(Boolean).join("\n");
     }
     renderReferenceChips(); renderUploadedAssets(); await refreshRoutePreview(); hideStatus();
   } catch (err) { showStatus(err instanceof Error ? err.message : "Upload failed."); }
@@ -334,6 +340,10 @@ els.studioUploadedAssets?.addEventListener("change", async (e) => {
   if (!asset) return;
   asset.label = wrapper.querySelector('[data-upload-field="label"]')?.value?.trim() || "";
   asset.notes = wrapper.querySelector('[data-upload-field="notes"]')?.value?.trim() || "";
+  const selectedInput = wrapper.querySelector('[data-upload-field="selected"]');
+  if (selectedInput) {
+    selectUploadForRun(studioState, asset.id, selectedInput.checked);
+  }
   const analysis = await analyzeUploadedAssetRecord(asset);
   studioState.assetAnalyses = [...studioState.assetAnalyses.filter((item) => item.assetId !== asset.id), analysis];
   renderUploadedAssets(); await refreshRoutePreview();

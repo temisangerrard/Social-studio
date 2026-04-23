@@ -231,6 +231,19 @@
   color: #5b5b5b;
 }
 
+.uploaded-asset-card__scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #5b5b5b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.uploaded-asset-card__scope input {
+  accent-color: #893516;
+}
+
 .uploaded-asset-card__input,
 .uploaded-asset-card__notes,
 .route-preview {

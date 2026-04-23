@@ -2,6 +2,7 @@ import { els } from "./dom-refs.js";
 import { studioState } from "./state.js";
 import { escapeHtml } from "./app-helpers.js";
 import { getBrandById } from "./ui-utils.js";
+import { activeAssetAnalyses, activeUploadedAssets } from "./upload-scope.js";
 
 function parseReferenceLines(raw) {
   return String(raw || "").split("\n").map((v) => v.trim()).filter(Boolean)
@@ -24,7 +25,7 @@ function buildBrandReferenceAssets(brandId, visualMode) {
 export function buildReferenceAssets({ brandId, visualMode, inputValue, selectedAsset } = {}) {
   const brandRefs = buildBrandReferenceAssets(brandId, visualMode);
   const runRefs = parseReferenceLines(inputValue);
-  const uploadedRefs = (studioState.uploadedAssets || [])
+  const uploadedRefs = activeUploadedAssets(studioState)
     .filter((asset) => asset.mimeType?.startsWith("image/"))
     .map((asset) => ({ id: asset.id, label: asset.label || asset.filename, url: asset.url, source: "asset", kind: "image" }));
   const assetRefs = selectedAsset?.assetUrl && selectedAsset.assetKind === "image"
@@ -73,7 +74,7 @@ export function renderInlineRoutePreview() {
   parts.push(`<span class="route-inline__badge">${escapeHtml(decision.workflowType || studioState.workflowType || "slideshow")}</span>`);
   if (decision.contentTypeId) parts.push(`<span class="route-inline__label">${escapeHtml(decision.contentTypeId)}</span>`);
   if (decision.deliveryTargets) parts.push(`<span class="route-inline__label">→ ${escapeHtml(decision.deliveryTargets)}</span>`);
-  const uploadCount = (studioState.uploadedAssets || []).length;
+  const uploadCount = activeUploadedAssets(studioState).length;
   if (uploadCount > 0) parts.push(`<span class="route-inline__label">${uploadCount} upload${uploadCount > 1 ? "s" : ""}</span>`);
   el.innerHTML = parts.join(" ");
   el.classList.remove("hidden");
@@ -81,7 +82,9 @@ export function renderInlineRoutePreview() {
 
 export async function refreshRoutePreview() {
   const rawIdea = els.studioIdeaInput.value.trim();
-  if (!rawIdea && !studioState.uploadedAssets.length) {
+  const uploadedAssets = activeUploadedAssets(studioState);
+  const assetAnalyses = activeAssetAnalyses(studioState);
+  if (!rawIdea && !uploadedAssets.length) {
     studioState.routePreview = null;
     renderRoutePreview();
     renderInlineRoutePreview();
@@ -97,8 +100,8 @@ export async function refreshRoutePreview() {
         notes: els.studioNotesInput.value.trim(),
         platformTargets: [els.studioPlatformSelect.value],
         goal: getBrandById(els.studioProductSelect.value)?.defaults?.goal || "awareness",
-        uploadedAssets: studioState.uploadedAssets,
-        assetAnalyses: studioState.assetAnalyses
+        uploadedAssets,
+        assetAnalyses
       })
     });
     if (!res.ok) throw new Error("Failed to preview route.");
@@ -125,7 +128,7 @@ export function updateContentTypeSelector(brandId) {
     `<option value="${escapeHtml(ct.id)}">${escapeHtml(ct.name)}</option>`
   ).join("");
   if (brand.defaultContentType) select.value = brand.defaultContentType;
-  const analyses = studioState.assetAnalyses || [];
+  const analyses = activeAssetAnalyses(studioState);
   const platform = els.studioPlatformSelect?.value || "instagram";
   if (analyses.some((a) => a.assetType === "person_photo") && platform === "linkedin") {
     const opt = document.createElement("option"); opt.value = "linkedin-photo-post"; opt.textContent = "LinkedIn Post with Photo"; select.appendChild(opt);

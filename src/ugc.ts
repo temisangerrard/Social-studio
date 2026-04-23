@@ -116,6 +116,11 @@ export async function generateUgcPackage(params: UgcGenerateParams): Promise<{
       workflowType: "video-clip",
       visualMode: "mixed",
       deliveryTargets: platform,
+      styleControl: {
+        styleCardId: "ugc-voiceover-story",
+        generationMode: "reference-match",
+        referenceLockStrength: "loose"
+      },
       videoOptions: {
         duration: 5,
         aspectRatio: "9:16",

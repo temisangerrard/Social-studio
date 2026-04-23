@@ -5,6 +5,7 @@ import { getBrandById, showStatus, hideStatus, showCanvasProgress, hideCanvasPro
 import { buildReferenceAssets, renderRoutePreview } from "./references.js";
 import { outputAssets, renderInspectorPackage, renderInspectorAsset, renderCanvas } from "./inspector.js";
 import { resolveGenerationRouting } from "./generation-request.js";
+import { activeAssetAnalyses, activeUploadedAssets } from "./upload-scope.js";
 
 // ── Poll job ──────────────────────────────────────────────────────────────────
 export async function pollJob(jobId, onUpdate) {
@@ -35,6 +36,8 @@ export function loadOutputToEngine(output) {
 export async function runGeneration(rawIdea, notes) {
   const brandId = els.studioProductSelect.value;
   const brief = {};
+  const uploadedAssets = activeUploadedAssets(studioState);
+  const assetAnalyses = activeAssetAnalyses(studioState);
   const generationRouting = resolveGenerationRouting({
     selectedStyleId: studioState.selectedStyleId,
     userPickedStyle: studioState.userPickedStyle,
@@ -53,8 +56,8 @@ export async function runGeneration(rawIdea, notes) {
       brandId, visualMode: els.studioVisualMode.value,
       inputValue: els.studioReferenceInput.value, selectedAsset: studioState.selectedAsset
     }),
-    uploadedAssets: studioState.uploadedAssets,
-    assetAnalyses: studioState.assetAnalyses,
+    uploadedAssets,
+    assetAnalyses,
     platformTargets: [els.studioPlatformSelect.value],
     goal: getBrandById(brandId)?.defaults?.goal || "awareness",
     workflowType: generationRouting.workflowType,
