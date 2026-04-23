@@ -13,6 +13,7 @@ import { listBuiltinPresets, resolveStyleCard } from "./style-library.ts";
 import { ingestReferencesAndCreateStyleCard } from "./reference-ingestion.ts";
 import { buildPreviewPlan, buildStructuredPrompt } from "./creative-director.ts";
 import { listVoices } from "./voice-generator.ts";
+import { generateUgcPackage, normalizeUgcDraft, type UgcScriptDraft } from "./ugc.ts";
 
 async function generateUgcBrief(idea: string, brand: BrandProfile): Promise<Record<string, string>> {
   const fallback = {
@@ -45,6 +46,20 @@ async function generateUgcBrief(idea: string, brand: BrandProfile): Promise<Reco
     if (!raw) return fallback;
     return { ...fallback, ...JSON.parse(raw.replace(/```json\n?|\n?```/g, "").trim()) };
   } catch { return fallback; }
+}
+
+function normalizeUgcScriptInput(body: Record<string, unknown>, brand: BrandProfile): UgcScriptDraft {
+  return normalizeUgcDraft({
+    hook: typeof body.hook === "string" ? body.hook : undefined,
+    problem: typeof body.problem === "string" ? body.problem : undefined,
+    productMoment: typeof body.productMoment === "string" ? body.productMoment : undefined,
+    outcome: typeof body.outcome === "string" ? body.outcome : undefined,
+    cta: typeof body.cta === "string" ? body.cta : undefined,
+    toneNotes: typeof body.toneNotes === "string" ? body.toneNotes : undefined,
+    fullScript: typeof body.fullScript === "string" ? body.fullScript : undefined,
+    beatSheet: Array.isArray(body.beatSheet) ? body.beatSheet.filter((item): item is string => typeof item === "string") : undefined,
+    onScreenText: Array.isArray(body.onScreenText) ? body.onScreenText.filter((item): item is string => typeof item === "string") : undefined
+  }, brand);
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -788,16 +803,19 @@ async function handleRequest(req: Request): Promise<Response> {
     const postId = url.pathname.slice("/api/outputs/".length);
 
     // Export endpoints: /api/outputs/:postId/export/pdf and /export/zip
-    const exportMatch = postId.match(/^([^/]+)\/export\/(pdf|zip)$/);
+    const exportMatch = postId.match(/^([^/]+)\/export\/(pdf|zip|package)$/);
     if (exportMatch) {
       const [, id, format] = exportMatch;
       const outputDir = path.join(OUTPUTS_ROOT, id);
       try { await fs.access(outputDir); } catch { return json({ error: "Output not found" }, { status: 404 }); }
       try {
-        const { exportPdf, exportZip } = await import("./export.ts");
+        const { exportPdf, exportZip, exportPackageZip } = await import("./export.ts");
         if (format === "pdf") {
           const buf = await exportPdf(outputDir);
           return new Response(buf as any, { status: 200, headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${id}-carousel.pdf"` } });
+        } else if (format === "package") {
+          const buf = await exportPackageZip(outputDir);
+          return new Response(buf as any, { status: 200, headers: { "Content-Type": "application/zip", "Content-Disposition": `attachment; filename="${id}-ugc-package.zip"` } });
         } else {
           const platforms = url.searchParams.getAll("platform");
           const buf = await exportZip(outputDir, platforms.length ? platforms : undefined);
@@ -991,7 +1009,53 @@ async function handleRequest(req: Request): Promise<Response> {
     if (!idea) return json({ error: "idea required" }, { status: 400 });
     const brand = await storage.getBrandProfile(brandId);
     if (!brand) return json({ error: "Brand not found" }, { status: 404 });
-    return json(await generateUgcBrief(idea, brand));
+    return json(normalizeUgcDraft(await generateUgcBrief(idea, brand), brand));
+  }
+
+  if (url.pathname === "/api/ugc/draft" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const idea = typeof body.idea === "string" ? body.idea.trim() : "";
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    if (!idea) return json({ error: "idea required" }, { status: 400 });
+    const brand = await storage.getBrandProfile(brandId);
+    if (!brand) return json({ error: "Brand not found" }, { status: 404 });
+    const draft = await generateUgcBrief(idea, brand);
+    return json(normalizeUgcDraft(draft, brand));
+  }
+
+  if (url.pathname === "/api/ugc/generate" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    const platform = body.platform === "instagram" || body.platform === "linkedin" ? body.platform : "tiktok";
+    const voiceId = typeof body.voiceId === "string" ? body.voiceId : "mock";
+    const visualMode = typeof body.visualMode === "string" ? body.visualMode : "story-led";
+    const brand = await storage.getBrandProfile(brandId);
+    if (!brand) return json({ error: "Brand not found" }, { status: 404 });
+
+    const uploadedAssetIds = Array.isArray(body.uploadedAssetIds)
+      ? body.uploadedAssetIds.filter((item): item is string => typeof item === "string")
+      : [];
+    let uploadedAssets: UploadedAsset[] = [];
+    if (uploadedAssetIds.length > 0) {
+      try {
+        const raw = await fs.readFile(path.join(UPLOADS_ROOT, "_index.json"), "utf8");
+        const index = JSON.parse(raw) as UploadedAsset[];
+        uploadedAssets = index.filter((asset) => uploadedAssetIds.includes(asset.id));
+      } catch {
+        uploadedAssets = [];
+      }
+    }
+    const script = normalizeUgcScriptInput(body.script && typeof body.script === "object" ? body.script as Record<string, unknown> : {}, brand);
+
+    return json(await generateUgcPackage({
+      brand,
+      platform,
+      voiceId,
+      visualMode,
+      script,
+      uploadedAssets,
+      outputRoot: OUTPUTS_ROOT
+    }));
   }
 
   if (url.pathname === "/api/styles" && req.method === "GET") {

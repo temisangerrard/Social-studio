@@ -111,3 +111,23 @@ export async function exportZip(
   await done;
   return new Uint8Array(Buffer.concat(chunks));
 }
+
+export async function exportPackageZip(outputDir: string): Promise<Uint8Array> {
+  const chunks: Buffer[] = [];
+  const writable = new Writable({
+    write(chunk, _enc, cb) { chunks.push(chunk); cb(); },
+  });
+
+  const archive = archiver("zip", { zlib: { level: 6 } });
+  archive.pipe(writable);
+  archive.directory(outputDir, false);
+
+  const done = new Promise<void>((resolve, reject) => {
+    writable.on("finish", resolve);
+    archive.on("error", reject);
+  });
+
+  await archive.finalize();
+  await done;
+  return new Uint8Array(Buffer.concat(chunks));
+}

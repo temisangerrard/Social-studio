@@ -2,6 +2,7 @@ export const els = {
   navLinks: Array.from(document.querySelectorAll(".topnav a[data-view]")),
   views: {
     studio: document.getElementById("view-studio"),
+    ugc: document.getElementById("view-ugc"),
     styles: document.getElementById("view-styles"),
     calendar: document.getElementById("view-calendar"),
     library: document.getElementById("view-library"),
@@ -69,7 +70,22 @@ export const els = {
   assetModalTitle: document.getElementById("asset-modal-title"),
   assetModalOpen: document.getElementById("asset-modal-open"),
   assetModalDownload: document.getElementById("asset-modal-download"),
-  assetModalClose: document.getElementById("asset-modal-close")
+  assetModalClose: document.getElementById("asset-modal-close"),
+  ugcBrandSelect: document.getElementById("ugc-brand-select"),
+  ugcPlatformSelect: document.getElementById("ugc-platform-select"),
+  ugcIdeaInput: document.getElementById("ugc-idea-input"),
+  ugcNotesInput: document.getElementById("ugc-notes-input"),
+  ugcAssetsInput: document.getElementById("ugc-assets-input"),
+  ugcUploadsList: document.getElementById("ugc-uploads-list"),
+  ugcDraftForm: document.getElementById("ugc-draft-form"),
+  ugcGenerateForm: document.getElementById("ugc-generate-form"),
+  ugcDraftPanel: document.getElementById("ugc-draft-panel"),
+  ugcDraftButton: document.getElementById("ugc-draft-button"),
+  ugcGenerateButton: document.getElementById("ugc-generate-button"),
+  ugcVoiceSelect: document.getElementById("ugc-voice-select"),
+  ugcVisualMode: document.getElementById("ugc-visual-mode"),
+  ugcStatus: document.getElementById("ugc-status"),
+  ugcOutput: document.getElementById("ugc-output")
 };
 
 export const adminEls = {

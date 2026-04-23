@@ -2,6 +2,7 @@ import { els } from "./dom-refs.js";
 import { studioState } from "./state.js";
 import { escapeHtml } from "./app-helpers.js";
 import { showStatus, hideStatus } from "./ui-utils.js";
+import { addUploadsToLibrary, isUploadSelected, selectUploadForRun } from "./upload-scope.js";
 
 /** @type {function|null} Called after an uploaded asset is deleted. */
 let _onAssetDeleted = null;
@@ -109,7 +110,7 @@ export async function loadExistingUploads() {
     if (Array.isArray(assets) && assets.length) {
       const existingIds = new Set(studioState.uploadedAssets.map((a) => a.id));
       const fresh = assets.filter((a) => !existingIds.has(a.id));
-      studioState.uploadedAssets = [...fresh, ...studioState.uploadedAssets];
+      addUploadsToLibrary(studioState, fresh, { selectForRun: false });
       renderUploadedAssets();
     }
   } catch { /* network error — ignore */ }
@@ -132,6 +133,10 @@ export function renderUploadedAssets() {
           <img class="uploaded-asset-card__preview" src="${escapeHtml(asset.url)}" alt="${escapeHtml(asset.label || asset.filename)}" />
           <button class="uploaded-asset-card__delete" data-upload-id="${escapeHtml(asset.id)}" type="button" title="Remove">✕</button>
         </div>
+        <label class="uploaded-asset-card__scope">
+          <input type="checkbox" data-upload-field="selected" ${isUploadSelected(studioState, asset.id) ? "checked" : ""} />
+          <span>Use in this run</span>
+        </label>
         <div class="uploaded-asset-card__meta">
           <strong>${escapeHtml(asset.label || asset.filename)}</strong>
           <span>${escapeHtml(analysis?.subjectSummary || "Not yet analysed")}</span>
@@ -150,6 +155,7 @@ export function renderUploadedAssets() {
       const asset = studioState.uploadedAssets.find((a) => a.id === id);
       studioState.uploadedAssets = studioState.uploadedAssets.filter((a) => a.id !== id);
       studioState.assetAnalyses = studioState.assetAnalyses.filter((a) => a.assetId !== id);
+      selectUploadForRun(studioState, id, false);
       // Strip deleted asset URL from reference input
       if (asset?.url && els.studioReferenceInput) {
         els.studioReferenceInput.value = els.studioReferenceInput.value
