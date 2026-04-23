@@ -28,6 +28,10 @@ export interface VideoStrategyConfig {
   referenceImageUrls?: string[];
   /** For seedance-reference: reference audio URL */
   referenceAudioUrl?: string;
+  /** Override the storyboard image generation prompt (GPT Image 2) */
+  storyboardPrompt?: string;
+  /** Override the video generation prompt (Seedance / Kling) */
+  videoPrompt?: string;
 }
 export type AssetType = "food_photo" | "product_photo" | "person_photo" | "screenshot" | "logo" | "document" | "unknown";
 export type ContentRouteFamily = "carousel" | "edited-image" | "recipe" | "flyer" | "linkedin-post" | "infographic";
