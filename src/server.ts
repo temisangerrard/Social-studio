@@ -1225,6 +1225,7 @@ async function handleRequest(req: Request): Promise<Response> {
     }
     const platform = typeof body.platform === "string" ? body.platform : "tiktok";
     const visualMode = typeof body.visualMode === "string" ? body.visualMode : "mascot-led";
+    const workflowType = typeof body.workflowType === "string" ? body.workflowType : "slideshow";
     const request: GenerationRequest = {
       brandProfileId: brandId,
       rawIdea: idea,
@@ -1232,9 +1233,12 @@ async function handleRequest(req: Request): Promise<Response> {
       references: [],
       platformTargets: [platform as "tiktok" | "instagram"],
       goal: "installs",
-      workflowType: "slideshow",
+      workflowType: workflowType as GenerationRequest["workflowType"],
       visualMode: visualMode as GenerationRequest["visualMode"],
       deliveryTargets: platform as GenerationRequest["deliveryTargets"],
+      videoStrategy: body.videoStrategy && typeof body.videoStrategy === "object"
+        ? (body.videoStrategy as GenerationRequest["videoStrategy"])
+        : undefined,
       styleControl: {
         styleCardId: typeof body.styleCardId === "string" ? body.styleCardId : listBuiltinPresets()[0].id,
         generationMode: "image-first",
