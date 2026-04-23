@@ -89,11 +89,8 @@ export function defaultVideoStrategy(): VideoStrategyConfig {
 export function resolveVideoStrategy(request: GenerationRequest, brand: BrandProfile): VideoStrategyConfig {
   if (request.videoStrategy) return request.videoStrategy;
 
-  // Auto-select based on context
-  const hasUploads = (request.uploadedAssets?.length ?? 0) > 0;
-  const hasMascotRefs = (brand.mascot?.referenceImages?.length ?? 0) > 0;
-
   // If user uploaded an image, animate it
+  const hasUploads = (request.uploadedAssets?.length ?? 0) > 0;
   if (hasUploads) {
     const firstImage = request.uploadedAssets?.find((a) => a.mimeType.startsWith("image/"));
     if (firstImage) {
@@ -108,19 +105,7 @@ export function resolveVideoStrategy(request: GenerationRequest, brand: BrandPro
     }
   }
 
-  // If brand has mascot/product references, use reference-to-video
-  if (hasMascotRefs) {
-    return {
-      strategy: "seedance-reference",
-      duration: 10,
-      aspectRatio: "9:16",
-      resolution: "720p",
-      generateAudio: true,
-      referenceImageUrls: brand.mascot!.referenceImages.slice(0, 9),
-    };
-  }
-
-  // Default: storyboard-to-video for best quality
+  // Default: GPT Image 2 storyboard grid → Seedance 2.0 image-to-video
   return {
     strategy: "storyboard-to-video",
     duration: 10,
