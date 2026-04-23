@@ -6,6 +6,7 @@ import {
   activeUploadedAssets,
   addUploadsToLibrary,
   isUploadSelected,
+  removeUploadFromLibrary,
   selectUploadForRun
 } from "./upload-scope.js";
 
@@ -49,4 +50,25 @@ test("run selection can be toggled without deleting stored uploads", () => {
 
   assert.deepEqual(state.uploadedAssets.map((asset) => asset.id), ["hero"]);
   assert.deepEqual(activeUploadedAssets(state), []);
+});
+
+test("uploads can be deleted from library, active selection, and analyses together", () => {
+  const state = {
+    uploadedAssets: [
+      { id: "hero", url: "/api/uploads/hero.jpg" },
+      { id: "keep", url: "/api/uploads/keep.jpg" }
+    ],
+    assetAnalyses: [
+      { assetId: "hero", assetType: "product_photo" },
+      { assetId: "keep", assetType: "food_photo" }
+    ],
+    selectedUploadAssetIds: new Set(["hero", "keep"])
+  };
+
+  const removed = removeUploadFromLibrary(state, "hero");
+
+  assert.equal(removed.id, "hero");
+  assert.deepEqual(state.uploadedAssets.map((asset) => asset.id), ["keep"]);
+  assert.deepEqual(state.assetAnalyses.map((analysis) => analysis.assetId), ["keep"]);
+  assert.deepEqual(activeUploadedAssets(state).map((asset) => asset.id), ["keep"]);
 });

@@ -2,6 +2,8 @@ import { els } from "./dom-refs.js";
 import { ugcState } from "./ugc-state.js";
 import { buildUgcDraftRequest, buildUgcGenerateRequest } from "./ugc-request.js";
 import { buildUgcOutputActions } from "./ugc-output.js";
+import { escapeHtml } from "./app-helpers.js";
+import { removeUploadFromLibrary } from "./upload-scope.js";
 
 function setText(id, value) {
   const el = document.getElementById(id);
@@ -26,8 +28,25 @@ function renderUploads() {
     return;
   }
   els.ugcUploadsList.innerHTML = ugcState.uploadedAssets
-    .map((asset) => `<span class="reference-chip reference-chip--asset">${asset.label || asset.filename}</span>`)
+    .map((asset) => `
+      <span class="reference-chip reference-chip--asset" data-upload-id="${escapeHtml(asset.id)}">
+        ${escapeHtml(asset.label || asset.filename)}
+        <button class="reference-chip__delete" type="button" data-delete-upload-id="${escapeHtml(asset.id)}" title="Delete upload">×</button>
+      </span>
+    `)
     .join("");
+  els.ugcUploadsList.querySelectorAll("[data-delete-upload-id]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const id = button.dataset.deleteUploadId;
+      removeUploadFromLibrary(ugcState, id);
+      renderUploads();
+      await fetch("/api/uploads", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id })
+      }).catch(() => {});
+    });
+  });
 }
 
 function renderDraft() {

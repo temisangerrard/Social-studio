@@ -327,6 +327,11 @@ function normalizeRequest(input: unknown): GenerationRequest {
       request.routingTrace && typeof request.routingTrace === "object"
         ? (request.routingTrace as GenerationRequest["routingTrace"])
         : undefined,
+    creativeProjectId: typeof request.creativeProjectId === "string" ? request.creativeProjectId : undefined,
+    creativePlan:
+      request.creativePlan && typeof request.creativePlan === "object"
+        ? (request.creativePlan as GenerationRequest["creativePlan"])
+        : undefined,
     styleControl:
       request.styleControl && typeof request.styleControl === "object"
         ? (request.styleControl as GenerationRequest["styleControl"])
@@ -602,6 +607,8 @@ export async function runPipelineFromRequest(
       routingDecision,
       routingTrace
     },
+    creative_project_id: request.creativeProjectId,
+    creative_plan: request.creativePlan,
     uploaded_assets: request.uploadedAssets ?? [],
     asset_analyses: assetAnalyses,
     routing_decision: routingDecision,

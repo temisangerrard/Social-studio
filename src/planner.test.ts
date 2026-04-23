@@ -5,6 +5,7 @@ import {
   fallbackPlanSocialPackage,
   parsePlannerResponse
 } from "./planner.ts";
+import { buildCreativeSystemOutput } from "./creative-system.ts";
 import type { BrandProfile, GenerationRequest } from "./types.ts";
 
 const brand: BrandProfile = {
@@ -129,4 +130,40 @@ test("food-led visual mode keeps mascot out of food reveal prompts", () => {
 
   assert.doesNotMatch(result.slides[5].image_prompt ?? "", /green pepper mascot/i);
   assert.doesNotMatch(result.slides[6].image_prompt ?? "", /green pepper mascot/i);
+});
+
+test("approved creative plans override legacy Peppera carousel defaults", () => {
+  const pepperaBrand = {
+    ...brand,
+    id: "peppera",
+    name: "Peppera",
+    category: "meal planning",
+    valueProposition: "Turns pantry odds and ends into realistic meals",
+    platformPersonality: "native, funny, practical",
+    contentPillars: ["pantry chaos", "anti-takeout", "budget meals"],
+    bannedPhrases: ["discover", "unlock", "game changer"]
+  };
+  const creativePlan = buildCreativeSystemOutput({
+    brand: pepperaBrand,
+    rawIntent: "Peppera pantry meals but chaotic UGC",
+    platform: "tiktok"
+  });
+
+  const result = fallbackPlanSocialPackage({
+    brand: pepperaBrand,
+    request: {
+      ...request,
+      rawIdea: "Peppera pantry meals but chaotic UGC",
+      workflowType: "ugc-voiceover",
+      creativeProjectId: "creative-01",
+      creativePlan,
+      platformTargets: ["instagram"]
+    }
+  });
+
+  assert.equal(result.caption, creativePlan.production_assets.caption_options[0]);
+  assert.deepEqual(result.hooks, creativePlan.production_assets.headline_options.slice(0, 3));
+  assert.notEqual(result.slides.length, 7);
+  assert.doesNotMatch(result.hooks[0], /5 Meals From JUST/i);
+  assert.match(result.platformNotes.tiktok ?? "", /pacing|native|cut|first frame/i);
 });

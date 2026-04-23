@@ -8,10 +8,11 @@ import { analyzeUploadedAsset, filePathToDataUrl } from "./upload-intake.ts";
 import { runPipelineFromRequest } from "./pipeline.ts";
 import { defaultProductRegistry, registerBrandDescription, resolveProductContext } from "./product-context.ts";
 import { createStorage } from "./storage.ts";
-import type { BatchGenerationRequest, BoardDocument, BrandProfile, CalendarSlot, ContentPillar, GenerationRequest, PostMetadata, StyleCard, UploadedAsset, AssetAnalysis } from "./types.ts";
+import type { BatchGenerationRequest, BoardDocument, BrandProfile, CalendarSlot, ContentPillar, CreativeProjectMemory, GenerationRequest, Platform, PostMetadata, StyleCard, UploadedAsset, AssetAnalysis } from "./types.ts";
 import { listBuiltinPresets, resolveStyleCard } from "./style-library.ts";
 import { ingestReferencesAndCreateStyleCard } from "./reference-ingestion.ts";
 import { buildPreviewPlan, buildStructuredPrompt } from "./creative-director.ts";
+import { generateCreativeSystemOutput, refineCreativeProject } from "./creative-system.ts";
 import { listVoices } from "./voice-generator.ts";
 import { generateUgcPackage, normalizeUgcDraft, type UgcScriptDraft } from "./ugc.ts";
 
@@ -60,6 +61,10 @@ function normalizeUgcScriptInput(body: Record<string, unknown>, brand: BrandProf
     beatSheet: Array.isArray(body.beatSheet) ? body.beatSheet.filter((item): item is string => typeof item === "string") : undefined,
     onScreenText: Array.isArray(body.onScreenText) ? body.onScreenText.filter((item): item is string => typeof item === "string") : undefined
   }, brand);
+}
+
+function normalizePlatform(value: unknown, fallback: Platform): Platform {
+  return value === "instagram" || value === "linkedin" || value === "tiktok" ? value : fallback;
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -449,12 +454,34 @@ function uploadedAssetFromBody(storedName: string, mimeType: string, body: Recor
   };
 }
 
-function uploadFilePathFromAsset(asset: UploadedAsset): string | null {
+function uploadFilePathFromAsset(asset: UploadedAsset, uploadsRoot = UPLOADS_ROOT): string | null {
   if (!asset.url.startsWith("/api/uploads/")) {
     return null;
   }
   const filename = path.basename(asset.url.slice("/api/uploads/".length));
-  return path.join(UPLOADS_ROOT, filename);
+  return path.join(uploadsRoot, filename);
+}
+
+export async function deleteUploadedAssetFromIndex(uploadsRoot: string, id: string): Promise<{ deleted: boolean; asset: UploadedAsset | null }> {
+  const indexPath = path.join(uploadsRoot, "_index.json");
+  let index: UploadedAsset[] = [];
+  try {
+    index = JSON.parse(await fs.readFile(indexPath, "utf8")) as UploadedAsset[];
+  } catch {
+    index = [];
+  }
+
+  const asset = index.find((a) => a.id === id) ?? null;
+  if (!asset) {
+    return { deleted: false, asset: null };
+  }
+
+  const nextIndex = index.filter((a) => a.id !== id);
+  await fs.mkdir(uploadsRoot, { recursive: true });
+  await fs.writeFile(indexPath, JSON.stringify(nextIndex, null, 2));
+  const filePath = uploadFilePathFromAsset(asset, uploadsRoot);
+  if (filePath) await fs.unlink(filePath).catch(() => {});
+  return { deleted: true, asset };
 }
 
 async function analyzeAssetRecord(asset: UploadedAsset, brand: BrandProfile, prompt: string): Promise<AssetAnalysis> {
@@ -567,6 +594,52 @@ async function handleRequest(req: Request): Promise<Response> {
     return json(board);
   }
 
+  if (url.pathname === "/api/creative/brief" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    const brand = await storage.getBrandProfile(brandId);
+    if (!brand) return json({ error: `Brand profile not found: ${brandId}` }, { status: 404 });
+    const rawIntent = typeof body.rawIntent === "string" ? body.rawIntent : typeof body.idea === "string" ? body.idea : "";
+    if (!rawIntent.trim()) return json({ error: "rawIntent required" }, { status: 400 });
+    const now = new Date().toISOString();
+    const creativePlan = await generateCreativeSystemOutput({
+      brand,
+      rawIntent,
+      platform: normalizePlatform(body.platform, brand.defaults.platformTargets[0] ?? "tiktok"),
+      selectedDirectionId: typeof body.selectedDirectionId === "string" ? body.selectedDirectionId : undefined
+    });
+    const project: CreativeProjectMemory = {
+      id: makeId("creative"),
+      brandProfileId: brand.id,
+      rawIntent,
+      selectedDirectionId: creativePlan.recommended_direction_id,
+      creativePlan,
+      refinementNotes: [],
+      createdAt: now,
+      updatedAt: now
+    };
+    await storage.saveCreativeProject(project);
+    return json(project);
+  }
+
+  if (url.pathname.startsWith("/api/creative/projects/") && req.method === "GET") {
+    const id = url.pathname.slice("/api/creative/projects/".length).split("/")[0];
+    const project = await storage.getCreativeProject(id);
+    return project ? json(project) : json({ error: "Creative project not found" }, { status: 404 });
+  }
+
+  if (url.pathname.startsWith("/api/creative/projects/") && url.pathname.endsWith("/refine") && req.method === "POST") {
+    const id = url.pathname.replace("/api/creative/projects/", "").replace("/refine", "").replace(/\/$/, "");
+    const project = await storage.getCreativeProject(id);
+    if (!project) return json({ error: "Creative project not found" }, { status: 404 });
+    const body = await parseJsonBody(req);
+    const feedback = typeof body.feedback === "string" ? body.feedback : "";
+    if (!feedback.trim()) return json({ error: "feedback required" }, { status: 400 });
+    const refined = refineCreativeProject(project, feedback);
+    await storage.saveCreativeProject(refined);
+    return json(refined);
+  }
+
   if (url.pathname === "/api/uploads" && req.method === "GET") {
     try {
       const raw = await fs.readFile(path.join(UPLOADS_ROOT, "_index.json"), "utf8");
@@ -580,17 +653,8 @@ async function handleRequest(req: Request): Promise<Response> {
     const body = await parseJsonBody(req);
     const id = typeof body.id === "string" ? body.id : "";
     if (!id) return json({ error: "id required" }, { status: 400 });
-    const indexPath = path.join(UPLOADS_ROOT, "_index.json");
-    let index: UploadedAsset[] = [];
-    try { index = JSON.parse(await fs.readFile(indexPath, "utf8")); } catch { /* empty */ }
-    const asset = index.find((a) => a.id === id);
-    index = index.filter((a) => a.id !== id);
-    await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
-    if (asset) {
-      const filePath = uploadFilePathFromAsset(asset);
-      if (filePath) await fs.unlink(filePath).catch(() => {});
-    }
-    return json({ ok: true });
+    const result = await deleteUploadedAssetFromIndex(UPLOADS_ROOT, id);
+    return json({ ok: true, deleted: result.deleted });
   }
 
   if (url.pathname === "/api/uploads" && req.method === "POST") {

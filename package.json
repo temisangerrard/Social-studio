@@ -8,7 +8,7 @@
     "generate": "tsx src/index.ts",
     "server": "tsx src/server.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/context.test.ts src/content-types.test.ts src/image-generator.test.ts src/pipeline.test.ts src/planner.test.ts src/routing.test.ts src/server.test.ts src/storage.test.ts src/ugc.test.ts src/upload-intake.test.ts src/workflow-engine.test.ts public/app-helpers.test.ts public/generation-request.test.js public/ugc-output.test.js public/ugc-request.test.js public/upload-scope.test.js"
+    "test": "node --import tsx --test src/context.test.ts src/content-types.test.ts src/creative-system.test.ts src/image-generator.test.ts src/pipeline.test.ts src/planner.test.ts src/routing.test.ts src/server.test.ts src/storage.test.ts src/ugc.test.ts src/upload-delete.test.ts src/upload-intake.test.ts src/workflow-engine.test.ts public/app-helpers.test.ts public/generation-request.test.js public/ugc-output.test.js public/ugc-request.test.js public/upload-scope.test.js"
   },
   "dependencies": {
     "@types/archiver": "^7.0.0",

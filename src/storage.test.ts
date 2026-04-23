@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { createStorage } from "./storage.ts";
+import type { CreativeProjectMemory } from "./types.ts";
 import type { BoardDocument, BrandProfile } from "./types.ts";
 
 async function makeTempDir(): Promise<string> {
@@ -85,4 +86,60 @@ test("storage persists boards with card layout data", async () => {
   const loaded = await storage.getBoard("board-01");
   assert.equal(loaded?.cards[0].x, 120);
   assert.equal(loaded?.cards[0].height, 180);
+});
+
+test("storage persists creative project memory", async () => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "social-studio-storage-"));
+  const storage = createStorage(root);
+  const project: CreativeProjectMemory = {
+    id: "creative_1",
+    brandProfileId: "peppera",
+    rawIntent: "Peppera pantry meals but chaotic",
+    selectedDirectionId: "food-but-no-food-1",
+    creativePlan: {
+      brief_interpretation: {
+        product: "Peppera",
+        goal: "installs",
+        audience: "busy home cooks",
+        format: "ugc-short-video",
+        tone: "chaotic",
+        platform: "tiktok",
+        confidence: 0.8,
+        inferredContext: []
+      },
+      proposed_directions: [],
+      recommended_direction_id: "food-but-no-food-1",
+      content_blueprint: {
+        narrative_arc: [],
+        beat_sheet: [],
+        creative_notes: [],
+        editing_style: "native",
+        cta_style: "soft",
+        pacing_guidance: "fast",
+        on_screen_text_strategy: "short"
+      },
+      production_assets: {
+        script: [],
+        on_screen_text: [],
+        shot_list: [],
+        image_prompts: [],
+        slide_plan: [],
+        caption_options: [],
+        headline_options: [],
+        render_prompts: [],
+        voiceover_version: [],
+        thumbnail_or_cover_text: []
+      },
+      variants: [],
+      review_flags: []
+    },
+    refinementNotes: [],
+    createdAt: "2026-04-23T09:00:00.000Z",
+    updatedAt: "2026-04-23T09:00:00.000Z"
+  };
+
+  await storage.saveCreativeProject(project);
+
+  assert.deepEqual(await storage.getCreativeProject("creative_1"), project);
+  assert.deepEqual((await storage.listCreativeProjects()).map((item) => item.id), ["creative_1"]);
 });

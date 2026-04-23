@@ -39,3 +39,11 @@ export function addUploadsToLibrary(state, assets = [], { selectForRun = false }
   }
   return nextAssets;
 }
+
+export function removeUploadFromLibrary(state, assetId) {
+  const asset = (state.uploadedAssets || []).find((item) => item.id === assetId) || null;
+  state.uploadedAssets = (state.uploadedAssets || []).filter((item) => item.id !== assetId);
+  state.assetAnalyses = (state.assetAnalyses || []).filter((analysis) => analysis.assetId !== assetId);
+  selectUploadForRun(state, assetId, false);
+  return asset;
+}

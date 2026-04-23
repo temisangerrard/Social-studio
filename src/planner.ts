@@ -1,5 +1,5 @@
 import { generateScript, generatePepperaCarousel, generateFromBlueprint, buildCartoonFoodPrompt } from "./script-generator.ts";
-import type { BrandProfile, ContentTypeDefinition, GenerationRequest, PlannedPackage, Slide, StructuredRecipe } from "./types.ts";
+import type { BrandProfile, ContentTypeDefinition, CreativeSystemOutput, GenerationRequest, PlannedPackage, Slide, SlideLayout, SlideRole, StructuredRecipe } from "./types.ts";
 
 interface PlannerContext {
   brand: BrandProfile;
@@ -513,6 +513,98 @@ function extractIngredients(request: GenerationRequest): string[] {
   return found.length > 0 ? found : ingredientCards.length > 0 ? ingredientCards : ["eggs", "bread"];
 }
 
+const CREATIVE_SLIDE_ROLES: SlideRole[] = ["hook", "problem", "escalation", "discovery", "benefit", "cta"];
+
+function creativeSlideRole(index: number, total: number): SlideRole {
+  if (index === 0) return "hook";
+  if (index === total - 1) return "cta";
+  return CREATIVE_SLIDE_ROLES[Math.min(index, CREATIVE_SLIDE_ROLES.length - 2)] ?? "benefit";
+}
+
+function creativeSlideLayout(index: number, total: number, hasImagePrompt: boolean): SlideLayout {
+  if (index === 0) return "hook_cover";
+  if (index === total - 1) return "cta_banner";
+  return hasImagePrompt ? "image_text_split" : "statement";
+}
+
+function compactList(items: string[]): string[] {
+  return items.map((item) => item.trim()).filter(Boolean);
+}
+
+function uniqueHashtags(items: string[]): string[] {
+  return Array.from(new Set(items.map(normalizeHashtag).filter(Boolean)));
+}
+
+function creativePlanToSlides(plan: CreativeSystemOutput): Slide[] {
+  const assets = plan.production_assets;
+  const script = compactList(assets.script);
+  const onScreenText = compactList(assets.on_screen_text);
+  const imagePrompts = compactList(assets.image_prompts);
+  const renderPrompts = compactList(assets.render_prompts);
+  const shotList = compactList(assets.shot_list);
+  const slidePlan = compactList(assets.slide_plan);
+  const beatSheet = compactList(plan.content_blueprint.beat_sheet);
+  const source = script.length > 0 ? script : slidePlan.length > 0 ? slidePlan : beatSheet;
+  const total = Math.max(source.length, onScreenText.length, imagePrompts.length, shotList.length, 1);
+
+  return Array.from({ length: total }, (_, index) => {
+    const prompt = imagePrompts[index] ?? renderPrompts[index] ?? shotList[index] ?? null;
+    const text =
+      onScreenText[index] ??
+      source[index] ??
+      plan.production_assets.headline_options[index] ??
+      plan.content_blueprint.narrative_arc[index] ??
+      plan.brief_interpretation.goal;
+    const role = creativeSlideRole(index, total);
+
+    return {
+      slide_number: index + 1,
+      role,
+      type: prompt ? "generated_image" : "text_only",
+      text,
+      image_prompt: prompt,
+      visual_goal: slidePlan[index] ?? shotList[index] ?? plan.content_blueprint.creative_notes[index] ?? plan.content_blueprint.on_screen_text_strategy,
+      layout: creativeSlideLayout(index, total, Boolean(prompt)),
+      asset_path: null,
+      uploaded_asset_url: null,
+    };
+  });
+}
+
+export function planFromCreativeSystem({ brand, request }: PlannerContext): PlannedPackage | null {
+  const creativePlan = request.creativePlan;
+  if (!creativePlan) {
+    return null;
+  }
+
+  const assets = creativePlan.production_assets;
+  const hooks = compactList(assets.headline_options).slice(0, 3);
+  const recommended = creativePlan.proposed_directions.find((direction) => direction.id === creativePlan.recommended_direction_id);
+  const platform = creativePlan.brief_interpretation.platform;
+  const platformNotes = {
+    [platform]: [
+      creativePlan.content_blueprint.pacing_guidance,
+      creativePlan.content_blueprint.editing_style,
+      creativePlan.content_blueprint.on_screen_text_strategy,
+      recommended ? `Recommended concept: ${recommended.title}.` : "",
+    ].filter(Boolean).join(" "),
+  } satisfies Partial<Record<typeof platform, string>>;
+
+  const baseTags = creativePlan.brief_interpretation.format.includes("ugc")
+    ? ["#ugc", "#creatorcontent"]
+    : creativePlan.brief_interpretation.format.includes("carousel")
+      ? ["#carousel", "#socialstrategy"]
+      : ["#socialcontent", "#contentstrategy"];
+
+  return {
+    hooks: hooks.length > 0 ? hooks : creativePlan.proposed_directions[0]?.hook_examples.slice(0, 3) ?? [request.rawIdea],
+    caption: compactList(assets.caption_options)[0] ?? `${creativePlan.proposed_directions[0]?.title ?? request.rawIdea}. ${brand.cta}.`,
+    hashtags: uniqueHashtags([...brand.defaults.hashtags, ...baseTags]),
+    platformNotes,
+    slides: assignUploadedAssetsToSlides(creativePlanToSlides(creativePlan), request),
+  };
+}
+
 /**
  * Assign uploaded assets to slides based on asset type analysis.
  * - person_photo → hook slide
@@ -580,6 +672,11 @@ export function assignUploadedAssetsToCarouselSlides(slides: Slide[], request: G
 }
 
 export function fallbackPlanSocialPackage({ brand, request, contentType }: PlannerContext): PlannedPackage {
+  const creativePlan = planFromCreativeSystem({ brand, request, contentType });
+  if (creativePlan) {
+    return creativePlan;
+  }
+
   // Route 1: Peppera recipe-carousel — use existing dedicated path
   if (isPepperaRecipeCarousel(brand, contentType)) {
     return fallbackPlanPepperaCarousel({ brand, request, contentType });
@@ -770,6 +867,14 @@ function fallbackPlanPepperaCarousel({ brand, request }: PlannerContext): Planne
 export async function planSocialPackage(
   context: PlannerContext
 ): Promise<{ plan: PlannedPackage; provider: "glm" | "fallback" }> {
+  const creativePlan = planFromCreativeSystem(context);
+  if (creativePlan) {
+    return {
+      plan: creativePlan,
+      provider: "fallback"
+    };
+  }
+
   const apiKey = process.env.GLM_API_KEY;
   const apiUrl = process.env.GLM_API_URL ?? "https://open.bigmodel.cn/api/paas/v4/chat/completions";
   const model = process.env.GLM_MODEL ?? context.brand.providers.plannerModel ?? "glm-4.5";
