@@ -58,7 +58,7 @@ function platformForIntent(brand: BrandProfile, rawIntent: string, explicit?: Pl
 function formatForIntent(rawIntent: string, platform: Platform): CreativeFormat {
   if (has(rawIntent, ["ugc", "creator", "talking", "review"])) return has(rawIntent, ["founder"]) ? "creator-talking-video" : "ugc-short-video";
   if (has(rawIntent, ["trailer", "hype", "promo", "launch"])) return "promo-trailer";
-  if (has(rawIntent, ["meme", "funny", "chaotic"])) return "ugc-short-video";
+  if (has(rawIntent, ["meme", "funny", "chaotic"])) return "meme-post";
   if (has(rawIntent, ["thought leadership", "serious", "founder", "insight"])) return "founder-thought-leadership";
   if (has(rawIntent, ["carousel", "slides", "education", "explainer"])) return "educational-carousel";
   if (has(rawIntent, ["image", "poster", "photo"])) return "image-led-post";
@@ -387,18 +387,33 @@ export function buildCreativeSystemPrompt(input: CreativeInput, fallback: Creati
   ].join("\n");
 }
 
+function isStringArray(v: unknown): v is string[] {
+  return Array.isArray(v) && v.every((i) => typeof i === "string");
+}
+
 function isCreativeSystemOutput(value: unknown): value is CreativeSystemOutput {
   if (!value || typeof value !== "object") return false;
-  const output = value as Partial<CreativeSystemOutput>;
-  return Boolean(
-    output.brief_interpretation &&
-    Array.isArray(output.proposed_directions) &&
-    typeof output.recommended_direction_id === "string" &&
-    output.content_blueprint &&
-    output.production_assets &&
-    Array.isArray(output.variants) &&
-    Array.isArray(output.review_flags)
-  );
+  const o = value as Record<string, unknown>;
+  if (
+    !o.brief_interpretation ||
+    !Array.isArray(o.proposed_directions) ||
+    typeof o.recommended_direction_id !== "string" ||
+    !Array.isArray(o.variants) ||
+    !Array.isArray(o.review_flags)
+  ) return false;
+
+  const bp = o.content_blueprint as Record<string, unknown> | undefined;
+  if (!bp || typeof bp !== "object") return false;
+  if (!isStringArray(bp.narrative_arc) || !isStringArray(bp.beat_sheet) || !isStringArray(bp.creative_notes)) return false;
+  if (typeof bp.editing_style !== "string" || typeof bp.cta_style !== "string" || typeof bp.pacing_guidance !== "string" || typeof bp.on_screen_text_strategy !== "string") return false;
+
+  const pa = o.production_assets as Record<string, unknown> | undefined;
+  if (!pa || typeof pa !== "object") return false;
+  for (const key of ["script", "on_screen_text", "shot_list", "image_prompts", "slide_plan", "caption_options", "headline_options", "render_prompts", "voiceover_version", "thumbnail_or_cover_text"] as const) {
+    if (!isStringArray(pa[key])) return false;
+  }
+
+  return true;
 }
 
 function scrubGenericPhrases(output: CreativeSystemOutput): CreativeSystemOutput {
