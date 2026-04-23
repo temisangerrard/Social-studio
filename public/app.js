@@ -56,27 +56,37 @@ initAssetModalListeners();
 
 // ── Messages ──────────────────────────────────────────────────────────────────
 function workflowTypeForStyle(styleId) {
-  if (styleId?.startsWith("ugc-faceless")) return "ugc-faceless";
-  if (styleId?.startsWith("ugc-voiceover")) return "ugc-voiceover";
   return "slideshow";
 }
 
-function syncUgcUi(styleId, { hideBrief = true } = {}) {
-  const isUgc = styleId?.startsWith("ugc-");
-  const briefPanel = document.getElementById("ugc-brief-panel");
-  if (briefPanel && hideBrief) briefPanel.classList.add("hidden");
-  studioState.ugcBriefApproved = false;
-  els.studioSubmit.textContent = isUgc ? "Draft Brief" : "Generate";
+function syncStudioSubmitUi() {
+  els.studioSubmit.textContent = "Generate";
 }
 
-function applyStyleSelection(styleId, { userPicked = true, syncSelect = true, hideBrief = true } = {}) {
+function firstStudioStyleId() {
+  return studioState.stylePresets.find((item) => !item.id.startsWith("ugc-"))?.id || "";
+}
+
+function openDedicatedUgcTab(idea = "") {
+  if (els.ugcIdeaInput && idea && !els.ugcIdeaInput.value.trim()) {
+    els.ugcIdeaInput.value = idea;
+  }
+  document.dispatchEvent(new CustomEvent("studio:switch-view", { detail: "ugc" }));
+  showStatus("UGC now lives in the dedicated UGC tab.");
+}
+
+function applyStyleSelection(styleId, { userPicked = true, syncSelect = true } = {}) {
+  if (styleId?.startsWith("ugc-")) {
+    openDedicatedUgcTab(els.studioIdeaInput?.value?.trim() || "");
+    styleId = firstStudioStyleId();
+  }
   studioState.selectedStyleId = styleId;
   studioState.userPickedStyle = userPicked;
   studioState.workflowType = workflowTypeForStyle(styleId);
   if (syncSelect && els.studioStylePreset) {
     els.studioStylePreset.value = styleId;
   }
-  syncUgcUi(styleId, { hideBrief });
+  syncStudioSubmitUi();
   return studioState.stylePresets.find((item) => item.id === styleId);
 }
 
@@ -87,39 +97,10 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
   if (!idea) return;
   if (!studioState.selectedStyleId) { showStatus("Select a style preset first."); return; }
 
-  const isUgc = studioState.selectedStyleId?.startsWith("ugc-");
-  const briefPanel = document.getElementById("ugc-brief-panel");
-
-  // UGC two-step: first click drafts the brief, second click generates
-  if (isUgc && briefPanel && !studioState.ugcBriefApproved) {
-    setButtonLoading(els.studioSubmit, "Drafting…");
-    let drafted = false;
-    try {
-      const res = await fetch("/api/ugc-brief", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idea, brandProfileId: els.studioProductSelect.value })
-      });
-      const brief = await res.json();
-      if (!res.ok) throw new Error(brief.error || "Brief generation failed.");
-      document.getElementById("ugc-hook").value = brief.hook || "";
-      document.getElementById("ugc-problem").value = brief.problem || "";
-      document.getElementById("ugc-product-moment").value = brief.productMoment || "";
-      document.getElementById("ugc-outcome").value = brief.outcome || "";
-      document.getElementById("ugc-cta").value = brief.cta || "";
-      document.getElementById("ugc-tone-notes").value = brief.toneNotes || "";
-      briefPanel.classList.remove("hidden");
-      studioState.ugcBriefApproved = true;
-      drafted = true;
-    } catch (err) { showStatus(err instanceof Error ? err.message : "Brief generation failed."); }
-    finally {
-      clearButtonLoading(els.studioSubmit);
-      if (drafted) els.studioSubmit.textContent = "Generate";
-    }
+  if (studioState.selectedStyleId?.startsWith("ugc-")) {
+    openDedicatedUgcTab(idea);
     return;
   }
-
-  // Reset for next run
-  if (isUgc) studioState.ugcBriefApproved = false;
 
   setButtonLoading(els.studioSubmit, "Planning…");
   showStatus("Planning content strategy…");
@@ -258,7 +239,6 @@ function syncBrandDefaults(brandId) {
   if (brand.defaultStyleCardId && !brand.defaultStyleCardId.startsWith("ugc-") && studioState.stylePresets.some(s => s.id === brand.defaultStyleCardId)) {
     applyStyleSelection(brand.defaultStyleCardId, { userPicked: false, syncSelect: true, hideBrief: true });
   }
-  // Update UGC brief placeholders for this brand
   updateUgcPlaceholders(brand);
 }
 
@@ -297,14 +277,16 @@ els.studioContentTypeSelect?.addEventListener("change", () => refreshRoutePrevie
 if (els.studioStylePreset) {
   els.studioStylePreset.addEventListener("change", () => {
     const styleId = els.studioStylePreset.value;
+    if (styleId.startsWith("ugc-")) {
+      applyStyleSelection(styleId, { userPicked: false, syncSelect: true });
+      return;
+    }
     const style = applyStyleSelection(styleId, { userPicked: true, syncSelect: false, hideBrief: true });
     if (style && els.studioStylePreviewBody) {
       els.studioStylePreview.classList.remove("hidden");
-      const isUgc = styleId.startsWith("ugc-");
       const tags = style.visualTraits.tone.map((t) => `<span class="style-tag">${t}</span>`).join("");
       const avoids = style.negativeConstraints.slice(0, 4).map((c) => `<span class="style-tag">${c}</span>`).join("");
       els.studioStylePreviewBody.innerHTML = `
-        ${isUgc ? `<div class="style-section"><div class="style-section-label">Type</div><span class="style-tag" style="background:rgba(39,174,96,0.12);color:#1a8a4a">${styleId.includes("faceless") ? "Faceless UGC" : "Voiceover UGC"}</span> + AI voiceover</div>` : ""}
         <div class="style-section"><div class="style-section-label">Intent</div>${style.intent}</div>
         <div class="style-section"><div class="style-section-label">Tone</div>${tags}</div>
         <div class="style-section"><div class="style-section-label">Image</div>${style.imageStyle}</div>
@@ -357,11 +339,6 @@ initAdminListeners();
 initStylesListeners();
 initBrandEditorListeners();
 initUgcListeners();
-
-// ── UGC brief panel ───────────────────────────────────────────────────────────
-document.getElementById("ugc-brief-close")?.addEventListener("click", () => {
-  document.getElementById("ugc-brief-panel")?.classList.add("hidden");
-});
 
 // ── Create brand modal ────────────────────────────────────────────────────────
 {

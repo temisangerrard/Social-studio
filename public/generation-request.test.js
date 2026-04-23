@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { resolveGenerationRouting } from "./generation-request.js";
 
-test("manual UGC preset keeps its workflow when platform routing changes", () => {
+test("legacy Studio UGC preset never re-enables inline UGC brief handling", () => {
   const result = resolveGenerationRouting({
     selectedStyleId: "ugc-voiceover-story",
     userPickedStyle: true,
@@ -17,7 +17,7 @@ test("manual UGC preset keeps its workflow when platform routing changes", () =>
   });
 
   assert.equal(result.workflowType, "ugc-voiceover");
-  assert.equal(result.includeUgcBrief, true);
+  assert.equal(result.includeUgcBrief, false);
   assert.deepEqual(result.routingOverride, {
     workflowType: "ugc-voiceover"
   });

@@ -73,15 +73,7 @@ export async function runGeneration(rawIdea, notes) {
       generationMode: els.studioGenerationMode?.value || "image-first",
       textDensity: els.studioTextDensity?.value || undefined,
       imageTreatment: els.studioImageTreatment?.value || undefined,
-      referenceLockStrength: els.studioReferenceLock?.value || "loose",
-      ugcBrief: generationRouting.includeUgcBrief ? {
-        hook: document.getElementById("ugc-hook")?.value?.trim() || undefined,
-        problem: document.getElementById("ugc-problem")?.value?.trim() || undefined,
-        productMoment: document.getElementById("ugc-product-moment")?.value?.trim() || undefined,
-        outcome: document.getElementById("ugc-outcome")?.value?.trim() || undefined,
-        cta: document.getElementById("ugc-cta")?.value?.trim() || undefined,
-        toneNotes: document.getElementById("ugc-tone-notes")?.value?.trim() || undefined,
-      } : undefined
+      referenceLockStrength: els.studioReferenceLock?.value || "loose"
     }
   };
 
