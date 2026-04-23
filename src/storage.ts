@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { BoardDocument, BrandProfile, CalendarSlot, ContentPillar, StyleCard } from "./types.ts";
+import type { BoardDocument, BrandProfile, CalendarSlot, ContentPillar, CreativeProjectMemory, StyleCard } from "./types.ts";
 
 interface Storage {
   listBrandProfiles(): Promise<BrandProfile[]>;
@@ -21,6 +21,9 @@ interface Storage {
   getStyleCard(id: string): Promise<StyleCard | null>;
   saveStyleCard(card: StyleCard): Promise<void>;
   deleteStyleCard(id: string): Promise<void>;
+  listCreativeProjects(): Promise<CreativeProjectMemory[]>;
+  getCreativeProject(id: string): Promise<CreativeProjectMemory | null>;
+  saveCreativeProject(project: CreativeProjectMemory): Promise<void>;
 }
 
 async function readJsonFile<T>(filePath: string): Promise<T | null> {
@@ -66,6 +69,7 @@ export function createStorage(rootDir: string): Storage {
   const calendarDir = path.join(rootDir, "workspace", "calendar");
   const pillarsDir = path.join(rootDir, "workspace", "pillars");
   const stylesDir = path.join(rootDir, "workspace", "styles");
+  const creativeProjectsDir = path.join(rootDir, "workspace", "creative-projects");
 
   return {
     async listBrandProfiles() {
@@ -155,6 +159,19 @@ export function createStorage(rootDir: string): Storage {
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
       }
+    },
+
+    async listCreativeProjects() {
+      const projects = await listJsonDirectory<CreativeProjectMemory>(creativeProjectsDir);
+      return projects.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    },
+
+    async getCreativeProject(id: string) {
+      return readJsonFile<CreativeProjectMemory>(path.join(creativeProjectsDir, `${id}.json`));
+    },
+
+    async saveCreativeProject(project: CreativeProjectMemory) {
+      await writeJsonFile(path.join(creativeProjectsDir, `${project.id}.json`), project);
     }
   };
 }

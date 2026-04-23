@@ -2,7 +2,7 @@ import { els } from "./dom-refs.js";
 import { studioState } from "./state.js";
 import { escapeHtml } from "./app-helpers.js";
 import { showStatus, hideStatus } from "./ui-utils.js";
-import { addUploadsToLibrary, isUploadSelected, selectUploadForRun } from "./upload-scope.js";
+import { addUploadsToLibrary, isUploadSelected, removeUploadFromLibrary } from "./upload-scope.js";
 
 /** @type {function|null} Called after an uploaded asset is deleted. */
 let _onAssetDeleted = null;
@@ -152,10 +152,7 @@ export function renderUploadedAssets() {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       const id = btn.dataset.uploadId;
-      const asset = studioState.uploadedAssets.find((a) => a.id === id);
-      studioState.uploadedAssets = studioState.uploadedAssets.filter((a) => a.id !== id);
-      studioState.assetAnalyses = studioState.assetAnalyses.filter((a) => a.assetId !== id);
-      selectUploadForRun(studioState, id, false);
+      const asset = removeUploadFromLibrary(studioState, id);
       // Strip deleted asset URL from reference input
       if (asset?.url && els.studioReferenceInput) {
         els.studioReferenceInput.value = els.studioReferenceInput.value

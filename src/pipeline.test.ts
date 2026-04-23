@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
+import { buildCreativeSystemOutput } from "./creative-system.ts";
 import { brandProfileFromBrief, resolveContentType, runPipelineFromRequest, validateContentTypes } from "./pipeline.ts";
 import type { AssetAnalysis, BrandProfile, ContentRecipeDefinition, ContentTypeDefinition, GenerationRequest, PlannedPackage, Slide, UploadedAsset } from "./types.ts";
 
@@ -234,6 +235,50 @@ test("pipeline uses li post-id prefix for linkedin generations", async () => {
 
   assert.match(metadata.post_id, /_li_/);
   assert.equal(metadata.workflow_type, "linkedin-text");
+});
+
+test("pipeline persists creative project memory on generated metadata", async () => {
+  const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), "social-studio-creative-"));
+  const brand = makeBrand();
+  const creativePlan = buildCreativeSystemOutput({
+    brand,
+    rawIntent: "Peppera pantry meals but chaotic UGC",
+    platform: "tiktok"
+  });
+
+  const metadata = await runPipelineFromRequest(
+    {
+      ...makeRequest(),
+      rawIdea: "Peppera pantry meals but chaotic UGC",
+      workflowType: "slideshow",
+      creativeProjectId: "creative-01",
+      creativePlan,
+      styleControl: { styleCardId: "editorial-bite", generationMode: "text-first" }
+    },
+    brand,
+    outputRoot,
+    {
+      planPackage: async ({ request }) => ({
+        provider: "fallback",
+        plan: {
+          hooks: request.creativePlan?.production_assets.headline_options.slice(0, 3) ?? ["fallback"],
+          caption: request.creativePlan?.production_assets.caption_options[0] ?? "fallback",
+          hashtags: ["#ugc"],
+          platformNotes: { tiktok: "creative plan aware" },
+          slides: makeSlides()
+        }
+      }),
+      generateSlideImages: async () => [],
+      renderPackageSlides: async () => []
+    }
+  );
+
+  assert.equal(metadata.creative_project_id, "creative-01");
+  assert.equal(metadata.creative_plan?.recommended_direction_id, creativePlan.recommended_direction_id);
+
+  const savedMetadata = JSON.parse(await fs.readFile(path.join(outputRoot, metadata.post_id, "metadata.json"), "utf8"));
+  assert.equal(savedMetadata.creative_project_id, "creative-01");
+  assert.equal(savedMetadata.creative_plan.recommended_direction_id, creativePlan.recommended_direction_id);
 });
 
 

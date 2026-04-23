@@ -156,6 +156,15 @@ export interface BrandProfile {
   visual: BrandVisualSettings;
   defaults: BrandDefaults;
   providers: BrandProviders;
+  category?: string;
+  valueProposition?: string;
+  platformPersonality?: string;
+  toneRange?: string[];
+  contentPillars?: string[];
+  bannedPhrases?: string[];
+  preferredThemes?: string[];
+  goodContentExamples?: string[];
+  badContentExamples?: string[];
   mascot?: BrandMascot;
   contentTypes?: ContentTypeDefinition[];
   defaultContentType?: string;
@@ -318,6 +327,8 @@ export interface GenerationRequest {
   contentTypeId?: string;
   routingDecision?: RoutingDecision;
   routingTrace?: RoutingTrace;
+  creativeProjectId?: string;
+  creativePlan?: CreativeSystemOutput;
   styleControl: StyleControlledRequest;
 }
 
@@ -399,6 +410,8 @@ export interface PostMetadata {
   brief: ContentBrief;
   brand_profile: BrandProfile;
   generation_request: GenerationRequest;
+  creative_project_id?: string;
+  creative_plan?: CreativeSystemOutput;
   uploaded_assets?: UploadedAsset[];
   asset_analyses?: AssetAnalysis[];
   routing_decision?: RoutingDecision;
@@ -576,4 +589,106 @@ export interface StyleControlledRequest {
   referenceLockStrength?: ReferenceLockStrength;
   imageTreatment?: ImageTreatment;
   ugcBrief?: UgcBrief;
+}
+
+// ── Creative Operating System ────────────────────────────────────────────────
+
+export type CreativeFormat =
+  | "ugc-short-video"
+  | "creator-talking-video"
+  | "image-led-post"
+  | "meme-post"
+  | "educational-carousel"
+  | "founder-thought-leadership"
+  | "promo-trailer"
+  | "slideshow-video"
+  | "product-explainer"
+  | "ad-creative"
+  | "insight-card";
+
+export type CreativeReviewFlag =
+  | "too_safe"
+  | "too_generic"
+  | "too_brandlike"
+  | "too_static"
+  | "too_adlike"
+  | "weak_hook"
+  | "refined";
+
+export interface CreativeBriefInterpretation {
+  product: string;
+  goal: string;
+  audience: string;
+  format: CreativeFormat;
+  tone: string;
+  platform: Platform;
+  confidence: number;
+  inferredContext: string[];
+}
+
+export interface CreativeDirection {
+  id: string;
+  title: string;
+  format: CreativeFormat;
+  angle: string;
+  why_it_works: string;
+  emotional_driver: string;
+  visual_style: string;
+  hook_style: string;
+  recommended_platform_fit: Platform[];
+  hook_examples: string[];
+  performance_score: number;
+  brand_fit_score: number;
+}
+
+export interface ContentBlueprint {
+  narrative_arc: string[];
+  beat_sheet: string[];
+  creative_notes: string[];
+  editing_style: string;
+  cta_style: string;
+  pacing_guidance: string;
+  on_screen_text_strategy: string;
+}
+
+export interface ProductionAssets {
+  script: string[];
+  on_screen_text: string[];
+  shot_list: string[];
+  image_prompts: string[];
+  slide_plan: string[];
+  caption_options: string[];
+  headline_options: string[];
+  render_prompts: string[];
+  voiceover_version: string[];
+  thumbnail_or_cover_text: string[];
+}
+
+export interface CreativeVariant {
+  label: string;
+  difference: string;
+  script_adjustments: string[];
+  visual_adjustments: string[];
+}
+
+export interface CreativeSystemOutput {
+  brief_interpretation: CreativeBriefInterpretation;
+  proposed_directions: CreativeDirection[];
+  recommended_direction_id: string;
+  content_blueprint: ContentBlueprint;
+  production_assets: ProductionAssets;
+  variants: CreativeVariant[];
+  review_flags: CreativeReviewFlag[];
+  refinementNotes?: string[];
+}
+
+export interface CreativeProjectMemory {
+  id: string;
+  brandProfileId: string;
+  rawIntent: string;
+  selectedDirectionId: string;
+  creativePlan: CreativeSystemOutput;
+  refinementNotes: string[];
+  createdAt: string;
+  updatedAt: string;
 }

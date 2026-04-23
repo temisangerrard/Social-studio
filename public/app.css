@@ -1284,6 +1284,22 @@ textarea {
   background: rgba(254, 228, 198, 0.58);
 }
 
+.reference-chip__delete {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(31, 26, 22, 0.08);
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.reference-chip__delete:hover {
+  background: rgba(185, 45, 26, 0.14);
+  color: #9f2416;
+}
+
 .checkbox-row {
   display: flex;
   align-items: center;
