@@ -158,6 +158,7 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
     studioState.canvasLoadingStage = null;
     hideCanvasProgress();
     clearButtonLoading(els.studioSubmit);
+    els.studioSubmit.disabled = false;
     showCanvasProgress(err instanceof Error ? err.message : String(err));
   }
 });
@@ -403,7 +404,7 @@ async function loadProducts() {
   const [productsRes, brandsRes, stylesRes] = await Promise.all([fetch("/api/products"), fetch("/api/brands"), fetch("/api/styles")]);
   studioState.products = await productsRes.json();
   studioState.brands = await brandsRes.json();
-  studioState.stylePresets = await stylesRes.json();
+  studioState.stylePresets = await stylesRes.json().catch(() => []);
   els.studioProductSelect.innerHTML = studioState.brands.map((b) => `<option value="${b.id}">${b.name}</option>`).join("") + `<option value="__new__">+ New brand</option>`;
   if (els.ugcBrandSelect) {
     els.ugcBrandSelect.innerHTML = studioState.brands.map((b) => `<option value="${b.id}">${b.name}</option>`).join("");
@@ -420,9 +421,10 @@ async function loadProducts() {
     if (studioPresets.length > 0) {
       applyStyleSelection(studioPresets[0].id, { userPicked: false, syncSelect: true, hideBrief: true });
       if (els.studioStyleControls) els.studioStyleControls.classList.remove("hidden");
-      els.studioSubmit.disabled = false;
     }
   }
+  // Always enable the submit button after loading — even if styles are empty
+  els.studioSubmit.disabled = false;
 }
 
 // ── Mobile inspector ──────────────────────────────────────────────────────────

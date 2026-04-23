@@ -449,6 +449,18 @@ async function createImageArtifact(params: {
   };
 }
 
+async function createPlaceholderVideoArtifact(params: {
+  prompt: string;
+  title: string;
+  assetsDir: string;
+  fileStem: string;
+}): Promise<string> {
+  await fs.mkdir(params.assetsDir, { recursive: true });
+  const placeholderPath = path.join(params.assetsDir, `${params.fileStem}.txt`);
+  await fs.writeFile(placeholderPath, `[MOCK VIDEO]\nPrompt: ${params.prompt}\nTitle: ${params.title}\n`, "utf8");
+  return placeholderPath;
+}
+
 async function createVideoArtifact(params: {
   prompt: string;
   title: string;
@@ -461,7 +473,7 @@ async function createVideoArtifact(params: {
   const recipe = buildWorkflowRecipe(params.request);
   const references = buildWorkflowReferenceAssets(params.request, params.brandProfile);
   const videoOptions = resolveVideoOptions(params.request);
-  const assetPath = await generateFalVideoAsset({
+  let assetPath = await generateFalVideoAsset({
     prompt: params.prompt,
     assetsDir: params.assetsDir,
     fileStem: params.artifactId,
@@ -470,6 +482,16 @@ async function createVideoArtifact(params: {
     references,
     videoOptions
   });
+
+  if (!assetPath) {
+    console.warn(`[pipeline] Video generation returned null for ${params.artifactId}, writing placeholder`);
+    assetPath = await createPlaceholderVideoArtifact({
+      prompt: params.prompt,
+      title: params.title,
+      assetsDir: params.assetsDir,
+      fileStem: params.artifactId
+    });
+  }
 
   return {
     id: params.artifactId,
@@ -796,6 +818,20 @@ export async function runPipelineFromRequest(
         })
       )
     );
+
+    // Generate voiceover for the reel package
+    const voiceResult = await generateVoiceover(
+      metadata.reel_package.voiceoverScript,
+      assetsDir,
+      "voiceover"
+    );
+    metadata.voiceover = {
+      script: metadata.reel_package.voiceoverScript,
+      audioPath: voiceResult.audioPath,
+      voiceId: voiceResult.voiceId,
+      durationEstimate: voiceResult.durationEstimate,
+    };
+
     metadata.render_status = "skipped";
   }
 
