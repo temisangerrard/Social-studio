@@ -1,8 +1,9 @@
 export const ugcState = {
   voices: [],
   uploadedAssets: [],
-  draft: null,
+  creativeProject: null,
   lastOutput: null,
   loadingVoices: false,
-  draftApproved: false
+  creativeBriefApproved: false,
+  creativeBriefSignature: ""
 };

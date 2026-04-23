@@ -335,7 +335,7 @@
               </div>
               <div class="gen-form__footer">
                 <span id="ugc-status" class="assistant-status hidden"></span>
-                <button id="ugc-draft-button" class="primary-button" type="submit">Draft Script</button>
+                <button id="ugc-draft-button" class="primary-button" type="submit">Build UGC Brief</button>
               </div>
             </form>
           </div>
@@ -350,65 +350,29 @@
           </div>
 
           <form id="ugc-generate-form" class="ugc-stack">
-            <div id="ugc-draft-panel" class="ugc-stack hidden">
+            <div id="ugc-brief-panel" class="ugc-stack">
+              <p class="drawer-empty-hint">Build a UGC brief to review directions, shot beats, hooks, and production assets before generating.</p>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="ugc-brief-feedback">Refinement note</label>
+              <input id="ugc-brief-feedback" type="text" placeholder="less ad-like, more creator energy, more premium, more chaotic…" />
+            </div>
+            <div class="field-row">
               <div class="field-group">
-                <label class="field-label" for="ugc-script-hook">Hook</label>
-                <input id="ugc-script-hook" type="text" />
-              </div>
-              <div class="field-row">
-                <div class="field-group">
-                  <label class="field-label" for="ugc-script-problem">Problem</label>
-                  <input id="ugc-script-problem" type="text" />
-                </div>
-                <div class="field-group">
-                  <label class="field-label" for="ugc-script-product-moment">Product moment</label>
-                  <input id="ugc-script-product-moment" type="text" />
-                </div>
-              </div>
-              <div class="field-row">
-                <div class="field-group">
-                  <label class="field-label" for="ugc-script-outcome">Outcome</label>
-                  <input id="ugc-script-outcome" type="text" />
-                </div>
-                <div class="field-group">
-                  <label class="field-label" for="ugc-script-cta">CTA</label>
-                  <input id="ugc-script-cta" type="text" />
-                </div>
+                <label class="field-label" for="ugc-voice-select">Voice</label>
+                <select id="ugc-voice-select"></select>
               </div>
               <div class="field-group">
-                <label class="field-label" for="ugc-script-tone-notes">Tone notes</label>
-                <input id="ugc-script-tone-notes" type="text" />
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="ugc-script-full">Full script</label>
-                <textarea id="ugc-script-full" rows="6"></textarea>
-              </div>
-              <div class="field-row">
-                <div class="field-group">
-                  <label class="field-label" for="ugc-script-beats">Beat sheet</label>
-                  <textarea id="ugc-script-beats" rows="5"></textarea>
-                </div>
-                <div class="field-group">
-                  <label class="field-label" for="ugc-script-onscreen">On-screen text</label>
-                  <textarea id="ugc-script-onscreen" rows="5"></textarea>
-                </div>
-              </div>
-              <div class="field-row">
-                <div class="field-group">
-                  <label class="field-label" for="ugc-voice-select">Voice</label>
-                  <select id="ugc-voice-select"></select>
-                </div>
-                <div class="field-group">
-                  <label class="field-label" for="ugc-visual-mode">Video treatment</label>
-                  <select id="ugc-visual-mode">
-                    <option value="story-led">Story-led</option>
-                    <option value="product-demo">Product demo</option>
-                    <option value="faceless-b-roll">Faceless B-roll</option>
-                  </select>
-                </div>
+                <label class="field-label" for="ugc-visual-mode">Video treatment</label>
+                <select id="ugc-visual-mode">
+                  <option value="story-led">Story-led</option>
+                  <option value="product-demo">Product demo</option>
+                  <option value="faceless-b-roll">Faceless B-roll</option>
+                </select>
               </div>
             </div>
             <div class="gen-form__footer">
+              <button id="ugc-brief-refine" class="ghost-button" type="button">Refine Brief</button>
               <button id="ugc-generate-button" class="primary-button" type="submit">Generate UGC Video</button>
             </div>
           </form>

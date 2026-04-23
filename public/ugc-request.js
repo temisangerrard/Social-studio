@@ -13,7 +13,9 @@ export function buildUgcGenerateRequest({
   voiceId,
   visualMode,
   script,
-  uploadedAssetIds
+  uploadedAssetIds,
+  creativeProjectId,
+  creativePlan
 } = {}) {
   return {
     brandProfileId: brandId || "peppera",
@@ -21,6 +23,8 @@ export function buildUgcGenerateRequest({
     voiceId: voiceId || "mock",
     visualMode: visualMode || "story-led",
     script: script || {},
-    uploadedAssetIds: Array.isArray(uploadedAssetIds) ? uploadedAssetIds : []
+    uploadedAssetIds: Array.isArray(uploadedAssetIds) ? uploadedAssetIds : [],
+    creativeProjectId: typeof creativeProjectId === "string" ? creativeProjectId : undefined,
+    creativePlan: creativePlan && typeof creativePlan === "object" ? creativePlan : undefined
   };
 }

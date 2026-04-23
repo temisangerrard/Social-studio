@@ -61,3 +61,24 @@ test("UGC generate request includes approved script and voice context only", () 
   assert.equal("routePreview" in request, false);
   assert.equal("selectedStyleId" in request, false);
 });
+
+test("UGC generate request carries approved creative plan context", () => {
+  const request = buildUgcGenerateRequest({
+    brandId: "peppera",
+    platform: "tiktok",
+    voiceId: "voice_123",
+    visualMode: "story-led",
+    creativeProjectId: "creative-1",
+    creativePlan: {
+      recommended_direction_id: "dir-1",
+      production_assets: {
+        headline_options: ["Hook one"],
+        on_screen_text: ["Text one"]
+      }
+    }
+  });
+
+  assert.equal(request.creativeProjectId, "creative-1");
+  assert.equal(request.creativePlan.recommended_direction_id, "dir-1");
+  assert.equal("routePreview" in request, false);
+});

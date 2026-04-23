@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import type { BrandProfile, Platform, PostMetadata, UploadedAsset } from "./types.ts";
+import type { BrandProfile, CreativeSystemOutput, Platform, PostMetadata, UploadedAsset } from "./types.ts";
 import { generateVoiceover } from "./voice-generator.ts";
 import { runPipelineFromRequest } from "./pipeline.ts";
 
@@ -22,7 +22,9 @@ export interface UgcGenerateParams {
   platform: Platform;
   voiceId: string;
   visualMode: string;
-  script: UgcScriptDraft;
+  script?: UgcScriptDraft;
+  creativeProjectId?: string;
+  creativePlan?: CreativeSystemOutput;
   uploadedAssets?: UploadedAsset[];
   outputRoot: string;
 }
@@ -86,6 +88,37 @@ export function buildUgcPromptContext(params: {
   ].join(" ");
 }
 
+function listOrEmpty(value: unknown): string[] {
+  return Array.isArray(value) ? value.map((item) => String(item).trim()).filter(Boolean) : [];
+}
+
+export function buildUgcDraftFromCreativePlan(plan: CreativeSystemOutput, brand: BrandProfile): UgcScriptDraft {
+  const headlines = listOrEmpty(plan.production_assets?.headline_options);
+  const scriptLines = listOrEmpty(plan.production_assets?.script);
+  const voiceover = listOrEmpty(plan.production_assets?.voiceover_version);
+  const onScreenText = listOrEmpty(plan.production_assets?.on_screen_text);
+  const beatSheet = listOrEmpty(plan.content_blueprint?.beat_sheet);
+  const narrativeArc = listOrEmpty(plan.content_blueprint?.narrative_arc);
+  const directions = Array.isArray(plan.proposed_directions) ? plan.proposed_directions : [];
+  const direction = directions.find((item) => item.id === plan.recommended_direction_id) ?? directions[0];
+  const hookExamples = listOrEmpty(direction?.hook_examples);
+
+  return normalizeUgcDraft(
+    {
+      hook: headlines[0] || scriptLines[0] || hookExamples[0] || `${brand.name} in one line.`,
+      problem: scriptLines[1] || direction?.angle || narrativeArc[0] || brand.description,
+      productMoment: scriptLines[2] || direction?.why_it_works || `${brand.name} shows the product moment clearly.`,
+      outcome: scriptLines[3] || direction?.emotional_driver || narrativeArc.at(-1) || brand.cta,
+      cta: brand.cta,
+      toneNotes: plan.brief_interpretation?.tone || brand.tone,
+      fullScript: [...(voiceover.length > 0 ? voiceover : scriptLines), brand.cta].filter(Boolean).join(" "),
+      beatSheet,
+      onScreenText: onScreenText.length > 0 ? onScreenText : headlines
+    },
+    brand
+  );
+}
+
 function assetUrlFromPath(postId: string, filePath: string | null | undefined): string | null {
   if (!filePath) return null;
   return `/api/assets/${postId}/${path.basename(filePath)}`;
@@ -101,13 +134,18 @@ export async function generateUgcPackage(params: UgcGenerateParams): Promise<{
   script: UgcScriptDraft;
   metadata: PostMetadata;
 }> {
-  const { brand, platform, voiceId, visualMode, script, uploadedAssets = [], outputRoot } = params;
+  const { brand, platform, voiceId, visualMode, creativePlan, creativeProjectId, uploadedAssets = [], outputRoot } = params;
+  const script = creativePlan
+    ? buildUgcDraftFromCreativePlan(creativePlan, brand)
+    : normalizeUgcDraft((params.script || {}) as Partial<UgcScriptDraft> & Record<string, unknown>, brand);
   const videoPrompt = buildUgcPromptContext({ brand, platform, visualMode, script });
   const metadata = await runPipelineFromRequest(
     {
       brandProfileId: brand.id,
       rawIdea: videoPrompt,
       notes: script.fullScript,
+      creativeProjectId,
+      creativePlan,
       cards: [],
       references: [],
       uploadedAssets,

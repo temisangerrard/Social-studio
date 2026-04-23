@@ -1117,6 +1117,10 @@ async function handleRequest(req: Request): Promise<Response> {
       voiceId,
       visualMode,
       script,
+      creativeProjectId: typeof body.creativeProjectId === "string" ? body.creativeProjectId : undefined,
+      creativePlan: body.creativePlan && typeof body.creativePlan === "object"
+        ? (body.creativePlan as GenerationRequest["creativePlan"])
+        : undefined,
       uploadedAssets,
       outputRoot: OUTPUTS_ROOT
     }));

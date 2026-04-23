@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { BrandProfile } from "./types.ts";
-import { buildUgcPromptContext, normalizeUgcDraft } from "./ugc.ts";
+import { buildCreativeSystemOutput } from "./creative-system.ts";
+import { buildUgcDraftFromCreativePlan, buildUgcPromptContext, normalizeUgcDraft } from "./ugc.ts";
 
 const brand: BrandProfile = {
   id: "peppera",
@@ -69,4 +70,19 @@ test("buildUgcPromptContext includes brand, platform, and script beats", () => {
   assert.match(prompt, /tiktok/i);
   assert.match(prompt, /product-demo/i);
   assert.match(prompt, /Show app/i);
+});
+
+test("buildUgcDraftFromCreativePlan converts creative output into a filmable UGC script", () => {
+  const creativePlan = buildCreativeSystemOutput({
+    brand,
+    rawIntent: "Peppera pantry meals but chaotic UGC",
+    platform: "tiktok"
+  });
+
+  const draft = buildUgcDraftFromCreativePlan(creativePlan, brand);
+
+  assert.match(draft.hook, /food|fridge|Peppera|pantry/i);
+  assert.match(draft.fullScript, /Peppera/i);
+  assert.ok(draft.beatSheet.length >= 4);
+  assert.ok(draft.onScreenText.length >= 2);
 });
