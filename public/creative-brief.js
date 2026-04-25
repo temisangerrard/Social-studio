@@ -24,22 +24,18 @@ export function approvedCreativePlanForGeneration(state = studioState) {
   };
 }
 
-function safeArray(v) {
-  return Array.isArray(v) ? v : [];
-}
-
 function listHtml(items) {
-  return safeArray(items).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+  return (items || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
 }
 
 function tagList(items) {
-  return safeArray(items).map((t) => `<span>${escapeHtml(String(t))}</span>`).join("");
+  return (items || []).map((t) => `<span>${escapeHtml(String(t))}</span>`).join("");
 }
 
 function directionCard(direction, selectedId) {
   const isSelected = direction.id === selectedId;
   const platforms = tagList(direction.recommended_platform_fit);
-  const hookExamples = safeArray(direction.hook_examples).slice(0, 2).map((h) => `<li>${escapeHtml(h)}</li>`).join("");
+  const hookExamples = (direction.hook_examples || []).slice(0, 2).map((h) => `<li>${escapeHtml(h)}</li>`).join("");
   return `
     <button class="creative-direction-card ${isSelected ? "is-selected" : ""}" type="button" data-direction-id="${escapeHtml(direction.id)}">
       <span class="creative-direction-card__score">${Math.round(direction.performance_score || 0)}</span>
@@ -64,8 +60,8 @@ function variantCard(variant) {
       <strong>${escapeHtml(variant.label)}</strong>
       <p>${escapeHtml(variant.difference)}</p>
       <div class="creative-variant-card__adjustments">
-        ${safeArray(variant.script_adjustments).map((a) => `<span>${escapeHtml(a)}</span>`).join("")}
-        ${safeArray(variant.visual_adjustments).map((a) => `<span class="creative-variant-card__visual">${escapeHtml(a)}</span>`).join("")}
+        ${(variant.script_adjustments || []).map((a) => `<span>${escapeHtml(a)}</span>`).join("")}
+        ${(variant.visual_adjustments || []).map((a) => `<span class="creative-variant-card__visual">${escapeHtml(a)}</span>`).join("")}
       </div>
     </div>
   `;
