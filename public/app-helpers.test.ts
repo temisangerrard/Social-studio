@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildCanvasCards, getPlatformPublishLinks, getWorkflowPresets, getWorkspaceAssetUrl } from "./app-helpers.js";
+import fc from "fast-check";
+import { buildCanvasCards, formatRelativeTime, getPlatformPublishLinks, getWorkflowPresets, getWorkspaceAssetUrl } from "./app-helpers.js";
 
 test("canvas cards include every generated asset with asset URLs", () => {
   const cards = buildCanvasCards(
@@ -88,5 +89,47 @@ test("workflow presets surface all content workflows", () => {
   assert.deepEqual(
     presets.map((preset) => preset.id),
     ["slideshow", "linkedin-carousel", "linkedin-text", "mascot-variants", "reference-edit", "video-clip", "reel-package"]
+  );
+});
+
+
+// ── Property 7: Relative timestamp formatting ───────────────────────────
+
+test("Feature: library-state-management, Property 7: timestamps within 7 days return relative phrase", () => {
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+  const relativePattern = /just now|minutes? ago|hours? ago|days? ago/;
+
+  fc.assert(
+    fc.property(
+      // Generate an offset between 0ms and 7 days in milliseconds
+      fc.integer({ min: 0, max: SEVEN_DAYS_MS }),
+      (offsetMs) => {
+        const timestamp = new Date(Date.now() - offsetMs).toISOString();
+        const result = formatRelativeTime(timestamp);
+        assert.match(result, relativePattern, `Expected relative phrase for offset ${offsetMs}ms, got "${result}"`);
+      }
+    ),
+    { numRuns: 200 }
+  );
+});
+
+test("Feature: library-state-management, Property 7: timestamps older than 7 days return absolute date", () => {
+  const EIGHT_DAYS_MS = 8 * 24 * 60 * 60 * 1000;
+  const TEN_YEARS_MS = 10 * 365 * 24 * 60 * 60 * 1000;
+  // Absolute dates from toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric"})
+  // produce patterns like "Jan 15, 2026"
+  const absoluteDatePattern = /[A-Z][a-z]{2} \d{1,2}, \d{4}/;
+
+  fc.assert(
+    fc.property(
+      // Generate an offset between 8 days and 10 years ago
+      fc.integer({ min: EIGHT_DAYS_MS, max: TEN_YEARS_MS }),
+      (offsetMs) => {
+        const timestamp = new Date(Date.now() - offsetMs).toISOString();
+        const result = formatRelativeTime(timestamp);
+        assert.match(result, absoluteDatePattern, `Expected absolute date for offset ${offsetMs}ms, got "${result}"`);
+      }
+    ),
+    { numRuns: 200 }
   );
 });

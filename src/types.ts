@@ -362,6 +362,7 @@ export interface GeneratedArtifact {
   prompt: string;
   asset_path?: string | null;
   preview_path?: string | null;
+  slide_number?: number;
   source_asset_id?: string | null;
   variant_group?: string | null;
 }
