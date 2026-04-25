@@ -24,6 +24,13 @@ export function approvedCreativePlanForGeneration(state = studioState) {
   };
 }
 
+const STRATEGY_LABELS = {
+  ai_generated: { label: "AI Image", color: "#7c3aed" },
+  asset_library: { label: "Asset Library", color: "#0369a1" },
+  reusable_template: { label: "Template", color: "#15803d" },
+  no_image_text_only: { label: "Text Only", color: "#64748b" }
+};
+
 function safeArray(v) {
   return Array.isArray(v) ? v : [];
 }
@@ -36,24 +43,41 @@ function tagList(items) {
   return safeArray(items).map((t) => `<span>${escapeHtml(String(t))}</span>`).join("");
 }
 
+function strategyBadge(strategy) {
+  const s = STRATEGY_LABELS[strategy] || { label: strategy, color: "#64748b" };
+  return `<span class="sb-strategy-badge" style="--badge-color:${s.color}">${escapeHtml(s.label)}</span>`;
+}
+
+function storyboardSlideHtml(slide) {
+  const badge = strategyBadge(slide.image_strategy);
+  const hasPrompt = slide.image_strategy === "ai_generated" && slide.image_prompt;
+  return `
+    <div class="sb-slide">
+      <div class="sb-slide__header">
+        <span class="sb-slide__number">${slide.slide_number}</span>
+        <span class="sb-slide__role">${escapeHtml(slide.role)}</span>
+        ${badge}
+      </div>
+      <p class="sb-slide__copy">${escapeHtml(slide.copy || "")}</p>
+      ${hasPrompt ? `<details class="sb-slide__prompt"><summary>Image prompt</summary><p>${escapeHtml(slide.image_prompt)}</p></details>` : ""}
+      ${slide.visual_notes ? `<p class="sb-slide__notes">${escapeHtml(slide.visual_notes)}</p>` : ""}
+    </div>
+  `;
+}
+
 function directionCard(direction, selectedId) {
   const isSelected = direction.id === selectedId;
-  const platforms = tagList(direction.recommended_platform_fit);
   const hookExamples = safeArray(direction.hook_examples).slice(0, 2).map((h) => `<li>${escapeHtml(h)}</li>`).join("");
   return `
     <button class="creative-direction-card ${isSelected ? "is-selected" : ""}" type="button" data-direction-id="${escapeHtml(direction.id)}">
-      <span class="creative-direction-card__score">${Math.round(direction.performance_score || 0)}</span>
-      <strong>${escapeHtml(direction.title)}</strong>
-      <span>${escapeHtml(direction.format || "")} · ${escapeHtml(direction.emotional_driver || "")}</span>
-      <p>${escapeHtml(direction.angle || "")}</p>
-      <small>${escapeHtml(direction.why_it_works || "")}</small>
-      ${direction.visual_style ? `<span class="creative-direction-card__meta">${escapeHtml(direction.visual_style)}</span>` : ""}
-      ${direction.hook_style ? `<span class="creative-direction-card__meta">${escapeHtml(direction.hook_style)}</span>` : ""}
-      ${hookExamples ? `<ul class="creative-direction-card__hooks">${hookExamples}</ul>` : ""}
-      <div class="creative-direction-card__footer">
-        ${platforms ? `<span class="creative-direction-card__platforms">${platforms}</span>` : ""}
-        ${direction.brand_fit_score ? `<span class="creative-direction-card__brand-fit">Brand fit ${Math.round(direction.brand_fit_score)}</span>` : ""}
+      <div class="creative-direction-card__scores">
+        <span class="creative-direction-card__score" title="Performance score">${Math.round(direction.performance_score || 0)}</span>
+        ${direction.brand_fit_score ? `<span class="creative-direction-card__brand-fit">Brand ${Math.round(direction.brand_fit_score)}</span>` : ""}
       </div>
+      <strong>${escapeHtml(direction.title)}</strong>
+      <span class="creative-direction-card__driver">${escapeHtml(direction.emotional_driver || "")}</span>
+      <p>${escapeHtml(direction.angle || "")}</p>
+      ${hookExamples ? `<ul class="creative-direction-card__hooks">${hookExamples}</ul>` : ""}
     </button>
   `;
 }
@@ -82,67 +106,63 @@ export function renderCreativeBrief(project = studioState.creativeProject) {
   const plan = project.creativePlan;
   const brief = plan.brief_interpretation;
   const bp = plan.content_blueprint;
-  const pa = plan.production_assets;
   const selectedId = plan.recommended_direction_id;
   const selected = plan.proposed_directions.find((d) => d.id === selectedId) || plan.proposed_directions[0];
-  const flags = tagList((plan.review_flags || []).map((f) => f.replace(/_/g, " ")));
+  const storyboard = safeArray(plan.storyboard);
+  const flags = (plan.review_flags || []).map((f) => f.replace(/_/g, " "));
 
   els.creativeBriefPanel.innerHTML = `
     <div class="creative-brief-summary">
       <div>
-        <span class="creative-brief-summary__label">Interpreted as</span>
-        <strong>${escapeHtml(brief.format)} for ${escapeHtml(brief.platform)}</strong>
-        <p>${escapeHtml(brief.audience)} · ${escapeHtml(brief.tone)}</p>
+        <strong>${escapeHtml(brief.product)} · ${escapeHtml(brief.format)}</strong>
+        <p>${escapeHtml(brief.audience)} · ${escapeHtml(brief.platform)}</p>
       </div>
-      <span class="creative-brief-summary__confidence">${Math.round((brief.confidence || 0) * 100)}%</span>
+      <span class="creative-brief-summary__confidence" title="Confidence">${Math.round((brief.confidence || 0) * 100)}%</span>
     </div>
 
-    <div class="creative-direction-grid">
-      ${(plan.proposed_directions || []).map((d) => directionCard(d, selectedId)).join("")}
-    </div>
-
-    <div class="creative-blueprint">
-      <div>
-        <span class="creative-brief-summary__label">Recommended</span>
-        <strong>${escapeHtml(selected?.title || "Direction")}</strong>
-        <p>${escapeHtml(bp.editing_style || "")}</p>
+    ${storyboard.length ? `
+    <div class="sb-section">
+      <div class="sb-section__header">
+        <span class="creative-brief-summary__label">Storyboard</span>
+        <span class="sb-section__count">${storyboard.length} slides · ${escapeHtml(selected?.title || "")}</span>
       </div>
-
-      <div class="creative-blueprint__lists">
-        <div><span>Narrative Arc</span><ul>${listHtml(bp.narrative_arc)}</ul></div>
-        <div><span>Beats</span><ul>${listHtml(bp.beat_sheet)}</ul></div>
-        <div><span>Creative Notes</span><ul>${listHtml(bp.creative_notes)}</ul></div>
+      <div class="sb-grid">
+        ${storyboard.map(storyboardSlideHtml).join("")}
       </div>
-
-      <div class="creative-blueprint__meta">
-        ${bp.pacing_guidance ? `<div><span class="creative-brief-summary__label">Pacing</span><p>${escapeHtml(bp.pacing_guidance)}</p></div>` : ""}
-        ${bp.cta_style ? `<div><span class="creative-brief-summary__label">CTA Style</span><p>${escapeHtml(bp.cta_style)}</p></div>` : ""}
-        ${bp.on_screen_text_strategy ? `<div><span class="creative-brief-summary__label">On-Screen Text</span><p>${escapeHtml(bp.on_screen_text_strategy)}</p></div>` : ""}
-      </div>
-
-      ${flags ? `<div class="creative-review-flags">${flags}</div>` : ""}
-    </div>
-
-    <div class="creative-production">
-      <span class="creative-brief-summary__label">Production Assets</span>
-      <div class="creative-production__grid">
-        ${pa.script?.length ? `<div><span>Script</span><ol>${listHtml(pa.script)}</ol></div>` : ""}
-        ${pa.shot_list?.length ? `<div><span>Shot List</span><ol>${listHtml(pa.shot_list)}</ol></div>` : ""}
-        ${pa.caption_options?.length ? `<div><span>Captions</span><ul>${listHtml(pa.caption_options)}</ul></div>` : ""}
-        ${pa.image_prompts?.length ? `<div><span>Image Prompts</span><ul>${listHtml(pa.image_prompts)}</ul></div>` : ""}
-        ${pa.slide_plan?.length ? `<div><span>Slide Plan</span><ol>${listHtml(pa.slide_plan)}</ol></div>` : ""}
-        ${pa.voiceover_version?.length ? `<div><span>Voiceover</span><ol>${listHtml(pa.voiceover_version)}</ol></div>` : ""}
-        ${pa.headline_options?.length ? `<div><span>Hooks</span><ul>${listHtml(pa.headline_options)}</ul></div>` : ""}
-      </div>
-    </div>
-
-    ${(plan.variants || []).length ? `
-    <div class="creative-variants">
-      <span class="creative-brief-summary__label">Variants</span>
-      <div class="creative-variants__grid">
-        ${plan.variants.map(variantCard).join("")}
-      </div>
+      ${plan.caption ? `
+      <div class="sb-caption">
+        <span class="creative-brief-summary__label">Caption</span>
+        <p>${escapeHtml(plan.caption)}</p>
+        ${safeArray(plan.hashtags).length ? `<p class="sb-caption__tags">${safeArray(plan.hashtags).map((t) => escapeHtml(t)).join(" ")}</p>` : ""}
+      </div>` : ""}
     </div>` : ""}
+
+    <details class="creative-brief-directions">
+      <summary>
+        <span class="creative-brief-summary__label">Creative Directions (${(plan.proposed_directions || []).length})</span>
+      </summary>
+      <div class="creative-direction-grid">
+        ${(plan.proposed_directions || []).map((d) => directionCard(d, selectedId)).join("")}
+      </div>
+    </details>
+
+    <details class="creative-brief-blueprint">
+      <summary><span class="creative-brief-summary__label">Blueprint & Production</span></summary>
+      <div class="creative-blueprint">
+        <p>${escapeHtml(bp.editing_style || "")}</p>
+        <div class="creative-blueprint__lists">
+          <div><span>Narrative Arc</span><ul>${listHtml(bp.narrative_arc)}</ul></div>
+          <div><span>Beat Sheet</span><ul>${listHtml(bp.beat_sheet)}</ul></div>
+          <div><span>Creative Notes</span><ul>${listHtml(bp.creative_notes)}</ul></div>
+        </div>
+        <div class="creative-blueprint__meta">
+          ${bp.pacing_guidance ? `<div><span class="creative-brief-summary__label">Pacing</span><p>${escapeHtml(bp.pacing_guidance)}</p></div>` : ""}
+          ${bp.cta_style ? `<div><span class="creative-brief-summary__label">CTA</span><p>${escapeHtml(bp.cta_style)}</p></div>` : ""}
+        </div>
+      </div>
+    </details>
+
+    ${flags.length ? `<div class="creative-review-flags">${flags.map((f) => `<span>${escapeHtml(f)}</span>`).join("")}</div>` : ""}
   `;
   els.creativeBriefActions?.classList.remove("hidden");
 }

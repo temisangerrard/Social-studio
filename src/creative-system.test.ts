@@ -94,7 +94,7 @@ test("creative system flags and avoids generic banned phrases", () => {
   }
 });
 
-test("creative system prompt defines multi-stage studio roles and structured schema", () => {
+test("creative system prompt embeds brand profile, storyboard schema, and generation rules", () => {
   const fallback = buildCreativeSystemOutput({
     brand: peppera,
     rawIntent: "Peppera pantry meals but chaotic",
@@ -106,15 +106,14 @@ test("creative system prompt defines multi-stage studio roles and structured sch
     platform: "tiktok"
   }, fallback);
 
-  assert.match(prompt, /Brief Interpreter/);
-  assert.match(prompt, /Creative Strategist/);
-  assert.match(prompt, /Platform-Native Writer/);
-  assert.match(prompt, /Visual Director/);
-  assert.match(prompt, /Performance Editor/);
-  assert.match(prompt, /Intent Interpretation/);
-  assert.match(prompt, /Production Assets/);
+  assert.match(prompt, /Creative Director/);
+  assert.match(prompt, /slide-by-slide storyboard/);
+  assert.match(prompt, /image_strategy/);
+  assert.match(prompt, /ai_generated/);
   assert.match(prompt, /Return JSON only/);
   assert.match(prompt, /proposed_directions/);
+  assert.match(prompt, /Peppera/);
+  assert.match(prompt, /busy home cooks/);
 });
 
 test("refinement updates the intended layer without losing chosen direction memory", () => {

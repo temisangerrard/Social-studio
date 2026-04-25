@@ -6,7 +6,9 @@ import type {
   CreativeProjectMemory,
   CreativeReviewFlag,
   CreativeSystemOutput,
-  Platform
+  ImageStrategy,
+  Platform,
+  StoryboardSlide
 } from "./types.ts";
 
 export const GENERIC_PHRASES = [
@@ -96,146 +98,181 @@ export function interpretCreativeIntent(input: CreativeInput): CreativeBriefInte
   };
 }
 
-function directionSeeds(brand: BrandProfile, rawIntent: string, format: CreativeFormat): Array<Omit<CreativeDirection, "id" | "format" | "recommended_platform_fit" | "performance_score" | "brand_fit_score">> {
+// ── Dynamic direction builder — reads brand profile, no hardcoded brand IDs ───
+
+function buildDynamicDirections(
+  brand: BrandProfile,
+  rawIntent: string,
+  _format: CreativeFormat
+): Array<Omit<CreativeDirection, "id" | "format" | "recommended_platform_fit" | "performance_score" | "brand_fit_score">> {
   const product = brand.name;
-  if (brand.id === "peppera" || /meal|pantry|food|cook/i.test(`${brand.description} ${rawIntent}`)) {
-    return [
-      {
-        title: "Food But No Food",
-        angle: "The painfully relatable moment where the fridge has ingredients, but your brain says there is nothing to eat.",
-        why_it_works: "It starts with a recognisable tension, then pays it off with a demonstrated dinner transformation.",
-        emotional_driver: "relief after mild kitchen chaos",
-        visual_style: "handheld kitchen POV, real pantry clutter, warm food payoff",
-        hook_style: "relatable confession",
-        hook_examples: ["I have food, but somehow I have no food.", "This is what I make when my fridge looks unserious."]
-      },
-      {
-        title: "Anti-Takeout Save",
-        angle: `${product} interrupts the expensive default of ordering food by turning leftovers into a fast plan.`,
-        why_it_works: "Money tension plus visible transformation gives the viewer a reason to keep watching.",
-        emotional_driver: "control and small financial win",
-        visual_style: "receipt contrast, pantry scan, plated meal reveal",
-        hook_style: "cost contrast",
-        hook_examples: ["I nearly ordered again, then checked what I already had.", "This saved my lazy dinner budget."]
-      },
-      {
-        title: "Pantry Roulette",
-        angle: "Treat random ingredients like a challenge and let the product turn the chaos into a dinner idea.",
-        why_it_works: "A game-like premise creates curiosity and rewatchable reveal energy.",
-        emotional_driver: "playful curiosity",
-        visual_style: "quick cuts, ingredient closeups, timer energy, creator reaction",
-        hook_style: "challenge setup",
-        hook_examples: ["Three random ingredients. One actual dinner.", "Pantry roulette should not have worked this well."]
-      }
-    ];
-  }
-
-  if (brand.id === "settley" || /real estate|property|asset|invest/i.test(`${brand.description} ${rawIntent}`)) {
-    return [
-      {
-        title: "The Property Access Gap",
-        angle: "Explain why property ownership feels further away and how fractional real assets change the entry point.",
-        why_it_works: "It connects a macro pain to a concrete category shift without sounding like a sales deck.",
-        emotional_driver: "trust and earned access",
-        visual_style: "minimal premium slides, architectural detail, restrained data moments",
-        hook_style: "category insight",
-        hook_examples: ["The old property ladder has a new entry point.", "Most people do not need a whole property to start thinking like an owner."]
-      },
-      {
-        title: "Why Now for Real-World Assets",
-        angle: "Frame tokenised property as a serious bridge between digital liquidity and tangible assets.",
-        why_it_works: "It gives investors a timely thesis instead of a generic product explanation.",
-        emotional_driver: "authority and timing",
-        visual_style: "black-on-white editorial, clean charts, property textures",
-        hook_style: "market timing",
-        hook_examples: ["The next serious crypto story may not look like crypto.", "Real-world assets are where the grown-up capital is watching."]
-      },
-      {
-        title: "Trust Before Yield",
-        angle: "Lead with transparency, asset backing, and investor confidence before mentioning returns.",
-        why_it_works: "It counters skepticism directly and matches the brand's premium trust position.",
-        emotional_driver: "security",
-        visual_style: "documentary property visuals, calm typography, proof-led sequencing",
-        hook_style: "trust objection",
-        hook_examples: ["Before yield, ask what backs it.", "The most important part of an investment platform is not the headline rate."]
-      }
-    ];
-  }
-
-  if (brand.id === "autobett" || /bet|crypto|onchain|agent|sports/i.test(`${brand.description} ${rawIntent}`)) {
-    return [
-      {
-        title: "Agent Takes the Bet",
-        angle: "Turn AI betting into a cinematic handoff from manual overthinking to autonomous execution.",
-        why_it_works: "It makes an abstract onchain product feel like a trailer with a simple before/after.",
-        emotional_driver: "hype and delegation",
-        visual_style: "neon odds board, fast sports cuts, wallet UI flashes",
-        hook_style: "trailer cold open",
-        hook_examples: ["What if your betting wallet had an agent?", "You set the risk. The agent hunts the edge."]
-      },
-      {
-        title: "DeFi Meets Sportsbook",
-        angle: "Position the product as crypto-native market automation rather than another betting app.",
-        why_it_works: "It speaks to degens in their language while keeping the mechanism clear.",
-        emotional_driver: "status and novelty",
-        visual_style: "dark UI, odds movement, smart-contract visual metaphors",
-        hook_style: "category mashup",
-        hook_examples: ["This is not a sportsbook. It is an onchain betting agent.", "Prediction markets just got an autopilot."]
-      },
-      {
-        title: "Risk Dial Drama",
-        angle: "Build tension around choosing risk parameters and watching the system execute.",
-        why_it_works: "A visible control moment gives the trailer a clear action and payoff.",
-        emotional_driver: "control under pressure",
-        visual_style: "risk dial closeups, countdown cuts, win/loss dashboard",
-        hook_style: "control tension",
-        hook_examples: ["Set the risk. Let it run.", "The most dangerous button is the one you understand."]
-      }
-    ];
-  }
+  const audience = brand.audience || "your audience";
+  const description = brand.valueProposition || brand.description || product;
+  const pillars = brand.contentPillars ?? [];
+  const themes = brand.preferredThemes ?? [];
+  const contextTheme = pillars[0] || themes[0] || rawIntent;
+  const toneBase = brand.tone || "authentic, direct";
+  const visualBase = brand.mascot ? `${brand.mascot.visualPrompt?.split(".")[0] || product} in scene` : "real product moment";
 
   return [
     {
-      title: "Specific Before Generic",
-      angle: `${brand.name} shown through a concrete user moment rather than a broad product claim.`,
-      why_it_works: "Specific context creates credibility and makes the output easier to film.",
-      emotional_driver: "clarity",
-      visual_style: "real use case, close-up detail, proof moment",
+      title: "The Specific Moment",
+      angle: `Show ${product} through a concrete, specific moment that ${audience} will immediately recognise — not a product pitch, a real human situation that ${description}.`,
+      why_it_works: "Specificity creates credibility. A real moment beats a product claim every time. Viewers see themselves.",
+      emotional_driver: "recognition and relief",
+      visual_style: `${toneBase} texture, close-up real-world detail, ${visualBase}, no corporate polish`,
       hook_style: "specific situation",
-      hook_examples: [`The moment ${brand.name} actually becomes useful.`, "This is the use case people remember."]
+      hook_examples: [
+        `The moment ${product} actually clicks for you.`,
+        `This is what ${audience} do when ${rawIntent.slice(0, 50)}.`
+      ]
     },
     {
-      title: "Problem to Proof",
-      angle: "Open on friction, show the product doing the work, end on a visible outcome.",
-      why_it_works: "Demonstrated outcome beats feature description.",
-      emotional_driver: "relief",
-      visual_style: "before/after sequence, product-in-action, clean payoff",
-      hook_style: "problem-first",
-      hook_examples: ["This used to take way too long.", "Here is the part nobody explains."]
+      title: "Tension to Transformation",
+      angle: `Open on the friction ${audience} feel before ${product} — then let the product do the work visually. No explanation, just the before and after.`,
+      why_it_works: "Demonstrated transformation beats described features. The before/after arc is universally relatable across any category.",
+      emotional_driver: "relief and earned control",
+      visual_style: `before/after sequence, ${product} in action, payoff frame with brand color ${brand.visual?.primaryColor || ""}`,
+      hook_style: "problem-first contrast",
+      hook_examples: [
+        `This used to take so much longer.`,
+        `I didn't know ${product} could do this until I tried.`
+      ]
     },
     {
-      title: "Founder Explains the Shift",
-      angle: "A founder-style insight that names the market change behind the product.",
-      why_it_works: "Authority framing makes even simple products feel strategically important.",
-      emotional_driver: "authority",
-      visual_style: "talking head plus simple visual proof",
-      hook_style: "contrarian insight",
-      hook_examples: ["The category is changing in one specific way.", "Most teams are explaining this backwards."]
+      title: `The ${product} Angle on ${contextTheme || description}`,
+      angle: `Give ${audience} a sharp, specific insight about ${contextTheme || description} that only someone who built ${product} would know — then let the product be the natural answer.`,
+      why_it_works: "Insider knowledge signals authority without pitching. It earns trust, saves, and shares because it teaches something real.",
+      emotional_driver: "authority, curiosity, and earned trust",
+      visual_style: `clean editorial, ${toneBase}, proof or data moment, brand-consistent typography`,
+      hook_style: "contrarian or insider insight",
+      hook_examples: [
+        `Here is what most ${audience} get wrong about ${contextTheme || description}.`,
+        `The thing ${product} users know that everyone else is still guessing at.`
+      ]
     }
   ];
 }
 
-export function generateCreativeDirections(input: CreativeInput, interpretation = interpretCreativeIntent(input)): CreativeDirection[] {
-  return directionSeeds(input.brand, compact(input.rawIntent), interpretation.format)
-    .slice(0, 5)
-    .map((seed, index) => ({
-      ...seed,
-      id: `${slug(seed.title)}-${index + 1}`,
-      format: index === 0 ? interpretation.format : seed.title.includes("Founder") ? "founder-thought-leadership" : interpretation.format,
-      recommended_platform_fit: interpretation.platform === "linkedin" ? ["linkedin"] : ["tiktok", "instagram"],
-      performance_score: 92 - index * 6,
-      brand_fit_score: 88 - index * 4
-    }));
+// ── Dynamic storyboard builder — per-slide copy + image strategy ───────────────
+
+function buildDynamicStoryboard(
+  brand: BrandProfile,
+  direction: Pick<CreativeDirection, "angle" | "visual_style" | "emotional_driver" | "hook_examples" | "hook_style">,
+  interpretation: CreativeBriefInterpretation
+): StoryboardSlide[] {
+  const product = brand.name;
+  const audience = brand.audience || "the viewer";
+  const hook = direction.hook_examples[0] || `The ${product} moment you didn't expect.`;
+  const visual = direction.visual_style;
+  const isVideo = interpretation.format.includes("video") || interpretation.format === "promo-trailer";
+  const primaryColor = brand.visual?.primaryColor ?? "";
+  const secondaryColor = brand.visual?.secondaryColor ?? "";
+  const tone = brand.tone || "authentic";
+
+  if (isVideo) {
+    return [
+      {
+        slide_number: 1,
+        role: "hook",
+        copy: hook,
+        image_strategy: "ai_generated" as ImageStrategy,
+        image_prompt: `${visual}, first-frame pattern interrupt, strong visual contrast, hook text overlay zone at bottom third, no generic ad polish, vertical 9:16 format, ${primaryColor}`,
+        visual_notes: "Must stop scroll in under 1 second. Bold, unexpected first frame. No logo, no intro — just the hook.",
+        layout: "hook_cover"
+      },
+      {
+        slide_number: 2,
+        role: "problem",
+        copy: `Before ${product} — ${direction.angle.split("—")[0] || direction.angle.slice(0, 80)}`,
+        image_strategy: "ai_generated" as ImageStrategy,
+        image_prompt: `${visual}, tension and friction, ${audience} relatable situation before the solution, authentic imperfect texture, vertical 9:16`,
+        visual_notes: "Show the before-state. Make the viewer see themselves in this moment.",
+        layout: "image_text_split"
+      },
+      {
+        slide_number: 3,
+        role: "reveal",
+        copy: `Then ${product} changes it.`,
+        image_strategy: "ai_generated" as ImageStrategy,
+        image_prompt: `${product} product or app interface hero shot, clean, approachable, not corporate, ${primaryColor} accent, vertical 9:16`,
+        visual_notes: "Product earns its reveal here. Keep it clean and real — not a promo shot.",
+        layout: "image_focus"
+      },
+      {
+        slide_number: 4,
+        role: "payoff",
+        copy: `The result: ${direction.emotional_driver}.`,
+        image_strategy: "ai_generated" as ImageStrategy,
+        image_prompt: `Transformation payoff visual, ${tone} feeling, ${visual}, visible positive outcome, optimistic lighting, vertical 9:16`,
+        visual_notes: "Demonstrated outcome — the after-state. Show it, don't narrate it.",
+        layout: "image_text_split"
+      },
+      {
+        slide_number: 5,
+        role: "cta",
+        copy: brand.cta || `Try ${product}`,
+        image_strategy: "reusable_template" as ImageStrategy,
+        visual_notes: `Brand CTA template. Primary: ${primaryColor}, Secondary: ${secondaryColor}. Single clear action, no hard sell.`,
+        layout: "cta_banner"
+      }
+    ];
+  }
+
+  // Carousel
+  return [
+    {
+      slide_number: 1,
+      role: "hook",
+      copy: hook,
+      image_strategy: "no_image_text_only" as ImageStrategy,
+      visual_notes: `Bold text on high-contrast background. ${primaryColor} or deep neutral. Make slide 1 earn the swipe — no image needed, the words carry it.`,
+      layout: "hook_cover"
+    },
+    {
+      slide_number: 2,
+      role: "problem",
+      copy: direction.angle.split(".")[0] || direction.angle.slice(0, 100),
+      image_strategy: "ai_generated" as ImageStrategy,
+      image_prompt: `${visual}, tension or friction moment for ${audience}, emotionally resonant scene, ${tone} texture, editorial composition, no stock photo look`,
+      visual_notes: "Image carries the tension. Copy is one sharp line — don't explain, make them feel it.",
+      layout: "image_text_split"
+    },
+    {
+      slide_number: 3,
+      role: "reveal",
+      copy: `${product} changes this.`,
+      image_strategy: "ai_generated" as ImageStrategy,
+      image_prompt: `${product} product moment, ${visual}, clean proof visual, brand-authentic not corporate, ${secondaryColor} accent tone, editorial composition`,
+      visual_notes: "The product earns its place here. Show it doing real work, not being advertised.",
+      layout: "image_focus"
+    },
+    {
+      slide_number: 4,
+      role: "payoff",
+      copy: `The result: ${direction.emotional_driver}.`,
+      image_strategy: "ai_generated" as ImageStrategy,
+      image_prompt: `Visible transformation outcome, ${tone} tone, ${visual}, positive payoff, warm optimistic lighting, ${primaryColor} accent`,
+      visual_notes: "Viewer sees the after-state clearly. Demonstrated outcome only — no describing what they're seeing.",
+      layout: "image_text_split"
+    },
+    {
+      slide_number: 5,
+      role: "insight",
+      copy: `What most ${audience} miss: ${direction.angle.split(",")[0] || "the thing that changes everything"}.`,
+      image_strategy: "no_image_text_only" as ImageStrategy,
+      visual_notes: "Text-only clarity slide. One sharp statement. High save and share rate on this slide type.",
+      layout: "statement"
+    },
+    {
+      slide_number: 6,
+      role: "cta",
+      copy: brand.cta || `Try ${product}`,
+      image_strategy: "reusable_template" as ImageStrategy,
+      visual_notes: `Branded CTA template. ${primaryColor}. Low friction ask — tell them exactly what to do next.`,
+      layout: "cta_banner"
+    }
+  ];
 }
 
 function selectedDirection(directions: CreativeDirection[], id?: string): CreativeDirection {
@@ -328,16 +365,33 @@ function reviewFlags(rawIntent: string, outputText: string): CreativeReviewFlag[
 
 export function buildCreativeSystemOutput(input: CreativeInput): CreativeSystemOutput {
   const interpretation = interpretCreativeIntent(input);
-  const directions = generateCreativeDirections(input, interpretation);
+  const seeds = buildDynamicDirections(input.brand, compact(input.rawIntent), interpretation.format);
+
+  const directions: CreativeDirection[] = seeds.slice(0, 5).map((seed, index) => ({
+    ...seed,
+    id: `${slug(seed.title)}-${index + 1}`,
+    format: interpretation.format,
+    recommended_platform_fit: interpretation.platform === "linkedin" ? ["linkedin"] : ["tiktok", "instagram"],
+    performance_score: 92 - index * 6,
+    brand_fit_score: 88 - index * 4
+  }));
+
   const recommended = selectedDirection(directions, input.selectedDirectionId);
+  const storyboard = buildDynamicStoryboard(input.brand, recommended, interpretation);
   const content_blueprint = blueprintFor(recommended, interpretation);
   const production_assets = assetsFor(input.brand, recommended, interpretation);
+  const caption = compact([recommended.hook_examples[0], recommended.angle, input.brand.cta].filter(Boolean).join(" "));
+  const hashtags = input.brand.defaults.hashtags ?? [];
+
   const output: CreativeSystemOutput = {
     brief_interpretation: interpretation,
     proposed_directions: directions,
     recommended_direction_id: recommended.id,
     content_blueprint,
     production_assets,
+    storyboard,
+    caption,
+    hashtags,
     variants: variantsFor(),
     review_flags: []
   };
@@ -348,47 +402,75 @@ export function buildCreativeSystemOutput(input: CreativeInput): CreativeSystemO
 export function buildCreativeSystemPrompt(input: CreativeInput, fallback: CreativeSystemOutput): string {
   const brand = input.brand;
   return [
-    "You are the creative engine of a social content studio, not a form-filling copy generator.",
-    "Operate as these internal roles: Brief Interpreter, Creative Strategist, Platform-Native Writer, Visual Director, Performance Editor, and Refinement Agent.",
-    "Interpret sparse input, infer missing context from the product profile, propose multiple strong directions, build production-ready assets, and self-correct generic output before returning.",
+    "You are the Creative Director of a social content studio. Your job is to turn a raw idea and a brand profile into a production-ready creative brief with a slide-by-slide storyboard.",
+    "You think like a platform-native content strategist — not a copywriter, not an ad agency.",
     "",
-    "Product profile:",
+    "Brand profile (read this carefully — every output must be grounded in this, no generic content):",
     JSON.stringify({
       name: brand.name,
-      category: brand.category,
       description: brand.description,
-      audience: brand.audience,
+      category: brand.category,
       valueProposition: brand.valueProposition,
-      visualIdentity: brand.visual,
-      platformPersonality: brand.platformPersonality,
+      audience: brand.audience,
+      tone: brand.tone,
       toneRange: brand.toneRange,
+      platformPersonality: brand.platformPersonality,
       contentPillars: brand.contentPillars,
-      bannedPhrases: [...GENERIC_PHRASES, ...(brand.bannedPhrases ?? [])],
       preferredThemes: brand.preferredThemes,
+      visual: brand.visual,
+      mascot: brand.mascot ? { name: brand.mascot.name, role: brand.mascot.role, usageRules: brand.mascot.usageRules } : null,
+      cta: brand.cta,
+      defaultHashtags: brand.defaults.hashtags,
+      bannedPhrases: [...GENERIC_PHRASES, ...(brand.bannedPhrases ?? [])],
       goodContentExamples: brand.goodContentExamples,
-      badContentExamples: brand.badContentExamples,
-      cta: brand.cta
+      badContentExamples: brand.badContentExamples
     }, null, 2),
     "",
-    `Sparse user intent: ${input.rawIntent}`,
-    `Requested platform, if any: ${input.platform ?? "infer"}`,
+    `Raw idea from user: "${input.rawIntent}"`,
+    `Platform: ${input.platform ?? "infer from brand defaults"}`,
     "",
-    "Pipeline requirements:",
-    "1. Intent Interpretation: infer product, audience, format, tone, objective, and platform fit.",
-    "2. Creative Strategy Generation: return 3-5 ranked directions with performance and brand-fit scores.",
-    "3. Content Blueprint: create narrative arc, beat sheet, pacing, visual moments, on-screen text strategy, CTA, and editing notes.",
-    "4. Production Assets: produce script, shot list, image prompts, slide plan, captions, headlines, thumbnail text, voiceover, and render prompts.",
-    "5. Review: flag weak/generic/ad-like/static issues and revise before returning.",
+    "Your deliverables:",
+    "1. Interpret the intent — infer format, tone, platform, and audience fit from the brand profile.",
+    "2. Generate 3 distinct creative directions with real angles, not generic directions.",
+    "   Each direction must feel like it was written for THIS brand and THIS audience specifically.",
+    "   Directions must have concrete hook examples — opening lines that would stop the scroll.",
+    "3. Build a slide-by-slide storyboard for the recommended direction:",
+    "   - 5-7 slides for video/UGC formats, 6-8 slides for carousels",
+    "   - Each slide needs: role, copy (actual slide text — not a description of it), image_strategy, image_prompt (if needed), visual_notes",
+    "   - image_strategy must be one of: ai_generated | asset_library | reusable_template | no_image_text_only",
+    "   - Hook slides: usually ai_generated or no_image_text_only",
+    "   - Middle/payoff slides: ai_generated with specific, cinematically-described prompts",
+    "   - CTA slide: reusable_template",
+    "   - image_prompt must be a rich, specific FAL.ai-ready prompt — not a description, an actual generation prompt",
+    "4. Write a ready-to-post caption and hashtag list.",
+    "5. Flag anything that could make this content generic, ad-like, or weak.",
     "",
-    "Performance heuristics to use: hook strength, curiosity gap, emotional contrast, relatability, authority, pattern interrupt, visual payoff, transformation, tension/release, social-native phrasing, rewatchability, cut cadence, scroll-stopping first frame, specificity, and demonstrated outcome.",
-    "Do not use empty phrases like discover, unlock, game changer, revolutionize, perfect for, seamless, or hidden meals.",
-    "Return JSON only matching this schema and keep the same top-level keys:",
+    "Quality rules:",
+    "- copy on each slide must be the actual text that would appear — not 'headline here' or 'describe product'",
+    "- image_prompt must be specific enough to generate the right visual without further editing",
+    "- the hook (slide 1 copy) must be something a real person would say — not marketing language",
+    "- every direction and storyboard slide must be grounded in the brand profile above",
+    "",
+    "Return JSON only — match this exact schema (same top-level keys, same structure):",
     JSON.stringify(fallback, null, 2)
   ].join("\n");
 }
 
 function isStringArray(v: unknown): v is string[] {
   return Array.isArray(v) && v.every((i) => typeof i === "string");
+}
+
+function isStoryboardSlide(v: unknown): v is StoryboardSlide {
+  if (!v || typeof v !== "object") return false;
+  const s = v as Record<string, unknown>;
+  return (
+    typeof s.slide_number === "number" &&
+    typeof s.role === "string" &&
+    typeof s.copy === "string" &&
+    typeof s.image_strategy === "string" &&
+    typeof s.visual_notes === "string" &&
+    typeof s.layout === "string"
+  );
 }
 
 function isCreativeSystemOutput(value: unknown): value is CreativeSystemOutput {
@@ -412,6 +494,8 @@ function isCreativeSystemOutput(value: unknown): value is CreativeSystemOutput {
   for (const key of ["script", "on_screen_text", "shot_list", "image_prompts", "slide_plan", "caption_options", "headline_options", "render_prompts", "voiceover_version", "thumbnail_or_cover_text"] as const) {
     if (!isStringArray(pa[key])) return false;
   }
+
+  if (!Array.isArray(o.storyboard) || !o.storyboard.every(isStoryboardSlide)) return false;
 
   return true;
 }
@@ -452,7 +536,7 @@ export async function generateCreativeSystemOutput(input: CreativeInput): Promis
         messages: [
           {
             role: "system",
-            content: "You return production-ready structured JSON for a multi-stage social content creative operating system."
+            content: "You are a creative director. Return production-ready structured JSON for a social content creative system. Every output must be brand-specific, platform-native, and storyboard-ready."
           },
           {
             role: "user",
@@ -469,6 +553,9 @@ export async function generateCreativeSystemOutput(input: CreativeInput): Promis
     if (!isCreativeSystemOutput(parsed)) throw new Error("Creative system response did not match schema");
     const scrubbed = scrubGenericPhrases(parsed);
     scrubbed.review_flags = Array.from(new Set([...scrubbed.review_flags, ...reviewFlags(input.rawIntent, JSON.stringify(scrubbed))]));
+    // Ensure caption and hashtags are populated even if AI omits them
+    if (!scrubbed.caption) scrubbed.caption = fallback.caption;
+    if (!scrubbed.hashtags?.length) scrubbed.hashtags = fallback.hashtags;
     return scrubbed;
   } catch (error) {
     console.warn(`[creative-system] Falling back to local creative engine: ${(error as Error).message}`);
@@ -484,12 +571,23 @@ export function refineCreativeProject(memory: CreativeProjectMemory, feedback: s
 
   if (/less ad|native|funny|funnier|chaotic|premium|founder/i.test(feedback)) {
     plan.content_blueprint.editing_style = compact(`${plan.content_blueprint.editing_style}; refined to feel ${note}`);
+    plan.storyboard = plan.storyboard.map((slide) => ({
+      ...slide,
+      visual_notes: compact(`${slide.visual_notes}; tone adjustment: ${note}`)
+    }));
   }
   if (/hook|opening|first/i.test(feedback)) {
     plan.production_assets.headline_options = plan.production_assets.headline_options.map((headline) => compact(`${headline} — sharper first frame`));
+    if (plan.storyboard[0]) {
+      plan.storyboard[0] = { ...plan.storyboard[0], visual_notes: compact(`${plan.storyboard[0].visual_notes}; sharpen hook based on: ${note}`) };
+    }
   }
   if (/visual|image|premium|chaotic/i.test(feedback)) {
     plan.production_assets.image_prompts = plan.production_assets.image_prompts.map((prompt) => compact(`${prompt}; refinement: ${note}`));
+    plan.storyboard = plan.storyboard.map((slide) => ({
+      ...slide,
+      image_prompt: slide.image_prompt ? compact(`${slide.image_prompt}; visual refinement: ${note}`) : slide.image_prompt
+    }));
   }
 
   return {
