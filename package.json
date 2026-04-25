@@ -21,7 +21,8 @@
   "devDependencies": {
     "@types/node": "^22.15.2",
     "fast-check": "^4.7.0",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.4"
   },
   "engines": {
     "node": ">=20"
