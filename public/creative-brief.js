@@ -35,12 +35,13 @@ function safeArray(v) {
   return Array.isArray(v) ? v : [];
 }
 
+
 function listHtml(items) {
-  return safeArray(items).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+  return (items || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
 }
 
 function tagList(items) {
-  return safeArray(items).map((t) => `<span>${escapeHtml(String(t))}</span>`).join("");
+  return (items || []).map((t) => `<span>${escapeHtml(String(t))}</span>`).join("");
 }
 
 function strategyBadge(strategy) {
@@ -88,8 +89,8 @@ function variantCard(variant) {
       <strong>${escapeHtml(variant.label)}</strong>
       <p>${escapeHtml(variant.difference)}</p>
       <div class="creative-variant-card__adjustments">
-        ${safeArray(variant.script_adjustments).map((a) => `<span>${escapeHtml(a)}</span>`).join("")}
-        ${safeArray(variant.visual_adjustments).map((a) => `<span class="creative-variant-card__visual">${escapeHtml(a)}</span>`).join("")}
+        ${(variant.script_adjustments || []).map((a) => `<span>${escapeHtml(a)}</span>`).join("")}
+        ${(variant.visual_adjustments || []).map((a) => `<span class="creative-variant-card__visual">${escapeHtml(a)}</span>`).join("")}
       </div>
     </div>
   `;
