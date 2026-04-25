@@ -53,15 +53,73 @@ function renderDraft() {
   const hasDraft = !!ugcState.draft;
   els.ugcDraftPanel?.classList.toggle("hidden", !hasDraft);
   if (!hasDraft) return;
-  setText("ugc-script-hook", ugcState.draft.hook);
-  setText("ugc-script-problem", ugcState.draft.problem);
-  setText("ugc-script-product-moment", ugcState.draft.productMoment);
-  setText("ugc-script-outcome", ugcState.draft.outcome);
-  setText("ugc-script-cta", ugcState.draft.cta);
-  setText("ugc-script-tone-notes", ugcState.draft.toneNotes);
-  setText("ugc-script-full", ugcState.draft.fullScript);
-  setText("ugc-script-beats", (ugcState.draft.beatSheet || []).join("\n"));
-  setText("ugc-script-onscreen", (ugcState.draft.onScreenText || []).join("\n"));
+
+  const d = ugcState.draft;
+
+  // Populate hidden form inputs so collectDraftScript() still works
+  setText("ugc-script-hook", d.hook);
+  setText("ugc-script-problem", d.problem);
+  setText("ugc-script-product-moment", d.productMoment);
+  setText("ugc-script-outcome", d.outcome);
+  setText("ugc-script-cta", d.cta);
+  setText("ugc-script-tone-notes", d.toneNotes);
+  setText("ugc-script-full", d.fullScript);
+  setText("ugc-script-beats", (d.beatSheet || []).join("\n"));
+  setText("ugc-script-onscreen", (d.onScreenText || []).join("\n"));
+
+  // Render readable brief card
+  const briefCard = document.getElementById("ugc-brief-card");
+  if (!briefCard) return;
+
+  const beats = (d.beatSheet || []).map((b) => `<li>${escapeHtml(b)}</li>`).join("");
+  const onscreen = (d.onScreenText || []).map((t) => `<li>${escapeHtml(t)}</li>`).join("");
+
+  briefCard.innerHTML = `
+    <div class="ugc-brief-hook">${escapeHtml(d.hook || "")}</div>
+
+    <div class="ugc-brief-beats">
+      <span class="ugc-brief-label">Beat sheet</span>
+      <ol>${beats}</ol>
+    </div>
+
+    <div class="ugc-brief-grid">
+      <div class="ugc-brief-cell">
+        <span class="ugc-brief-label">Problem</span>
+        <p>${escapeHtml(d.problem || "")}</p>
+      </div>
+      <div class="ugc-brief-cell">
+        <span class="ugc-brief-label">Product moment</span>
+        <p>${escapeHtml(d.productMoment || "")}</p>
+      </div>
+      <div class="ugc-brief-cell">
+        <span class="ugc-brief-label">Outcome</span>
+        <p>${escapeHtml(d.outcome || "")}</p>
+      </div>
+      <div class="ugc-brief-cell">
+        <span class="ugc-brief-label">CTA</span>
+        <p>${escapeHtml(d.cta || "")}</p>
+      </div>
+    </div>
+
+    ${d.toneNotes ? `
+    <div class="ugc-brief-cell">
+      <span class="ugc-brief-label">Tone</span>
+      <p>${escapeHtml(d.toneNotes)}</p>
+    </div>` : ""}
+
+    ${d.fullScript ? `
+    <div class="ugc-brief-script">
+      <span class="ugc-brief-label">Full script</span>
+      <p>${escapeHtml(d.fullScript)}</p>
+    </div>` : ""}
+
+    ${onscreen ? `
+    <div class="ugc-brief-onscreen">
+      <span class="ugc-brief-label">On-screen text</span>
+      <ol>${onscreen}</ol>
+    </div>` : ""}
+  `;
+  briefCard.classList.remove("hidden");
 }
 
 function renderOutput() {
