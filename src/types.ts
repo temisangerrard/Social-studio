@@ -672,6 +672,22 @@ export interface CreativeVariant {
   visual_adjustments: string[];
 }
 
+export type ImageStrategy =
+  | "ai_generated"
+  | "asset_library"
+  | "reusable_template"
+  | "no_image_text_only";
+
+export interface StoryboardSlide {
+  slide_number: number;
+  role: string;
+  copy: string;
+  image_strategy: ImageStrategy;
+  image_prompt?: string;
+  visual_notes: string;
+  layout: string;
+}
+
 export interface CreativeSystemOutput {
   brief_interpretation: CreativeBriefInterpretation;
   proposed_directions: CreativeDirection[];
@@ -680,6 +696,9 @@ export interface CreativeSystemOutput {
   production_assets: ProductionAssets;
   variants: CreativeVariant[];
   review_flags: CreativeReviewFlag[];
+  storyboard: StoryboardSlide[];
+  caption: string;
+  hashtags: string[];
   refinementNotes?: string[];
 }
 

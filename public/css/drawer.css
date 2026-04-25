@@ -339,22 +339,208 @@
   transform: scale(0.96);
 }
 
-/* ── Direction card extras ─────────────────────────────────────────────── */
+/* ── Storyboard ────────────────────────────────────────────────────────── */
 
-.creative-direction-card__meta {
-  display: block;
+.sb-section {
+  display: grid;
+  gap: 10px;
+}
+
+.sb-section__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sb-section__count {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.sb-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.sb-slide {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 2px 8px rgba(47, 35, 26, 0.06), inset 0 0 0 1px rgba(47, 35, 26, 0.06);
+}
+
+.sb-slide__header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.sb-slide__number {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(137, 53, 22, 0.1);
+  color: var(--brand-strong);
+  font-size: 0.64rem;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.sb-slide__role {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+.sb-strategy-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--badge-color) 12%, transparent);
+  color: var(--badge-color);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sb-slide__copy {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.sb-slide__prompt {
+  border-radius: 10px;
+  background: rgba(31, 26, 22, 0.04);
+  overflow: hidden;
+}
+
+.sb-slide__prompt summary {
+  padding: 6px 10px;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sb-slide__prompt p {
+  margin: 0;
+  padding: 0 10px 8px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  font-style: italic;
+}
+
+.sb-slide__notes {
+  margin: 0;
   color: var(--outline);
   font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+.sb-caption {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.6);
+  box-shadow: inset 0 0 0 1px rgba(47, 35, 26, 0.06);
+}
+
+.sb-caption p {
+  margin: 4px 0 0;
+  color: var(--ink);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.sb-caption__tags {
+  margin-top: 6px !important;
+  color: var(--muted) !important;
+  font-size: 0.7rem !important;
+}
+
+/* ── Creative brief collapsible sections ───────────────────────────────── */
+
+.creative-brief-directions,
+.creative-brief-blueprint {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.creative-brief-directions > summary,
+.creative-brief-blueprint > summary {
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 14px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background 0.14s;
+}
+
+.creative-brief-directions > summary::-webkit-details-marker,
+.creative-brief-blueprint > summary::-webkit-details-marker {
+  display: none;
+}
+
+.creative-brief-directions[open] > summary,
+.creative-brief-blueprint[open] > summary {
+  border-radius: 14px 14px 0 0;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.creative-brief-directions > .creative-direction-grid,
+.creative-brief-blueprint > .creative-blueprint {
+  padding: 8px 0 0;
+}
+
+/* ── Direction card scores row ─────────────────────────────────────────── */
+
+.creative-direction-card__scores {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.creative-direction-card__score {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: 2px 8px;
+  font-size: 0.62rem;
+}
+
+.creative-direction-card__driver {
+  display: block;
+  color: var(--outline);
+  font-size: 0.66rem;
   font-style: italic;
 }
 
 .creative-direction-card__hooks {
-  margin: 2px 0 0;
+  margin: 4px 0 0;
   padding-left: 15px;
   color: var(--muted);
   font-size: 0.72rem;
   line-height: 1.4;
 }
+
+/* ── Direction card extras ─────────────────────────────────────────────── */
 
 .creative-direction-card__footer {
   display: flex;

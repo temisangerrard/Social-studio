@@ -351,48 +351,23 @@
 
           <form id="ugc-generate-form" class="ugc-stack">
             <div id="ugc-draft-panel" class="ugc-stack hidden">
-              <div class="field-group">
-                <label class="field-label" for="ugc-script-hook">Hook</label>
+
+              <!-- Readable brief card — populated by renderDraft() -->
+              <div id="ugc-brief-card" class="ugc-brief-card hidden"></div>
+
+              <!-- Hidden form inputs — kept for collectDraftScript() -->
+              <div class="hidden">
                 <input id="ugc-script-hook" type="text" />
-              </div>
-              <div class="field-row">
-                <div class="field-group">
-                  <label class="field-label" for="ugc-script-problem">Problem</label>
-                  <input id="ugc-script-problem" type="text" />
-                </div>
-                <div class="field-group">
-                  <label class="field-label" for="ugc-script-product-moment">Product moment</label>
-                  <input id="ugc-script-product-moment" type="text" />
-                </div>
-              </div>
-              <div class="field-row">
-                <div class="field-group">
-                  <label class="field-label" for="ugc-script-outcome">Outcome</label>
-                  <input id="ugc-script-outcome" type="text" />
-                </div>
-                <div class="field-group">
-                  <label class="field-label" for="ugc-script-cta">CTA</label>
-                  <input id="ugc-script-cta" type="text" />
-                </div>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="ugc-script-tone-notes">Tone notes</label>
+                <input id="ugc-script-problem" type="text" />
+                <input id="ugc-script-product-moment" type="text" />
+                <input id="ugc-script-outcome" type="text" />
+                <input id="ugc-script-cta" type="text" />
                 <input id="ugc-script-tone-notes" type="text" />
+                <textarea id="ugc-script-full"></textarea>
+                <textarea id="ugc-script-beats"></textarea>
+                <textarea id="ugc-script-onscreen"></textarea>
               </div>
-              <div class="field-group">
-                <label class="field-label" for="ugc-script-full">Full script</label>
-                <textarea id="ugc-script-full" rows="6"></textarea>
-              </div>
-              <div class="field-row">
-                <div class="field-group">
-                  <label class="field-label" for="ugc-script-beats">Beat sheet</label>
-                  <textarea id="ugc-script-beats" rows="5"></textarea>
-                </div>
-                <div class="field-group">
-                  <label class="field-label" for="ugc-script-onscreen">On-screen text</label>
-                  <textarea id="ugc-script-onscreen" rows="5"></textarea>
-                </div>
-              </div>
+
               <div class="field-row">
                 <div class="field-group">
                   <label class="field-label" for="ugc-voice-select">Voice</label>
