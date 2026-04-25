@@ -1,9 +1,38 @@
 export type Platform = "tiktok" | "instagram" | "linkedin";
 export type DeliveryTarget = "tiktok" | "instagram" | "linkedin" | "both" | "all";
 export type PostFormat = "slideshow" | "carousel" | "text-only";
-export type WorkflowType = "slideshow" | "mascot-variants" | "reference-edit" | "video-clip" | "reel-package" | "linkedin-carousel" | "linkedin-text";
+export type WorkflowType = "slideshow" | "mascot-variants" | "reference-edit" | "video-clip" | "reel-package" | "linkedin-carousel" | "linkedin-text" | "ugc-faceless" | "ugc-voiceover";
 export type VisualMode = "mascot-led" | "food-led" | "mixed";
 export type ConsistencyMode = "prompt-led" | "mascot-consistent";
+
+// ── Video Strategy System ─────────────────────────────────────────────────────
+
+export type VideoStrategy =
+  | "storyboard-to-video"   // GPT Image 2 storyboard grid → Seedance 2.0 image-to-video
+  | "seedance-multishot"    // Seedance 2.0 text-to-video with Shot 1/2/3 labels + native audio
+  | "seedance-reference"    // Seedance 2.0 reference-to-video with brand assets
+  | "kling-text"            // Kling 3.0 text-to-video (single shot)
+  | "image-to-video";       // Animate an existing image via Seedance 2.0 or Kling i2v
+
+export interface VideoStrategyConfig {
+  strategy: VideoStrategy;
+  duration: number;           // seconds (4-15 for Seedance, 5/10 for Kling)
+  aspectRatio: "9:16" | "16:9" | "1:1";
+  resolution?: "480p" | "720p";
+  generateAudio: boolean;
+  /** For storyboard-to-video: number of panels in the grid (default 9 = 3×3) */
+  storyboardPanels?: number;
+  /** For image-to-video: source image URL or path */
+  sourceImageUrl?: string;
+  /** For seedance-reference: reference image URLs (up to 9) */
+  referenceImageUrls?: string[];
+  /** For seedance-reference: reference audio URL */
+  referenceAudioUrl?: string;
+  /** Override the storyboard image generation prompt (GPT Image 2) */
+  storyboardPrompt?: string;
+  /** Override the video generation prompt (Seedance / Kling) */
+  videoPrompt?: string;
+}
 export type AssetType = "food_photo" | "product_photo" | "person_photo" | "screenshot" | "logo" | "document" | "unknown";
 export type ContentRouteFamily = "carousel" | "edited-image" | "recipe" | "flyer" | "linkedin-post" | "infographic";
 export type ContentHint = ContentRouteFamily;
@@ -127,10 +156,21 @@ export interface BrandProfile {
   visual: BrandVisualSettings;
   defaults: BrandDefaults;
   providers: BrandProviders;
+  category?: string;
+  valueProposition?: string;
+  platformPersonality?: string;
+  toneRange?: string[];
+  contentPillars?: string[];
+  bannedPhrases?: string[];
+  preferredThemes?: string[];
+  goodContentExamples?: string[];
+  badContentExamples?: string[];
   mascot?: BrandMascot;
   contentTypes?: ContentTypeDefinition[];
   defaultContentType?: string;
   contentRecipes?: ContentRecipeDefinition[];
+  defaultStyleCardId?: string;
+  visualModes?: VisualMode[];
 }
 
 export interface BoardCard {
@@ -240,41 +280,6 @@ export interface BoardDocument {
   updatedAt: string;
 }
 
-export interface AssistantMessage {
-  id: string;
-  role: "assistant" | "user" | "system";
-  text: string;
-  createdAt: string;
-}
-
-export interface InferredBrief {
-  goal: string;
-  audience: string;
-  offer: string;
-  tone: string;
-  platform: string;
-}
-
-export interface CheckpointState {
-  strategy: "pending" | "active" | "done";
-  hooks: "pending" | "active" | "done";
-  visuals: "pending" | "active" | "done";
-  finalPackage: "pending" | "active" | "done";
-}
-
-export interface AssistantSession {
-  id: string;
-  productId: string;
-  status: "interviewing" | "generating" | "done";
-  currentQuestion: string;
-  messages: AssistantMessage[];
-  inferredBrief: InferredBrief;
-  checkpoints: CheckpointState;
-  workspaceCards: BoardCard[];
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface ProductContextSource {
   repo: string;
   localPath?: string;
@@ -316,11 +321,15 @@ export interface GenerationRequest {
   };
   targetAssetId?: string;
   videoOptions?: VideoOptions;
+  videoStrategy?: VideoStrategyConfig;
   variantCount?: number;
   deliveryTargets?: DeliveryTarget;
   contentTypeId?: string;
   routingDecision?: RoutingDecision;
   routingTrace?: RoutingTrace;
+  creativeProjectId?: string;
+  creativePlan?: CreativeSystemOutput;
+  styleControl: StyleControlledRequest;
 }
 
 export interface StructuredRecipe {
@@ -402,6 +411,8 @@ export interface PostMetadata {
   brief: ContentBrief;
   brand_profile: BrandProfile;
   generation_request: GenerationRequest;
+  creative_project_id?: string;
+  creative_plan?: CreativeSystemOutput;
   uploaded_assets?: UploadedAsset[];
   asset_analyses?: AssetAnalysis[];
   routing_decision?: RoutingDecision;
@@ -409,6 +420,12 @@ export interface PostMetadata {
   slides: Slide[];
   artifacts?: GeneratedArtifact[];
   reel_package?: ReelPackageDraft | null;
+  voiceover?: {
+    script: string;
+    audioPath: string | null;
+    voiceId: string;
+    durationEstimate: number;
+  } | null;
   output_dir: string;
   assets_dir: string;
   slides_dir: string;
@@ -481,4 +498,198 @@ export interface BatchGenerationRequest {
   brandProfileId: string;
   visualMode?: VisualMode;
   deliveryTargets?: DeliveryTarget;
+}
+
+// ── Style-Controlled Creative Pipeline ────────────────────────────────────────
+
+export type GenerationMode = "image-first" | "layout-first" | "reference-match" | "brand-adapted";
+export type TextDensity = "low" | "medium" | "high";
+export type ReferenceLockStrength = "loose" | "medium" | "tight";
+export type ImageTreatment = "photographic" | "illustrated" | "collage" | "monochrome";
+
+export interface StyleVisualTraits {
+  layout: string[];
+  typography: string[];
+  colorMode: string;
+  imageTreatment: string[];
+  composition: string[];
+  tone: string[];
+}
+
+export interface StyleContentRules {
+  maxTextWordsPerSlide: number;
+  headlineRequired: boolean;
+  bodyRequired: boolean;
+  captionStyle: string;
+  avoid: string[];
+}
+
+export interface StyleGenerationRequirements {
+  needsImage: boolean;
+  needsLayoutEngine: boolean;
+  needsTypographyPairing: boolean;
+}
+
+export interface StyleCard {
+  id: string;
+  name: string;
+  intent: string;
+  imageStyle: string;
+  layoutStyle: string;
+  copyStyle: string;
+  visualTraits: StyleVisualTraits;
+  contentRules: StyleContentRules;
+  generationRequirements: StyleGenerationRequirements;
+  negativeConstraints: string[];
+  source: "builtin" | "extracted" | "custom";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreativeBrief {
+  styleCardId: string;
+  styleName: string;
+  topic: string;
+  visualAngle: string;
+  slideNarrative: string[];
+  imageBrief: string;
+  layoutBrief: string;
+  copyDensity: TextDensity;
+  typographyMood: string;
+  renderRecommendation: string;
+}
+
+export interface RenderSpec {
+  aspectRatio: string;
+  safeMargins: number;
+  textAlignment: string;
+  imageCrop: string;
+}
+
+export interface StructuredPromptOutput {
+  creativeBrief: CreativeBrief;
+  imagePrompt: string;
+  layoutPrompt: string;
+  textOverlayRules: string;
+  renderSpec: RenderSpec;
+}
+
+export interface UgcBrief {
+  hook?: string;
+  problem?: string;
+  productMoment?: string;
+  outcome?: string;
+  cta?: string;
+  toneNotes?: string;
+}
+
+export interface StyleControlledRequest {
+  styleCardId: string;
+  generationMode?: GenerationMode;
+  textDensity?: TextDensity;
+  referenceLockStrength?: ReferenceLockStrength;
+  imageTreatment?: ImageTreatment;
+  ugcBrief?: UgcBrief;
+}
+
+// ── Creative Operating System ────────────────────────────────────────────────
+
+export type CreativeFormat =
+  | "ugc-short-video"
+  | "creator-talking-video"
+  | "image-led-post"
+  | "meme-post"
+  | "educational-carousel"
+  | "founder-thought-leadership"
+  | "promo-trailer"
+  | "slideshow-video"
+  | "product-explainer"
+  | "ad-creative"
+  | "insight-card";
+
+export type CreativeReviewFlag =
+  | "too_safe"
+  | "too_generic"
+  | "too_brandlike"
+  | "too_static"
+  | "too_adlike"
+  | "weak_hook"
+  | "refined";
+
+export interface CreativeBriefInterpretation {
+  product: string;
+  goal: string;
+  audience: string;
+  format: CreativeFormat;
+  tone: string;
+  platform: Platform;
+  confidence: number;
+  inferredContext: string[];
+}
+
+export interface CreativeDirection {
+  id: string;
+  title: string;
+  format: CreativeFormat;
+  angle: string;
+  why_it_works: string;
+  emotional_driver: string;
+  visual_style: string;
+  hook_style: string;
+  recommended_platform_fit: Platform[];
+  hook_examples: string[];
+  performance_score: number;
+  brand_fit_score: number;
+}
+
+export interface ContentBlueprint {
+  narrative_arc: string[];
+  beat_sheet: string[];
+  creative_notes: string[];
+  editing_style: string;
+  cta_style: string;
+  pacing_guidance: string;
+  on_screen_text_strategy: string;
+}
+
+export interface ProductionAssets {
+  script: string[];
+  on_screen_text: string[];
+  shot_list: string[];
+  image_prompts: string[];
+  slide_plan: string[];
+  caption_options: string[];
+  headline_options: string[];
+  render_prompts: string[];
+  voiceover_version: string[];
+  thumbnail_or_cover_text: string[];
+}
+
+export interface CreativeVariant {
+  label: string;
+  difference: string;
+  script_adjustments: string[];
+  visual_adjustments: string[];
+}
+
+export interface CreativeSystemOutput {
+  brief_interpretation: CreativeBriefInterpretation;
+  proposed_directions: CreativeDirection[];
+  recommended_direction_id: string;
+  content_blueprint: ContentBlueprint;
+  production_assets: ProductionAssets;
+  variants: CreativeVariant[];
+  review_flags: CreativeReviewFlag[];
+  refinementNotes?: string[];
+}
+
+export interface CreativeProjectMemory {
+  id: string;
+  brandProfileId: string;
+  rawIntent: string;
+  selectedDirectionId: string;
+  creativePlan: CreativeSystemOutput;
+  refinementNotes: string[];
+  createdAt: string;
+  updatedAt: string;
 }

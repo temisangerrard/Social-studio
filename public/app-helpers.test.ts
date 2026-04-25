@@ -101,7 +101,6 @@ test("Feature: library-state-management, Property 7: timestamps within 7 days re
 
   fc.assert(
     fc.property(
-      // Generate an offset between 0ms and 7 days in milliseconds
       fc.integer({ min: 0, max: SEVEN_DAYS_MS }),
       (offsetMs) => {
         const timestamp = new Date(Date.now() - offsetMs).toISOString();
@@ -116,13 +115,10 @@ test("Feature: library-state-management, Property 7: timestamps within 7 days re
 test("Feature: library-state-management, Property 7: timestamps older than 7 days return absolute date", () => {
   const EIGHT_DAYS_MS = 8 * 24 * 60 * 60 * 1000;
   const TEN_YEARS_MS = 10 * 365 * 24 * 60 * 60 * 1000;
-  // Absolute dates from toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric"})
-  // produce patterns like "Jan 15, 2026"
   const absoluteDatePattern = /[A-Z][a-z]{2} \d{1,2}, \d{4}/;
 
   fc.assert(
     fc.property(
-      // Generate an offset between 8 days and 10 years ago
       fc.integer({ min: EIGHT_DAYS_MS, max: TEN_YEARS_MS }),
       (offsetMs) => {
         const timestamp = new Date(Date.now() - offsetMs).toISOString();

@@ -1,0 +1,143 @@
+/* ═══ Style Controls — preset picker, preview ═══ */
+
+.style-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(111, 92, 69, 0.04);
+  border: 1px solid rgba(111, 92, 69, 0.08);
+}
+
+.style-preview {
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(175, 179, 170, 0.18);
+}
+
+.style-preview__body {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
+.style-preview__body .style-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  margin: 2px 4px 2px 0;
+  border-radius: 6px;
+  background: rgba(111, 92, 69, 0.08);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--highlight);
+}
+
+.style-preview__body .style-section {
+  margin-top: 8px;
+}
+
+.style-preview__body .style-section-label {
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+/* ═══ UGC Brief Panel ══════════════════════════════════════════════════════ */
+
+.ugc-brief {
+  position: fixed;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 29;
+  width: min(640px, calc(100vw - 32px));
+  background: rgba(250, 249, 244, 0.97);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(175, 179, 170, 0.18);
+  border-radius: 18px;
+  box-shadow: 0 -4px 32px rgba(47, 52, 45, 0.12);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform 250ms cubic-bezier(0.32, 0.72, 0, 1), opacity 200ms ease;
+}
+
+.ugc-brief.hidden {
+  transform: translateX(-50%) translateY(20px);
+  opacity: 0;
+  pointer-events: none;
+  display: flex !important;
+}
+
+.ugc-brief:not(.hidden) {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.ugc-brief__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ugc-brief__title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--highlight);
+}
+
+.ugc-brief__close {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 1rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.ugc-brief__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ugc-brief__fields input {
+  width: 100%;
+  border: 1px solid rgba(175, 179, 170, 0.25);
+  background: rgba(255, 255, 255, 0.84);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.84rem;
+  color: var(--ink);
+}
+
+.ugc-brief__fields input::placeholder {
+  color: var(--outline);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 640px) {
+  .ugc-brief {
+    bottom: 136px;
+    width: calc(100vw - 24px);
+    left: 12px;
+    right: 12px;
+    transform: none;
+  }
+  .ugc-brief.hidden {
+    transform: translateY(20px);
+  }
+  .ugc-brief:not(.hidden) {
+    transform: translateY(0);
+  }
+}

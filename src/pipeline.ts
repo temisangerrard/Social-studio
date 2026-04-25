@@ -14,6 +14,11 @@ import {
   resolveVideoOptions,
   resolveWorkflowType
 } from "./workflow-engine.ts";
+import { generateSlidesFromStyle, buildStructuredPrompt } from "./creative-director.ts";
+import { listBuiltinPresets, resolveStyleCard } from "./style-library.ts";
+import { generateVoiceover } from "./voice-generator.ts";
+import { stitchVideo } from "./video-stitcher.ts";
+import { executeVideoStrategy, resolveVideoStrategy } from "./video-strategies.ts";
 import type {
   BrandProfile,
   ContentBrief,
@@ -23,6 +28,8 @@ import type {
   PipelineOptions,
   Platform,
   PostMetadata,
+  StyleCard,
+  StyleControlledRequest,
   UploadedAsset,
   AssetAnalysis
 } from "./types.ts";
@@ -195,7 +202,8 @@ function requestFromBrief(brief: ContentBrief): GenerationRequest {
     platformTargets: [brief.platform],
     goal: brief.goal,
     workflowType: "slideshow",
-    deliveryTargets: brief.platform
+    deliveryTargets: brief.platform,
+    styleControl: { styleCardId: listBuiltinPresets()[0].id, generationMode: "image-first" }
   };
 }
 
@@ -276,7 +284,9 @@ function normalizeRequest(input: unknown): GenerationRequest {
       request.workflowType === "video-clip" ||
       request.workflowType === "reel-package" ||
       request.workflowType === "linkedin-carousel" ||
-      request.workflowType === "linkedin-text"
+      request.workflowType === "linkedin-text" ||
+      request.workflowType === "ugc-faceless" ||
+      request.workflowType === "ugc-voiceover"
         ? request.workflowType
         : "slideshow",
     visualMode:
@@ -296,6 +306,9 @@ function normalizeRequest(input: unknown): GenerationRequest {
             consistencyMode: videoOptions.consistencyMode === "mascot-consistent" ? "mascot-consistent" : "prompt-led"
           }
         : undefined,
+    videoStrategy: request.videoStrategy && typeof request.videoStrategy === "object"
+      ? (request.videoStrategy as GenerationRequest["videoStrategy"])
+      : undefined,
     variantCount: typeof request.variantCount === "number" ? request.variantCount : undefined,
     deliveryTargets:
       request.deliveryTargets === "tiktok" || request.deliveryTargets === "instagram" || request.deliveryTargets === "both" || request.deliveryTargets === "linkedin" || request.deliveryTargets === "all"
@@ -313,7 +326,16 @@ function normalizeRequest(input: unknown): GenerationRequest {
     routingTrace:
       request.routingTrace && typeof request.routingTrace === "object"
         ? (request.routingTrace as GenerationRequest["routingTrace"])
-        : undefined
+        : undefined,
+    creativeProjectId: typeof request.creativeProjectId === "string" ? request.creativeProjectId : undefined,
+    creativePlan:
+      request.creativePlan && typeof request.creativePlan === "object"
+        ? (request.creativePlan as GenerationRequest["creativePlan"])
+        : undefined,
+    styleControl:
+      request.styleControl && typeof request.styleControl === "object"
+        ? (request.styleControl as GenerationRequest["styleControl"])
+        : { styleCardId: listBuiltinPresets()[0].id, generationMode: "image-first" as const }
   };
 }
 
@@ -437,6 +459,18 @@ async function createImageArtifact(params: {
   };
 }
 
+async function createPlaceholderVideoArtifact(params: {
+  prompt: string;
+  title: string;
+  assetsDir: string;
+  fileStem: string;
+}): Promise<string> {
+  await fs.mkdir(params.assetsDir, { recursive: true });
+  const placeholderPath = path.join(params.assetsDir, `${params.fileStem}.txt`);
+  await fs.writeFile(placeholderPath, `[MOCK VIDEO]\nPrompt: ${params.prompt}\nTitle: ${params.title}\n`, "utf8");
+  return placeholderPath;
+}
+
 async function createVideoArtifact(params: {
   prompt: string;
   title: string;
@@ -449,7 +483,7 @@ async function createVideoArtifact(params: {
   const recipe = buildWorkflowRecipe(params.request);
   const references = buildWorkflowReferenceAssets(params.request, params.brandProfile);
   const videoOptions = resolveVideoOptions(params.request);
-  const assetPath = await generateFalVideoAsset({
+  let assetPath = await generateFalVideoAsset({
     prompt: params.prompt,
     assetsDir: params.assetsDir,
     fileStem: params.artifactId,
@@ -458,6 +492,16 @@ async function createVideoArtifact(params: {
     references,
     videoOptions
   });
+
+  if (!assetPath) {
+    console.warn(`[pipeline] Video generation returned null for ${params.artifactId}, writing placeholder`);
+    assetPath = await createPlaceholderVideoArtifact({
+      prompt: params.prompt,
+      title: params.title,
+      assetsDir: params.assetsDir,
+      fileStem: params.artifactId
+    });
+  }
 
   return {
     id: params.artifactId,
@@ -520,12 +564,15 @@ export async function runPipelineFromRequest(
     },
     contentType: contentType ?? undefined
   });
-  const workflowType = shouldPreferRouting ? routingDecision.workflowType : resolveWorkflowType(request);
+  const isUgcWorkflow = request.workflowType === "ugc-faceless" || request.workflowType === "ugc-voiceover";
+  const hasExplicitStyle = isUgcWorkflow || (!!requestInput.styleControl?.styleCardId);
+  const workflowType = hasExplicitStyle ? resolveWorkflowType(request) : (shouldPreferRouting ? routingDecision.workflowType : resolveWorkflowType(request));
   const deliveryTargets = shouldPreferRouting ? routingDecision.deliveryTargets : resolveDeliveryTargets(request);
 
   const isPepperaCarousel =
-    routingDecision.routeFamily === "recipe" ||
-    ((brandProfile.id === "peppera" || brandProfile.name === "Peppera") && workflowType === "slideshow");
+    !hasExplicitStyle &&
+    (routingDecision.routeFamily === "recipe" ||
+    ((brandProfile.id === "peppera" || brandProfile.name === "Peppera") && workflowType === "slideshow"));
 
   const brief: ContentBrief = {
     product: brandProfile.name,
@@ -560,6 +607,8 @@ export async function runPipelineFromRequest(
       routingDecision,
       routingTrace
     },
+    creative_project_id: request.creativeProjectId,
+    creative_plan: request.creativePlan,
     uploaded_assets: request.uploadedAssets ?? [],
     asset_analyses: assetAnalyses,
     routing_decision: routingDecision,
@@ -578,22 +627,50 @@ export async function runPipelineFromRequest(
   };
 
   if (workflowType === "slideshow" || workflowType === "linkedin-carousel") {
+    // ── Style-controlled generation path (always active) ────────────────────
+    const styleControl = request.styleControl;
+    let slidesToProcess = plan.slides;
+
+    let style = resolveStyleCard(styleControl.styleCardId, []);
+    if (!style) {
+      console.warn(`[pipeline] Style card not found: ${styleControl.styleCardId} — falling back to default preset`);
+      style = listBuiltinPresets()[0];
+    }
+
+    console.log(`[pipeline] Using style card: ${style.name}`);
+    const control: StyleControlledRequest = {
+      styleCardId: style.id,
+      generationMode: styleControl.generationMode ?? "image-first",
+      textDensity: styleControl.textDensity,
+      imageTreatment: styleControl.imageTreatment,
+      referenceLockStrength: styleControl.referenceLockStrength,
+    };
+    const styledSlides = generateSlidesFromStyle({ style, request, brand: brandProfile, control });
+    // Merge planner copy with style-directed image prompts and layout
+    slidesToProcess = styledSlides.map((styled, i) => {
+      const plannerSlide = plan.slides[i];
+      return {
+        ...styled,
+        text: plannerSlide?.text ?? styled.text,
+      };
+    });
+
     // Ensure uploaded assets are assigned to slides even if the planner didn't set them
     const hasUploads = (request.uploadedAssets ?? []).length > 0;
-    const alreadyAssigned = plan.slides.some((s: any) => s.uploaded_asset_url != null);
-    const slidesToProcess = (hasUploads && !alreadyAssigned)
+    const alreadyAssigned = slidesToProcess.some((s: any) => s.uploaded_asset_url != null);
+    const finalSlides = (hasUploads && !alreadyAssigned)
       ? (isPepperaCarousel
-          ? assignUploadedAssetsToCarouselSlides(plan.slides, request)
-          : assignUploadedAssetsToSlides(plan.slides, request))
-      : plan.slides;
+          ? assignUploadedAssetsToCarouselSlides(slidesToProcess, request)
+          : assignUploadedAssetsToSlides(slidesToProcess, request))
+      : slidesToProcess;
 
     // Ensure every slide has a slide_number BEFORE any downstream processing
     // (planner may omit it — we derive from array index)
-    slidesToProcess.forEach((s: any, i: number) => {
+    finalSlides.forEach((s: any, i: number) => {
       s.slide_number = i + 1;
     });
 
-    const slidesWithAssets = await imageGenerator(slidesToProcess, {
+    const slidesWithAssets = await imageGenerator(finalSlides, {
       assetsDir,
       falKey: process.env.FAL_KEY,
       falModel: process.env.FAL_MODEL ?? brandProfile.providers.imageModel,
@@ -637,6 +714,43 @@ export async function runPipelineFromRequest(
       metadata.render_error = error instanceof Error ? error.message : String(error);
     }
   } else if (workflowType === "linkedin-text") {
+    metadata.render_status = "skipped";
+  } else if (workflowType === "ugc-faceless" || workflowType === "ugc-voiceover") {
+    // UGC: multi-strategy AI video generation + voiceover
+    const scenes = plan.slides
+      .filter((s: any) => s.text && !s.text.startsWith("Content slide"))
+      .map((s: any, i: number) => ({
+        prompt: s.image_prompt || s.text,
+        title: s.text,
+        role: s.role || `scene-${i + 1}`,
+      }));
+
+    // Resolve video strategy (auto-selects based on brand/uploads/context)
+    const strategyConfig = resolveVideoStrategy(request, brandProfile);
+    console.log(`[pipeline] UGC video strategy: ${strategyConfig.strategy}`);
+
+    const strategyResult = await executeVideoStrategy({
+      scenes,
+      config: strategyConfig,
+      assetsDir,
+      falKey: process.env.FAL_KEY,
+      brand: brandProfile,
+      request,
+    });
+    metadata.artifacts = strategyResult.artifacts;
+
+    // Generate voiceover (Seedance generates native audio, but we still want
+    // a separate ElevenLabs voiceover for the narration track)
+    const voiceoverScript = scenes.map((s) => s.title).join("\n\n");
+    const voiceResult = await generateVoiceover(voiceoverScript, assetsDir, "voiceover");
+    metadata.voiceover = {
+      script: voiceoverScript,
+      audioPath: voiceResult.audioPath,
+      voiceId: voiceResult.voiceId,
+      durationEstimate: voiceResult.durationEstimate,
+    };
+
+    metadata.slides = scenes.map((s: any, i: number) => ({ ...s, slide_number: i + 1 }));
     metadata.render_status = "skipped";
   } else if (workflowType === "mascot-variants") {
     const count = resolveVariantCount(request);
@@ -701,6 +815,20 @@ export async function runPipelineFromRequest(
         })
       )
     );
+
+    // Generate voiceover for the reel package
+    const voiceResult = await generateVoiceover(
+      metadata.reel_package.voiceoverScript,
+      assetsDir,
+      "voiceover"
+    );
+    metadata.voiceover = {
+      script: metadata.reel_package.voiceoverScript,
+      audioPath: voiceResult.audioPath,
+      voiceId: voiceResult.voiceId,
+      durationEstimate: voiceResult.durationEstimate,
+    };
+
     metadata.render_status = "skipped";
   }
 
@@ -708,16 +836,9 @@ export async function runPipelineFromRequest(
   return metadata;
 }
 
-export async function runPipelineFromBrief(
-  briefInput: ContentBrief,
-  outputRoot?: string
-): Promise<PostMetadata> {
+export async function runPipeline(options: PipelineOptions): Promise<PostMetadata> {
+  const briefInput = await readBrief(path.resolve(options.briefPath));
   const brief = normalizeBrief(briefInput);
   const brandProfile = await loadOrCreateBrandProfile(brief);
-  return runPipelineFromRequest(requestFromBrief(brief), brandProfile, outputRoot);
-}
-
-export async function runPipeline(options: PipelineOptions): Promise<PostMetadata> {
-  const brief = await readBrief(path.resolve(options.briefPath));
-  return runPipelineFromBrief(brief, options.outputRoot ?? path.resolve("workspace", "outputs"));
+  return runPipelineFromRequest(requestFromBrief(brief), brandProfile, options.outputRoot ?? path.resolve("workspace", "outputs"));
 }

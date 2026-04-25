@@ -3,14 +3,69 @@ import path from "node:path";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import { config as loadEnv } from "dotenv";
-import { createInitialAssistantSession, generateAssistantReply } from "./assistant.ts";
 import { explainRoutingTree, buildRoutingTrace, routeGenerationRequest } from "./routing.ts";
-import type { AssistantMessage } from "./types.ts";
 import { analyzeUploadedAsset, filePathToDataUrl } from "./upload-intake.ts";
-import { runPipelineFromBrief, runPipelineFromRequest } from "./pipeline.ts";
+import { runPipelineFromRequest } from "./pipeline.ts";
 import { defaultProductRegistry, registerBrandDescription, resolveProductContext } from "./product-context.ts";
 import { createStorage } from "./storage.ts";
-import type { AssistantSession, BatchGenerationRequest, BoardDocument, BrandProfile, CalendarSlot, ContentPillar, GenerationRequest, PostMetadata, UploadedAsset, AssetAnalysis } from "./types.ts";
+import type { BatchGenerationRequest, BoardDocument, BrandProfile, CalendarSlot, ContentPillar, CreativeProjectMemory, GenerationRequest, Platform, PostMetadata, StyleCard, UploadedAsset, AssetAnalysis } from "./types.ts";
+import { listBuiltinPresets, resolveStyleCard } from "./style-library.ts";
+import { ingestReferencesAndCreateStyleCard } from "./reference-ingestion.ts";
+import { buildPreviewPlan, buildStructuredPrompt } from "./creative-director.ts";
+import { generateCreativeSystemOutput, refineCreativeProject } from "./creative-system.ts";
+import { listVoices } from "./voice-generator.ts";
+import { generateUgcPackage, normalizeUgcDraft, type UgcScriptDraft } from "./ugc.ts";
+
+async function generateUgcBrief(idea: string, brand: BrandProfile): Promise<Record<string, string>> {
+  const fallback = {
+    hook: `I didn't know ${brand.name} could do this until last week…`,
+    problem: `The problem ${brand.name} solves`,
+    productMoment: `How ${brand.name} works — the key moment`,
+    outcome: `What changed after using ${brand.name}`,
+    cta: brand.cta || `Try ${brand.name} — link in bio`,
+    toneNotes: brand.tone || "casual, direct",
+  };
+  const apiKey = process.env.GLM_API_KEY;
+  if (!apiKey) return fallback;
+  try {
+    const res = await fetch(process.env.GLM_API_URL ?? "https://open.bigmodel.cn/api/paas/v4/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: process.env.GLM_MODEL ?? "glm-4.5",
+        temperature: 0.8,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: `You write UGC scripts for social media. Output JSON with keys: hook, problem, productMoment, outcome, cta, toneNotes. Each value is one short punchy sentence, max 15 words. First person, conversational, like talking to camera. Brand: ${brand.name} — ${brand.description}. Tone: ${brand.tone}. Audience: ${brand.audience}.` },
+          { role: "user", content: `UGC script brief for: "${idea}"` }
+        ]
+      })
+    });
+    if (!res.ok) return fallback;
+    const payload = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+    const raw = payload.choices?.[0]?.message?.content;
+    if (!raw) return fallback;
+    return { ...fallback, ...JSON.parse(raw.replace(/```json\n?|\n?```/g, "").trim()) };
+  } catch { return fallback; }
+}
+
+function normalizeUgcScriptInput(body: Record<string, unknown>, brand: BrandProfile): UgcScriptDraft {
+  return normalizeUgcDraft({
+    hook: typeof body.hook === "string" ? body.hook : undefined,
+    problem: typeof body.problem === "string" ? body.problem : undefined,
+    productMoment: typeof body.productMoment === "string" ? body.productMoment : undefined,
+    outcome: typeof body.outcome === "string" ? body.outcome : undefined,
+    cta: typeof body.cta === "string" ? body.cta : undefined,
+    toneNotes: typeof body.toneNotes === "string" ? body.toneNotes : undefined,
+    fullScript: typeof body.fullScript === "string" ? body.fullScript : undefined,
+    beatSheet: Array.isArray(body.beatSheet) ? body.beatSheet.filter((item): item is string => typeof item === "string") : undefined,
+    onScreenText: Array.isArray(body.onScreenText) ? body.onScreenText.filter((item): item is string => typeof item === "string") : undefined
+  }, brand);
+}
+
+function normalizePlatform(value: unknown, fallback: Platform): Platform {
+  return value === "instagram" || value === "linkedin" || value === "tiktok" ? value : fallback;
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, "..");
@@ -93,7 +148,6 @@ interface Job {
   status: "pending" | "running" | "done" | "failed";
   stage: "queued" | "planning" | "generating" | "rendering" | "done" | "failed";
   progress?: string;
-  brief?: Record<string, unknown>;
   request?: GenerationRequest;
   result?: PostMetadata;
   error?: string;
@@ -400,12 +454,34 @@ function uploadedAssetFromBody(storedName: string, mimeType: string, body: Recor
   };
 }
 
-function uploadFilePathFromAsset(asset: UploadedAsset): string | null {
+function uploadFilePathFromAsset(asset: UploadedAsset, uploadsRoot = UPLOADS_ROOT): string | null {
   if (!asset.url.startsWith("/api/uploads/")) {
     return null;
   }
   const filename = path.basename(asset.url.slice("/api/uploads/".length));
-  return path.join(UPLOADS_ROOT, filename);
+  return path.join(uploadsRoot, filename);
+}
+
+export async function deleteUploadedAssetFromIndex(uploadsRoot: string, id: string): Promise<{ deleted: boolean; asset: UploadedAsset | null }> {
+  const indexPath = path.join(uploadsRoot, "_index.json");
+  let index: UploadedAsset[] = [];
+  try {
+    index = JSON.parse(await fs.readFile(indexPath, "utf8")) as UploadedAsset[];
+  } catch {
+    index = [];
+  }
+
+  const asset = index.find((a) => a.id === id) ?? null;
+  if (!asset) {
+    return { deleted: false, asset: null };
+  }
+
+  const nextIndex = index.filter((a) => a.id !== id);
+  await fs.mkdir(uploadsRoot, { recursive: true });
+  await fs.writeFile(indexPath, JSON.stringify(nextIndex, null, 2));
+  const filePath = uploadFilePathFromAsset(asset, uploadsRoot);
+  if (filePath) await fs.unlink(filePath).catch(() => {});
+  return { deleted: true, asset };
 }
 
 async function analyzeAssetRecord(asset: UploadedAsset, brand: BrandProfile, prompt: string): Promise<AssetAnalysis> {
@@ -428,35 +504,6 @@ function normalizeBoard(input: Record<string, unknown>): BoardDocument {
   };
 }
 
-function normalizeAssistantSession(input: Record<string, unknown>): AssistantSession {
-  const session = input as unknown as Partial<AssistantSession>;
-  const now = new Date().toISOString();
-
-  return {
-    id: session.id ?? makeId("session"),
-    productId: session.productId ?? "peppera",
-    status: session.status ?? "interviewing",
-    currentQuestion: session.currentQuestion ?? "What are you trying to make today?",
-    messages: session.messages ?? [],
-    inferredBrief: session.inferredBrief ?? {
-      goal: "",
-      audience: "",
-      offer: "",
-      tone: "",
-      platform: ""
-    },
-    checkpoints: session.checkpoints ?? {
-      strategy: "pending",
-      hooks: "pending",
-      visuals: "pending",
-      finalPackage: "pending"
-    },
-    workspaceCards: session.workspaceCards ?? [],
-    createdAt: session.createdAt ?? now,
-    updatedAt: now
-  };
-}
-
 async function startGeneration(body: Record<string, unknown>): Promise<{ jobId: string; status: string }> {
   const jobId = makeId("gen");
   const job: Job = {
@@ -468,12 +515,7 @@ async function startGeneration(body: Record<string, unknown>): Promise<{ jobId: 
   jobs.set(jobId, job);
   await saveJob(job);
 
-  const isLegacyBrief = typeof body.product === "string" && typeof body.idea === "string";
-  if (isLegacyBrief) {
-    job.brief = body;
-  } else {
-    job.request = body as unknown as GenerationRequest;
-  }
+  job.request = body as unknown as GenerationRequest;
 
   void (async () => {
     job.status = "running";
@@ -481,15 +523,6 @@ async function startGeneration(body: Record<string, unknown>): Promise<{ jobId: 
     await saveJob(job);
 
     try {
-      if (job.brief) {
-        const result = await runPipelineFromBrief(job.brief as any, OUTPUTS_ROOT);
-        job.result = result;
-        job.status = "done";
-        job.stage = "done";
-        await saveJob(job);
-        return;
-      }
-
       const request = job.request!;
       const brand = await storage.getBrandProfile(request.brandProfileId);
       if (!brand) {
@@ -538,73 +571,6 @@ async function handleRequest(req: Request): Promise<Response> {
     return json(await resolveProductContext(productId));
   }
 
-  if (url.pathname === "/api/assistant/sessions" && req.method === "GET") {
-    return json(await storage.listAssistantSessions());
-  }
-
-  if (url.pathname === "/api/assistant/sessions" && req.method === "POST") {
-    const body = await parseJsonBody(req);
-    const productId = typeof body.productId === "string" ? body.productId : "peppera";
-    const context = await resolveProductContext(productId);
-    const session = createInitialAssistantSession(productId, context);
-    await storage.saveAssistantSession(session);
-    return json(session);
-  }
-
-  if (url.pathname.startsWith("/api/assistant/sessions/") && req.method === "GET") {
-    const sessionId = url.pathname.slice("/api/assistant/sessions/".length);
-    const session = await storage.getAssistantSession(sessionId);
-    return session ? json(session) : json({ error: "Session not found" }, { status: 404 });
-  }
-
-  if (url.pathname.startsWith("/api/assistant/sessions/") && url.pathname.endsWith("/reply") && req.method === "POST") {
-    const sessionId = url.pathname.slice("/api/assistant/sessions/".length).replace(/\/reply$/, "");
-    const session = await storage.getAssistantSession(sessionId);
-    if (!session) {
-      return json({ error: "Session not found" }, { status: 404 });
-    }
-
-    const body = await parseJsonBody(req);
-    const text = typeof body.text === "string" ? body.text.trim() : "";
-    if (!text) {
-      return json({ error: "text is required" }, { status: 400 });
-    }
-
-    const nowStr = new Date().toISOString();
-    const userMsg: AssistantMessage = { id: makeId("msg"), role: "user", text, createdAt: nowStr };
-    session.messages.push(userMsg);
-
-    const brand = await storage.getBrandProfile(session.productId);
-    const { reply, updatedBrief, shouldGenerate } = await generateAssistantReply(session, text, brand);
-
-    const assistantMsg: AssistantMessage = { id: makeId("msg"), role: "assistant", text: reply, createdAt: new Date().toISOString() };
-    session.messages.push(assistantMsg);
-    session.inferredBrief = updatedBrief;
-    session.currentQuestion = reply;
-    session.updatedAt = new Date().toISOString();
-
-    await storage.saveAssistantSession(session);
-    return json({ session, shouldGenerate });
-  }
-
-  if (url.pathname.startsWith("/api/assistant/sessions/") && req.method === "POST") {
-    const sessionId = url.pathname.slice("/api/assistant/sessions/".length);
-    const existing = await storage.getAssistantSession(sessionId);
-    if (!existing) {
-      return json({ error: "Session not found" }, { status: 404 });
-    }
-
-    const body = await parseJsonBody(req);
-    const updated = normalizeAssistantSession({
-      ...existing,
-      ...body,
-      id: sessionId,
-      createdAt: existing.createdAt
-    });
-    await storage.saveAssistantSession(updated);
-    return json(updated);
-  }
-
   if (url.pathname === "/api/brands" && req.method === "POST") {
     const body = await parseJsonBody(req);
     await storage.saveBrandProfile(body as unknown as BrandProfile);
@@ -628,6 +594,69 @@ async function handleRequest(req: Request): Promise<Response> {
     return json(board);
   }
 
+  if (url.pathname === "/api/creative/brief" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    const brand = await storage.getBrandProfile(brandId);
+    if (!brand) return json({ error: `Brand profile not found: ${brandId}` }, { status: 404 });
+    const rawIntent = typeof body.rawIntent === "string" ? body.rawIntent : typeof body.idea === "string" ? body.idea : "";
+    if (!rawIntent.trim()) return json({ error: "rawIntent required" }, { status: 400 });
+    const now = new Date().toISOString();
+    const creativePlan = await generateCreativeSystemOutput({
+      brand,
+      rawIntent,
+      platform: normalizePlatform(body.platform, brand.defaults.platformTargets[0] ?? "tiktok"),
+      selectedDirectionId: typeof body.selectedDirectionId === "string" ? body.selectedDirectionId : undefined
+    });
+    const project: CreativeProjectMemory = {
+      id: makeId("creative"),
+      brandProfileId: brand.id,
+      rawIntent,
+      selectedDirectionId: creativePlan.recommended_direction_id,
+      creativePlan,
+      refinementNotes: [],
+      createdAt: now,
+      updatedAt: now
+    };
+    await storage.saveCreativeProject(project);
+    return json(project);
+  }
+
+  if (url.pathname.startsWith("/api/creative/projects/") && req.method === "GET") {
+    const id = url.pathname.slice("/api/creative/projects/".length).split("/")[0];
+    const project = await storage.getCreativeProject(id);
+    return project ? json(project) : json({ error: "Creative project not found" }, { status: 404 });
+  }
+
+  if (url.pathname.startsWith("/api/creative/projects/") && url.pathname.endsWith("/refine") && req.method === "POST") {
+    const id = url.pathname.replace("/api/creative/projects/", "").replace("/refine", "").replace(/\/$/, "");
+    const project = await storage.getCreativeProject(id);
+    if (!project) return json({ error: "Creative project not found" }, { status: 404 });
+    const body = await parseJsonBody(req);
+    const feedback = typeof body.feedback === "string" ? body.feedback : "";
+    if (!feedback.trim()) return json({ error: "feedback required" }, { status: 400 });
+    const refined = refineCreativeProject(project, feedback);
+    await storage.saveCreativeProject(refined);
+    return json(refined);
+  }
+
+  if (url.pathname === "/api/uploads" && req.method === "GET") {
+    try {
+      const raw = await fs.readFile(path.join(UPLOADS_ROOT, "_index.json"), "utf8");
+      return json(JSON.parse(raw) as UploadedAsset[]);
+    } catch {
+      return json([]);
+    }
+  }
+
+  if (url.pathname === "/api/uploads" && req.method === "DELETE") {
+    const body = await parseJsonBody(req);
+    const id = typeof body.id === "string" ? body.id : "";
+    if (!id) return json({ error: "id required" }, { status: 400 });
+    const result = await deleteUploadedAssetFromIndex(UPLOADS_ROOT, id);
+    return json({ ok: true, deleted: result.deleted });
+  }
+
   if (url.pathname === "/api/uploads" && req.method === "POST") {
     const body = await parseJsonBody(req);
     const filename = typeof body.filename === "string" ? body.filename : "upload";
@@ -643,7 +672,16 @@ async function handleRequest(req: Request): Promise<Response> {
     const storedName = `${stem}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}${extension}`;
     await fs.mkdir(UPLOADS_ROOT, { recursive: true });
     await fs.writeFile(path.join(UPLOADS_ROOT, storedName), buffer);
-    return json(uploadedAssetFromBody(storedName, mimeType, body));
+    const asset = uploadedAssetFromBody(storedName, mimeType, body);
+
+    // Append to persistent index
+    const indexPath = path.join(UPLOADS_ROOT, "_index.json");
+    let index: UploadedAsset[] = [];
+    try { index = JSON.parse(await fs.readFile(indexPath, "utf8")); } catch { /* first upload */ }
+    index.push(asset);
+    await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+
+    return json(asset);
   }
 
   if (url.pathname === "/api/uploads/analyze" && req.method === "POST") {
@@ -685,7 +723,10 @@ async function handleRequest(req: Request): Promise<Response> {
       uploadedAssets: Array.isArray(body.uploadedAssets) ? (body.uploadedAssets as UploadedAsset[]) : [],
       assetAnalyses: Array.isArray(body.assetAnalyses) ? (body.assetAnalyses as AssetAnalysis[]) : [],
       deliveryTargets: body.deliveryTargets as GenerationRequest["deliveryTargets"] | undefined,
-      routingOverride: body.routingOverride as GenerationRequest["routingOverride"] | undefined
+      routingOverride: body.routingOverride as GenerationRequest["routingOverride"] | undefined,
+      styleControl: body.styleControl && typeof body.styleControl === "object"
+        ? (body.styleControl as GenerationRequest["styleControl"])
+        : { styleCardId: listBuiltinPresets()[0].id, generationMode: "image-first" as const }
     };
 
     const assetAnalyses = request.assetAnalyses && request.assetAnalyses.length > 0
@@ -824,6 +865,31 @@ async function handleRequest(req: Request): Promise<Response> {
 
   if (url.pathname.startsWith("/api/outputs/") && req.method === "GET") {
     const postId = url.pathname.slice("/api/outputs/".length);
+
+    // Export endpoints: /api/outputs/:postId/export/pdf and /export/zip
+    const exportMatch = postId.match(/^([^/]+)\/export\/(pdf|zip|package)$/);
+    if (exportMatch) {
+      const [, id, format] = exportMatch;
+      const outputDir = path.join(OUTPUTS_ROOT, id);
+      try { await fs.access(outputDir); } catch { return json({ error: "Output not found" }, { status: 404 }); }
+      try {
+        const { exportPdf, exportZip, exportPackageZip } = await import("./export.ts");
+        if (format === "pdf") {
+          const buf = await exportPdf(outputDir);
+          return new Response(buf as any, { status: 200, headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="${id}-carousel.pdf"` } });
+        } else if (format === "package") {
+          const buf = await exportPackageZip(outputDir);
+          return new Response(buf as any, { status: 200, headers: { "Content-Type": "application/zip", "Content-Disposition": `attachment; filename="${id}-ugc-package.zip"` } });
+        } else {
+          const platforms = url.searchParams.getAll("platform");
+          const buf = await exportZip(outputDir, platforms.length ? platforms : undefined);
+          return new Response(buf as any, { status: 200, headers: { "Content-Type": "application/zip", "Content-Disposition": `attachment; filename="${id}-platforms.zip"` } });
+        }
+      } catch (err: any) {
+        return json({ error: err.message || "Export failed" }, { status: 500 });
+      }
+    }
+
     const output = await readOutput(postId);
     return output ? json(output) : json({ error: "Output not found" }, { status: 404 });
   }
@@ -994,6 +1060,175 @@ async function handleRequest(req: Request): Promise<Response> {
     return json({ results });
   }
 
+  // --- Style Library API ---
+
+  if (url.pathname === "/api/voices" && req.method === "GET") {
+    return json(await listVoices());
+  }
+
+  if (url.pathname === "/api/ugc-brief" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const idea = typeof body.idea === "string" ? body.idea.trim() : "";
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    if (!idea) return json({ error: "idea required" }, { status: 400 });
+    const brand = await storage.getBrandProfile(brandId);
+    if (!brand) return json({ error: "Brand not found" }, { status: 404 });
+    return json(normalizeUgcDraft(await generateUgcBrief(idea, brand), brand));
+  }
+
+  if (url.pathname === "/api/ugc/draft" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const idea = typeof body.idea === "string" ? body.idea.trim() : "";
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    if (!idea) return json({ error: "idea required" }, { status: 400 });
+    const brand = await storage.getBrandProfile(brandId);
+    if (!brand) return json({ error: "Brand not found" }, { status: 404 });
+    const draft = await generateUgcBrief(idea, brand);
+    return json(normalizeUgcDraft(draft, brand));
+  }
+
+  if (url.pathname === "/api/ugc/generate" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    const platform = body.platform === "instagram" || body.platform === "linkedin" ? body.platform : "tiktok";
+    const voiceId = typeof body.voiceId === "string" ? body.voiceId : "mock";
+    const visualMode = typeof body.visualMode === "string" ? body.visualMode : "story-led";
+    const brand = await storage.getBrandProfile(brandId);
+    if (!brand) return json({ error: "Brand not found" }, { status: 404 });
+
+    const uploadedAssetIds = Array.isArray(body.uploadedAssetIds)
+      ? body.uploadedAssetIds.filter((item): item is string => typeof item === "string")
+      : [];
+    let uploadedAssets: UploadedAsset[] = [];
+    if (uploadedAssetIds.length > 0) {
+      try {
+        const raw = await fs.readFile(path.join(UPLOADS_ROOT, "_index.json"), "utf8");
+        const index = JSON.parse(raw) as UploadedAsset[];
+        uploadedAssets = index.filter((asset) => uploadedAssetIds.includes(asset.id));
+      } catch {
+        uploadedAssets = [];
+      }
+    }
+    const script = normalizeUgcScriptInput(body.script && typeof body.script === "object" ? body.script as Record<string, unknown> : {}, brand);
+
+    return json(await generateUgcPackage({
+      brand,
+      platform,
+      voiceId,
+      visualMode,
+      script,
+      uploadedAssets,
+      outputRoot: OUTPUTS_ROOT
+    }));
+  }
+
+  if (url.pathname === "/api/styles" && req.method === "GET") {
+    const custom = await storage.listStyleCards();
+    const builtins = listBuiltinPresets();
+    const customIds = new Set(custom.map((c) => c.id));
+    const all = [...custom, ...builtins.filter((b) => !customIds.has(b.id))];
+    return json(all.sort((a, b) => a.name.localeCompare(b.name)));
+  }
+
+  if (url.pathname === "/api/styles" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const card = body as unknown as StyleCard;
+    if (!card.id || !card.name) return json({ error: "id and name required" }, { status: 400 });
+    card.source = card.source || "custom";
+    card.createdAt = card.createdAt || new Date().toISOString();
+    card.updatedAt = new Date().toISOString();
+    await storage.saveStyleCard(card);
+    return json(card);
+  }
+
+  if (url.pathname.startsWith("/api/styles/") && !url.pathname.includes("/from-references") && !url.pathname.includes("/preview") && req.method === "GET") {
+    const styleId = url.pathname.slice("/api/styles/".length);
+    const custom = await storage.listStyleCards();
+    const card = resolveStyleCard(styleId, custom);
+    return card ? json(card) : json({ error: "Style not found" }, { status: 404 });
+  }
+
+  if (url.pathname.startsWith("/api/styles/") && !url.pathname.includes("/from-references") && !url.pathname.includes("/preview") && req.method === "DELETE") {
+    const styleId = url.pathname.slice("/api/styles/".length);
+    await storage.deleteStyleCard(styleId);
+    return json({ ok: true });
+  }
+
+  if (url.pathname === "/api/styles/from-references" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const analyses = body.analyses as AssetAnalysis[] | undefined;
+    const name = typeof body.name === "string" ? body.name : "Extracted Style";
+    const intent = typeof body.intent === "string" ? body.intent : "Custom style from reference analysis";
+    if (!analyses?.length) return json({ error: "analyses array required" }, { status: 400 });
+    const { analysis, styleCard } = ingestReferencesAndCreateStyleCard(analyses, name, intent);
+    await storage.saveStyleCard(styleCard);
+    return json({ analysis, styleCard });
+  }
+
+  if (url.pathname === "/api/styles/preview-plan" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const styleId = typeof body.styleCardId === "string" ? body.styleCardId : "";
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    if (!styleId) return json({ error: "styleCardId required" }, { status: 400 });
+    const custom = await storage.listStyleCards();
+    const style = resolveStyleCard(styleId, custom);
+    if (!style) return json({ error: "Style not found" }, { status: 404 });
+    const brand = await storage.getBrandProfile(brandId);
+    if (!brand) return json({ error: "Brand not found" }, { status: 404 });
+    const request = body as unknown as GenerationRequest;
+    request.brandProfileId = brandId;
+    request.rawIdea = typeof body.rawIdea === "string" ? body.rawIdea : "";
+    const control = request.styleControl ?? { styleCardId: styleId };
+    const plan = buildPreviewPlan({ style, request, brand, control });
+    const structured = buildStructuredPrompt({ style, request, brand, control });
+    return json({ plan, structured });
+  }
+
+  if (url.pathname === "/api/styles/match" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const idea = typeof body.idea === "string" ? body.idea.trim() : "";
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    if (!idea) return json({ error: "idea is required" }, { status: 400 });
+    const brand = await storage.getBrandProfile(brandId);
+    const custom = await storage.listStyleCards();
+    const builtins = listBuiltinPresets();
+    const customIds = new Set(custom.map(c => c.id));
+    const allStyles = [...custom, ...builtins.filter(b => !customIds.has(b.id))];
+
+    const apiKey = process.env.GLM_API_KEY;
+    const apiUrl = process.env.GLM_API_URL ?? "https://open.bigmodel.cn/api/paas/v4/chat/completions";
+    const model = process.env.GLM_MODEL ?? "glm-4.5";
+
+    if (!apiKey) {
+      // Fallback: return brand default or first preset
+      const fallbackId = brand?.defaultStyleCardId || allStyles[0]?.id;
+      return json({ styleCardId: fallbackId, reason: "No LLM available — using brand default", scores: [] });
+    }
+
+    const styleList = allStyles.map(s => `- ${s.id}: ${s.intent}. Image: ${s.imageStyle}. Layout: ${s.layoutStyle}. Tone: ${s.visualTraits.tone.join(", ")}`).join("\n");
+    try {
+      const res = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model, temperature: 0.3, response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: `You match content ideas to visual style presets. Given an idea and a brand context, pick the best style preset and explain why. Return JSON: { "styleCardId": "...", "reason": "...", "scores": [{"id":"...","score":0-100},...] }` },
+            { role: "user", content: `Brand: ${brand?.name || brandId} — ${brand?.description || ""}\nTone: ${brand?.tone || ""}\nAudience: ${brand?.audience || ""}\n\nIdea: ${idea}\n\nAvailable styles:\n${styleList}\n\nPick the best style for this idea and brand. Score all styles 0-100.` }
+          ]
+        })
+      });
+      const data = await res.json() as { choices?: { message?: { content?: string } }[] };
+      const content = data.choices?.[0]?.message?.content ?? "{}";
+      const parsed = JSON.parse(content.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, ""));
+      const matchedId = typeof parsed.styleCardId === "string" && allStyles.some(s => s.id === parsed.styleCardId) ? parsed.styleCardId : (brand?.defaultStyleCardId || allStyles[0]?.id);
+      return json({ styleCardId: matchedId, reason: parsed.reason || "Best match", scores: Array.isArray(parsed.scores) ? parsed.scores : [] });
+    } catch (err) {
+      const fallbackId = brand?.defaultStyleCardId || allStyles[0]?.id;
+      return json({ styleCardId: fallbackId, reason: "LLM error — using brand default", scores: [] });
+    }
+  }
+
   // --- Content Pillars API ---
 
   if (url.pathname === "/api/pillars" && req.method === "GET") {
@@ -1054,6 +1289,7 @@ async function handleRequest(req: Request): Promise<Response> {
     }
     const platform = typeof body.platform === "string" ? body.platform : "tiktok";
     const visualMode = typeof body.visualMode === "string" ? body.visualMode : "mascot-led";
+    const workflowType = typeof body.workflowType === "string" ? body.workflowType : "slideshow";
     const request: GenerationRequest = {
       brandProfileId: brandId,
       rawIdea: idea,
@@ -1061,9 +1297,16 @@ async function handleRequest(req: Request): Promise<Response> {
       references: [],
       platformTargets: [platform as "tiktok" | "instagram"],
       goal: "installs",
-      workflowType: "slideshow",
+      workflowType: workflowType as GenerationRequest["workflowType"],
       visualMode: visualMode as GenerationRequest["visualMode"],
-      deliveryTargets: platform as GenerationRequest["deliveryTargets"]
+      deliveryTargets: platform as GenerationRequest["deliveryTargets"],
+      videoStrategy: body.videoStrategy && typeof body.videoStrategy === "object"
+        ? (body.videoStrategy as GenerationRequest["videoStrategy"])
+        : undefined,
+      styleControl: {
+        styleCardId: typeof body.styleCardId === "string" ? body.styleCardId : listBuiltinPresets()[0].id,
+        generationMode: "image-first",
+      }
     };
     return json(await startGeneration(request as unknown as Record<string, unknown>));
   }

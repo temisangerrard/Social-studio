@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { AssistantSession, BoardDocument, BrandProfile, CalendarSlot, ContentPillar } from "./types.ts";
+import type { BoardDocument, BrandProfile, CalendarSlot, ContentPillar, CreativeProjectMemory, StyleCard } from "./types.ts";
 
 interface Storage {
   listBrandProfiles(): Promise<BrandProfile[]>;
@@ -9,9 +9,6 @@ interface Storage {
   listBoards(): Promise<BoardDocument[]>;
   getBoard(id: string): Promise<BoardDocument | null>;
   saveBoard(board: BoardDocument): Promise<void>;
-  listAssistantSessions(): Promise<AssistantSession[]>;
-  getAssistantSession(id: string): Promise<AssistantSession | null>;
-  saveAssistantSession(session: AssistantSession): Promise<void>;
   listCalendarSlots(): Promise<CalendarSlot[]>;
   getCalendarSlot(id: string): Promise<CalendarSlot | null>;
   saveCalendarSlot(slot: CalendarSlot): Promise<void>;
@@ -20,6 +17,13 @@ interface Storage {
   getContentPillar(id: string): Promise<ContentPillar | null>;
   saveContentPillar(pillar: ContentPillar): Promise<void>;
   deleteContentPillar(id: string): Promise<void>;
+  listStyleCards(): Promise<StyleCard[]>;
+  getStyleCard(id: string): Promise<StyleCard | null>;
+  saveStyleCard(card: StyleCard): Promise<void>;
+  deleteStyleCard(id: string): Promise<void>;
+  listCreativeProjects(): Promise<CreativeProjectMemory[]>;
+  getCreativeProject(id: string): Promise<CreativeProjectMemory | null>;
+  saveCreativeProject(project: CreativeProjectMemory): Promise<void>;
 }
 
 async function readJsonFile<T>(filePath: string): Promise<T | null> {
@@ -62,9 +66,10 @@ async function listJsonDirectory<T>(dirPath: string): Promise<T[]> {
 export function createStorage(rootDir: string): Storage {
   const brandsDir = path.join(rootDir, "workspace", "brands");
   const boardsDir = path.join(rootDir, "workspace", "boards");
-  const sessionsDir = path.join(rootDir, "workspace", "sessions");
   const calendarDir = path.join(rootDir, "workspace", "calendar");
   const pillarsDir = path.join(rootDir, "workspace", "pillars");
+  const stylesDir = path.join(rootDir, "workspace", "styles");
+  const creativeProjectsDir = path.join(rootDir, "workspace", "creative-projects");
 
   return {
     async listBrandProfiles() {
@@ -91,19 +96,6 @@ export function createStorage(rootDir: string): Storage {
 
     async saveBoard(board: BoardDocument) {
       await writeJsonFile(path.join(boardsDir, `${board.id}.json`), board);
-    },
-
-    async listAssistantSessions() {
-      const sessions = await listJsonDirectory<AssistantSession>(sessionsDir);
-      return sessions.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-    },
-
-    async getAssistantSession(id: string) {
-      return readJsonFile<AssistantSession>(path.join(sessionsDir, `${id}.json`));
-    },
-
-    async saveAssistantSession(session: AssistantSession) {
-      await writeJsonFile(path.join(sessionsDir, `${session.id}.json`), session);
     },
 
     async listCalendarSlots() {
@@ -146,6 +138,40 @@ export function createStorage(rootDir: string): Storage {
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
       }
+    },
+
+    async listStyleCards() {
+      const cards = await listJsonDirectory<StyleCard>(stylesDir);
+      return cards.sort((a, b) => a.name.localeCompare(b.name));
+    },
+
+    async getStyleCard(id: string) {
+      return readJsonFile<StyleCard>(path.join(stylesDir, `${id}.json`));
+    },
+
+    async saveStyleCard(card: StyleCard) {
+      await writeJsonFile(path.join(stylesDir, `${card.id}.json`), card);
+    },
+
+    async deleteStyleCard(id: string) {
+      try {
+        await fs.unlink(path.join(stylesDir, `${id}.json`));
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      }
+    },
+
+    async listCreativeProjects() {
+      const projects = await listJsonDirectory<CreativeProjectMemory>(creativeProjectsDir);
+      return projects.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    },
+
+    async getCreativeProject(id: string) {
+      return readJsonFile<CreativeProjectMemory>(path.join(creativeProjectsDir, `${id}.json`));
+    },
+
+    async saveCreativeProject(project: CreativeProjectMemory) {
+      await writeJsonFile(path.join(creativeProjectsDir, `${project.id}.json`), project);
     }
   };
 }

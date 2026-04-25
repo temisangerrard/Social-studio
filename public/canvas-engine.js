@@ -161,20 +161,28 @@ const STRIP_START_X = 420;
 /** Y offset for the slide strip. */
 const STRIP_START_Y = 80;
 
-/** Overlay column X position. */
-const OVERLAY_X = 60;
+/** Overlay column X position (left of artboard strip). */
+const OVERLAY_X = 40;
 
 /** Overlay column starting Y position. */
 const OVERLAY_START_Y = 80;
 
 /** Overlay width. */
-const OVERLAY_W = 320;
+const OVERLAY_W = 340;
 
-/** Overlay height. */
-const OVERLAY_H = 200;
+/** Overlay height used only for zoom-to-fit bounds — actual height is CSS auto. */
+const OVERLAY_H = 180;
 
 /** Vertical gap between overlays. */
-const OVERLAY_GAP = 20;
+const OVERLAY_GAP = 16;
+
+/** Strategy card position — pinned above the artboard strip. */
+const STRATEGY_CARD_X = STRIP_START_X;
+const STRATEGY_CARD_Y = 8;
+const STRATEGY_CARD_W = 480;
+
+/** Grid snap size in canvas-space pixels. */
+const SNAP_GRID = 8;
 
 // ── Artboard Descriptor Builder (Task 2.1) ────────────────────────────────────
 
@@ -213,17 +221,17 @@ function detectType(item) {
 
 /**
  * Build the asset URL for a slide or artifact.
- * Uses the same logic as app-helpers.js getWorkspaceAssetUrl / getArtifactPreviewUrl.
  *
  * @param {object} output - The PostMetadata object.
  * @param {object} item   - A slide or artifact.
  * @param {Array<object>} [slides] - Optional slides array for cross-referencing artifacts against slides.
+ * @param {number|null} [hintSlideNumber] - Fallback slide number when item lacks slide_number (e.g. artifacts).
  * @returns {string|null}
  */
-export function resolveAssetUrl(output, item, slides) {
+export function resolveAssetUrl(output, item, slides = [], hintSlideNumber = null) {
   if (!output || !item) return null;
 
-  // Artifact-style: has asset_path
+  // Direct asset_path on the item (set by FAL generation or mock SVG)
   if (item.asset_path) {
     const filename = item.asset_path.split("/").pop();
     if (filename && output.post_id) {
@@ -231,7 +239,7 @@ export function resolveAssetUrl(output, item, slides) {
     }
   }
 
-  // Artifact preview_path fallback
+  // preview_path fallback (same value as asset_path in current pipeline)
   if (item.preview_path) {
     const filename = item.preview_path.split("/").pop();
     if (filename && output.post_id) {
@@ -239,27 +247,23 @@ export function resolveAssetUrl(output, item, slides) {
     }
   }
 
-  // Cross-reference fallback: if the item has a slide_number and the output has
-  // a slides array, look up the corresponding slide's asset_path
-  const slideNumber = item.slide_number;
-  if (
-    Array.isArray(slides) &&
-    typeof slideNumber === "number" &&
-    !Number.isNaN(slideNumber) &&
-    output.post_id
-  ) {
+  // Artifacts don't carry slide_number — use the hint computed from index
+  const slideNumber = item.slide_number ?? hintSlideNumber;
+
+  // Cross-reference the matching slide's asset_path
+  if (Array.isArray(slides) && typeof slideNumber === "number" && !Number.isNaN(slideNumber)) {
     const matchingSlide = slides.find((s) => s.slide_number === slideNumber);
-    if (matchingSlide && matchingSlide.asset_path) {
+    if (matchingSlide?.asset_path) {
       const filename = matchingSlide.asset_path.split("/").pop();
-      if (filename) {
+      if (filename && output.post_id) {
         return `/api/assets/${output.post_id}/${filename}`;
       }
     }
   }
 
-  // Slide fallback: use rendered slide path when asset_path is missing
-  // (matches getWorkspaceAssetUrl logic in app-helpers.js)
   if (item.kind === "video") return null;
+
+  // Rendered slide PNG fallback (only when renderer actually ran)
   if (typeof slideNumber === "number" && !Number.isNaN(slideNumber) && output.render_status !== "skipped") {
     return `/api/slides/${output.post_id}/slide-${pad2(slideNumber)}.png`;
   }
@@ -284,8 +288,6 @@ export function buildArtboardDescriptors(output) {
   const items = (output.artifacts && output.artifacts.length)
     ? output.artifacts
     : (output.slides || []);
-
-  // Pass slides array to resolveAssetUrl for cross-referencing artifacts against slides
   const slides = output.slides || [];
 
   let x = STRIP_START_X;
@@ -295,7 +297,7 @@ export function buildArtboardDescriptors(output) {
     const role = item.role || "slide";
     const type = detectType(item);
     const label = `${pad2(slideNumber)} — ${capitalizeRole(role)}`;
-    const assetUrl = resolveAssetUrl(output, item, slides);
+    const assetUrl = resolveAssetUrl(output, item, slides, slideNumber);
 
     const descriptor = {
       id: item.id || `artboard-${pad2(slideNumber)}`,
@@ -384,6 +386,27 @@ export function buildOverlayDescriptors(output) {
   return overlays;
 }
 
+/**
+ * Build a strategy card descriptor from output routing metadata.
+ * Returns null if no routing decision exists.
+ * @param {object} output
+ * @returns {object|null}
+ */
+export function buildStrategyCard(output) {
+  const d = output?.routing_decision;
+  if (!d) return null;
+  return {
+    id: "strategy-card",
+    workflowType: d.workflowType || output.workflow_type || "slideshow",
+    platform: (output.platform_targets || [])[0] || "",
+    recipeId: d.recipeId || d.contentTypeId || "",
+    confidence: typeof d.confidence === "number" ? d.confidence : null,
+    x: STRATEGY_CARD_X,
+    y: STRATEGY_CARD_Y,
+    width: STRATEGY_CARD_W,
+  };
+}
+
 // ── ArtboardManager (Task 2.5) ────────────────────────────────────────────────
 
 /**
@@ -399,6 +422,9 @@ export class ArtboardManager {
 
   /** @type {Array<object>} */
   overlays = [];
+
+  /** @type {object|null} */
+  strategyCard = null;
 
   /**
    * @param {Array<object>} artboards - ArtboardDescriptor array.
@@ -477,14 +503,14 @@ export class ArtboardManager {
         containerEl.appendChild(el);
       }
 
-      // Update position
+      // Update position — height is driven by CSS (auto)
       el.style.left = `${desc.x}px`;
       el.style.top = `${desc.y}px`;
       el.style.width = `${desc.width}px`;
-      el.style.height = `${desc.height}px`;
 
-      // Update text
-      el.textContent = desc.text;
+      // Update body text without destroying the card structure
+      const bodyEl = el.querySelector(".canvas-overlay__body");
+      if (bodyEl) bodyEl.textContent = desc.text;
     }
 
     // Remove stale overlay elements
@@ -492,6 +518,41 @@ export class ArtboardManager {
       if (!activeOverlayIds.has(id)) {
         el.remove();
       }
+    }
+
+    // Reflow overlay y positions based on actual rendered heights
+    let overlayY = OVERLAY_START_Y;
+    for (const desc of this.overlays) {
+      desc.y = overlayY;
+      const el = containerEl.querySelector(`[data-overlay-id="${desc.id}"]`);
+      if (el) {
+        el.style.top = `${overlayY}px`;
+        overlayY += el.offsetHeight + OVERLAY_GAP;
+      } else {
+        overlayY += OVERLAY_H + OVERLAY_GAP;
+      }
+    }
+
+    // ── Reconcile strategy card ──────────────────────────────────────────
+    const existingCard = containerEl.querySelector(".canvas-strategy-card");
+    if (this.strategyCard) {
+      const desc = this.strategyCard;
+      const el = existingCard || this._createStrategyCardElement(desc);
+      if (!existingCard) containerEl.appendChild(el);
+      el.style.left = `${desc.x}px`;
+      el.style.top = `${desc.y}px`;
+      el.style.width = `${desc.width}px`;
+      // Update content
+      const badge = el.querySelector(".strategy-card__workflow");
+      if (badge) badge.textContent = desc.workflowType;
+      const platform = el.querySelector(".strategy-card__platform");
+      if (platform) platform.textContent = desc.platform;
+      const recipe = el.querySelector(".strategy-card__recipe");
+      if (recipe) recipe.textContent = desc.recipeId;
+      const conf = el.querySelector(".strategy-card__confidence");
+      if (conf) conf.textContent = desc.confidence != null ? `${Math.round(desc.confidence * 100)}%` : "—";
+    } else if (existingCard) {
+      existingCard.remove();
     }
   }
 
@@ -592,9 +653,36 @@ export class ArtboardManager {
   }
 
   /**
+   * Create a DOM element for the strategy card.
+   * Structure: div.canvas-strategy-card > badge + platform + recipe + confidence
+   * @param {object} desc
+   * @returns {HTMLElement}
+   */
+  _createStrategyCardElement(desc) {
+    const el = document.createElement("div");
+    el.className = "canvas-strategy-card";
+    el.dataset.strategyCard = "true";
+    el.style.position = "absolute";
+
+    el.innerHTML = `<div class="strategy-card__row">
+      <span class="strategy-card__workflow">${desc.workflowType}</span>
+      <span class="strategy-card__platform">${desc.platform}</span>
+    </div>
+    <div class="strategy-card__row">
+      <span class="strategy-card__label">Recipe</span>
+      <span class="strategy-card__recipe">${desc.recipeId}</span>
+    </div>
+    <div class="strategy-card__row">
+      <span class="strategy-card__label">Confidence</span>
+      <span class="strategy-card__confidence">${desc.confidence != null ? Math.round(desc.confidence * 100) + "%" : "—"}</span>
+    </div>`;
+
+    return el;
+  }
+
+  /**
    * Create a DOM element for a content overlay descriptor.
-   *
-   * Structure: div.canvas-overlay.canvas-overlay--{type}
+   * Structure: div.canvas-overlay > header(chip + copy-btn) + p.body
    *
    * @param {object} desc - ContentOverlayDescriptor.
    * @returns {HTMLElement}
@@ -604,7 +692,39 @@ export class ArtboardManager {
     el.className = `canvas-overlay canvas-overlay--${desc.type}`;
     el.dataset.overlayId = desc.id;
     el.style.position = "absolute";
-    el.textContent = desc.text;
+
+    const typeLabel = { caption: "Caption", hook: "Hook", hashtag: "Hashtags" }[desc.type] || desc.type;
+
+    // Header row: type chip + copy button
+    const header = document.createElement("div");
+    header.className = "canvas-overlay__header";
+
+    const chip = document.createElement("span");
+    chip.className = "canvas-overlay__chip";
+    chip.textContent = typeLabel;
+    header.appendChild(chip);
+
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "canvas-overlay__copy";
+    copyBtn.type = "button";
+    copyBtn.title = `Copy ${typeLabel.toLowerCase()}`;
+    copyBtn.textContent = "Copy";
+    copyBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const text = el.querySelector(".canvas-overlay__body")?.textContent || desc.text;
+      navigator.clipboard?.writeText(text).catch(() => {});
+      copyBtn.textContent = "✓";
+      setTimeout(() => { copyBtn.textContent = "Copy"; }, 1500);
+    });
+    header.appendChild(copyBtn);
+    el.appendChild(header);
+
+    // Text body
+    const body = document.createElement("p");
+    body.className = "canvas-overlay__body";
+    body.textContent = desc.text;
+    el.appendChild(body);
+
     return el;
   }
 }
@@ -711,6 +831,20 @@ export class PointerStateMachine {
   }
 
   /**
+   * Find the closest .canvas-artboard or .canvas-overlay ancestor of an element.
+   * @param {HTMLElement} el
+   * @returns {HTMLElement|null}
+   */
+  _findDraggable(el) {
+    let node = el;
+    while (node && node !== this._stageEl) {
+      if (node.classList && (node.classList.contains("canvas-artboard") || node.classList.contains("canvas-overlay") || node.classList.contains("canvas-strategy-card"))) return node;
+      node = node.parentElement;
+    }
+    return null;
+  }
+
+  /**
    * Find the closest .canvas-artboard ancestor of an element, if any.
    * @param {HTMLElement} el
    * @returns {HTMLElement|null}
@@ -742,11 +876,14 @@ export class PointerStateMachine {
     if (e.button !== 0) return;
     // Suppress pan/drag while inline editing is active
     if (this._editingActive) return;
+    // Don't drag when clicking interactive elements inside overlays
+    if (e.target.closest("button, a, input, textarea, [contenteditable]")) return;
 
-    const artboard = this._findArtboard(e.target);
+    const artboard = this._findDraggable(e.target);
     this._lastPointer = { x: e.clientX, y: e.clientY };
+    const shouldPanViewport = e.pointerType === "touch";
 
-    if (artboard) {
+    if (artboard && !shouldPanViewport) {
       this.state = "dragging";
       this._dragTarget = artboard;
       this._dragOrigPos = {
@@ -755,7 +892,7 @@ export class PointerStateMachine {
       };
       artboard.classList.add("canvas-artboard--dragging");
       if (this._onDragStart) this._onDragStart(artboard);
-      artboard.setPointerCapture(e.pointerId);
+      this._stageEl.setPointerCapture(e.pointerId);
     } else {
       this.state = "panning";
       this._stageEl.setPointerCapture(e.pointerId);
@@ -773,16 +910,22 @@ export class PointerStateMachine {
       this._transform.applyPan(dx, dy);
       this._scheduleTransformUpdate();
     } else if (this.state === "dragging" && this._dragTarget) {
-      // Move artboard in canvas-space: screen delta / zoom
+      // Move element in canvas-space: screen delta / zoom
       const canvasDx = dx / this._transform.zoom;
       const canvasDy = dy / this._transform.zoom;
       const curLeft = parseFloat(this._dragTarget.style.left) || 0;
       const curTop = parseFloat(this._dragTarget.style.top) || 0;
-      this._dragTarget.style.left = `${curLeft + canvasDx}px`;
-      this._dragTarget.style.top = `${curTop + canvasDy}px`;
+      const rawX = curLeft + canvasDx;
+      const rawY = curTop + canvasDy;
+      const snappedX = Math.round(rawX / SNAP_GRID) * SNAP_GRID;
+      const snappedY = Math.round(rawY / SNAP_GRID) * SNAP_GRID;
+      this._dragTarget.style.left = `${snappedX}px`;
+      this._dragTarget.style.top = `${snappedY}px`;
 
-      // Show drop position indicator
-      this._updateDropIndicator(curLeft + canvasDx);
+      // Show drop position indicator for artboards only
+      if (this._dragTarget.classList.contains("canvas-artboard")) {
+        this._updateDropIndicator(snappedX);
+      }
     }
   }
 
@@ -790,8 +933,25 @@ export class PointerStateMachine {
   _onPointerUp(e) {
     if (this.state === "dragging" && this._dragTarget) {
       this._dragTarget.classList.remove("canvas-artboard--dragging");
-      this._removeDropIndicator();
-      this._snapToStrip(this._dragTarget);
+      if (this._dragTarget.classList.contains("canvas-overlay")) {
+        // Update overlay descriptor position
+        const id = this._dragTarget.dataset.overlayId;
+        const desc = this._artboardManager.overlays.find((o) => o.id === id);
+        if (desc) {
+          desc.x = parseFloat(this._dragTarget.style.left) || 0;
+          desc.y = parseFloat(this._dragTarget.style.top) || 0;
+        }
+      } else if (this._dragTarget.classList.contains("canvas-strategy-card")) {
+        // Update strategy card descriptor position
+        const desc = this._artboardManager.strategyCard;
+        if (desc) {
+          desc.x = parseFloat(this._dragTarget.style.left) || 0;
+          desc.y = parseFloat(this._dragTarget.style.top) || 0;
+        }
+      } else {
+        this._removeDropIndicator();
+        this._snapToStrip(this._dragTarget);
+      }
       if (this._onDragEnd) this._onDragEnd(this._dragTarget);
       this._dragTarget = null;
       this._dragOrigPos = null;
@@ -2031,12 +2191,12 @@ export class CanvasEngine {
     this._transformEl.className = "canvas-transform";
     this._stageEl.appendChild(this._transformEl);
 
-    // Apply grid background
-    this._applyGridBackground();
-
     // Initialize subsystems
     this._transform = new TransformState();
     this._artboardManager = new ArtboardManager();
+
+    // Apply grid background after transform state exists.
+    this._applyGridBackground();
 
     const onTransformChange = () => {
       this._updateGridBackground();
@@ -2131,6 +2291,7 @@ export class CanvasEngine {
 
     this._artboardManager.artboards = artboards;
     this._artboardManager.overlays = overlays;
+    this._artboardManager.strategyCard = buildStrategyCard(output);
 
     // Batch DOM updates into rAF
     this._scheduleUpdate(() => {
