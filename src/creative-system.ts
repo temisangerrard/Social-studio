@@ -553,9 +553,11 @@ export async function generateCreativeSystemOutput(input: CreativeInput): Promis
     if (!isCreativeSystemOutput(parsed)) throw new Error("Creative system response did not match schema");
     const scrubbed = scrubGenericPhrases(parsed);
     scrubbed.review_flags = Array.from(new Set([...scrubbed.review_flags, ...reviewFlags(input.rawIntent, JSON.stringify(scrubbed))]));
-    // Ensure caption and hashtags are populated even if AI omits them
+    // Ensure caption and hashtags are valid — guard against non-array hashtags from model
     if (!scrubbed.caption) scrubbed.caption = fallback.caption;
-    if (!scrubbed.hashtags?.length) scrubbed.hashtags = fallback.hashtags;
+    if (!Array.isArray(scrubbed.hashtags) || scrubbed.hashtags.length === 0) scrubbed.hashtags = fallback.hashtags;
+    // Normalize storyboard for pre-schema projects
+    if (!Array.isArray(scrubbed.storyboard)) scrubbed.storyboard = fallback.storyboard;
     return scrubbed;
   } catch (error) {
     console.warn(`[creative-system] Falling back to local creative engine: ${(error as Error).message}`);
@@ -568,23 +570,28 @@ export function refineCreativeProject(memory: CreativeProjectMemory, feedback: s
   const note = compact(feedback);
   plan.refinementNotes = [...(plan.refinementNotes ?? []), note];
   plan.review_flags = Array.from(new Set([...plan.review_flags, "refined"]));
+  // Guard against pre-schema projects that have no storyboard
+  const storyboard = Array.isArray(plan.storyboard) ? plan.storyboard : [];
 
   if (/less ad|native|funny|funnier|chaotic|premium|founder/i.test(feedback)) {
     plan.content_blueprint.editing_style = compact(`${plan.content_blueprint.editing_style}; refined to feel ${note}`);
-    plan.storyboard = plan.storyboard.map((slide) => ({
+    plan.storyboard = storyboard.map((slide) => ({
       ...slide,
       visual_notes: compact(`${slide.visual_notes}; tone adjustment: ${note}`)
     }));
   }
   if (/hook|opening|first/i.test(feedback)) {
     plan.production_assets.headline_options = plan.production_assets.headline_options.map((headline) => compact(`${headline} — sharper first frame`));
-    if (plan.storyboard[0]) {
-      plan.storyboard[0] = { ...plan.storyboard[0], visual_notes: compact(`${plan.storyboard[0].visual_notes}; sharpen hook based on: ${note}`) };
+    if (storyboard[0]) {
+      plan.storyboard = [
+        { ...storyboard[0], visual_notes: compact(`${storyboard[0].visual_notes}; sharpen hook based on: ${note}`) },
+        ...storyboard.slice(1)
+      ];
     }
   }
   if (/visual|image|premium|chaotic/i.test(feedback)) {
     plan.production_assets.image_prompts = plan.production_assets.image_prompts.map((prompt) => compact(`${prompt}; refinement: ${note}`));
-    plan.storyboard = plan.storyboard.map((slide) => ({
+    plan.storyboard = storyboard.map((slide) => ({
       ...slide,
       image_prompt: slide.image_prompt ? compact(`${slide.image_prompt}; visual refinement: ${note}`) : slide.image_prompt
     }));
