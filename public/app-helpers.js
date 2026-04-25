@@ -109,3 +109,34 @@ export function getContentTypeLabel(workflowType) {
   };
   return labels[workflowType] || "Single Image";
 }
+
+export function getWorkflowPresets() {
+  return [
+    { id: "slideshow", label: "Carousel" },
+    { id: "linkedin-carousel", label: "LinkedIn Carousel" },
+    { id: "linkedin-text", label: "LinkedIn Text" },
+    { id: "mascot-variants", label: "Mascot Variants" },
+    { id: "reference-edit", label: "Reference Edit" },
+    { id: "video-clip", label: "Video Clip" },
+    { id: "reel-package", label: "Reel Package" },
+  ];
+}
+
+export function buildCanvasCards(brief, output, idGen) {
+  const slides = output.slides || [];
+  const artifacts = output.artifacts || [];
+
+  if (slides.length > 0) {
+    return slides.map((slide) => ({
+      id: idGen(output.post_id),
+      type: "asset",
+      assetUrl: getWorkspaceAssetUrl(output, slide),
+    }));
+  }
+
+  return artifacts.map((artifact) => ({
+    id: idGen(output.post_id),
+    type: "asset",
+    assetUrl: getArtifactPreviewUrl(output, artifact),
+  }));
+}
