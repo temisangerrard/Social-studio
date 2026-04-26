@@ -185,6 +185,66 @@ async function generateWithFal(prompt: string, falKey: string, model: string, re
   throw new Error("fal.ai generation timed out");
 }
 
+/**
+ * GPT Image 2 (gpt-image-1) generation via OpenAI Images API.
+ * Used as a fallback when fal.ai fails and OPENAI_API_KEY is set.
+ * Food-optimised: realistic, high-quality, no text in images.
+ *
+ * Negative constraints are prepended to the prompt as instructions since
+ * the OpenAI Images API doesn't have a separate negative prompt field.
+ */
+async function generateWithGptImage2(
+  prompt: string,
+  openAiKey: string,
+  negativeHint = "No text in image. No watermarks. No overlays. Realistic food only."
+): Promise<Buffer> {
+  const fullPrompt = `${prompt}\n\n${negativeHint}`;
+
+  const response = await fetchWithTimeout(
+    "https://api.openai.com/v1/images/generations",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openAiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-image-1",
+        prompt: fullPrompt,
+        n: 1,
+        size: "1024x1024",
+        quality: "standard",
+        output_format: "jpeg",
+      }),
+    },
+    60000
+  );
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`GPT Image 2 failed (${response.status}): ${body}`);
+  }
+
+  const payload = (await response.json()) as {
+    data?: Array<{ url?: string; b64_json?: string }>;
+  };
+
+  const item = payload.data?.[0];
+  if (!item) throw new Error("GPT Image 2 returned no data");
+
+  // Prefer b64_json (no extra download), fall back to URL
+  if (item.b64_json) {
+    return Buffer.from(item.b64_json, "base64");
+  }
+  if (item.url) {
+    const imgRes = await fetchWithTimeout(item.url, {}, 30000);
+    if (!imgRes.ok) throw new Error(`GPT Image 2 download failed: ${imgRes.status}`);
+    return Buffer.from(await imgRes.arrayBuffer());
+  }
+
+  throw new Error("GPT Image 2: no url or b64_json in response");
+}
+
 export async function generateImagesForSlides(
   slides: Slide[],
   options: ImageGeneratorOptions
@@ -250,10 +310,12 @@ export async function generateImagesForSlides(
     const filename = `slide-${String(slide.slide_number).padStart(2, "0")}-${sanitizeFilename(slide.role)}.${extension}`;
     const filePath = path.join(assetsDir, filename);
 
+    const openAiKey = process.env.OPENAI_API_KEY;
+
     try {
       if (falKey) {
         // Determine aspect ratio from slide layout
-        const isCarouselSlide = slide.layout === "hook_cover" || slide.layout === "problem_setup" || slide.layout === "recipe_card" || slide.layout === "cta_banner";
+        const isCarouselSlide = slide.layout === "hook_cover" || slide.layout === "problem_setup" || slide.layout === "recipe_card" || slide.layout === "cta_banner" || slide.layout === "ingredient_card" || slide.layout === "reveal_split";
         const aspectRatio = isCarouselSlide ? "1:1" : "9:16";
 
         // Only send mascot reference images for mascot-inclusive slides (not food-only recipe slides)
@@ -263,12 +325,32 @@ export async function generateImagesForSlides(
         const imageBuffer = await generateWithFal(slide.image_prompt, falKey, falModel, refs, aspectRatio);
         await fs.writeFile(filePath, imageBuffer);
         slide.asset_path = filePath;
+      } else if (openAiKey) {
+        // GPT Image 2 fallback — used when FAL key not set but OpenAI key is available
+        console.log(`[image-generator] Using GPT Image 2 fallback for slide ${slide.slide_number}`);
+        const gptBuffer = await generateWithGptImage2(slide.image_prompt, openAiKey);
+        const gptPath = filePath.replace(/\.[^.]+$/, ".jpg");
+        await fs.writeFile(gptPath, gptBuffer);
+        slide.asset_path = gptPath;
       } else {
         await writeMockImage(filePath, slide.image_prompt, slide.slide_number, brandName, colors);
         slide.asset_path = filePath;
       }
     } catch (error) {
-      console.warn(`[image-generator] Falling back to placeholder: ${(error as Error).message}`);
+      console.warn(`[image-generator] Primary generation failed: ${(error as Error).message}`);
+      // Try GPT Image 2 as secondary fallback if FAL failed and OpenAI key exists
+      if (openAiKey && falKey) {
+        try {
+          console.log(`[image-generator] Trying GPT Image 2 as secondary fallback for slide ${slide.slide_number}`);
+          const gptBuffer = await generateWithGptImage2(slide.image_prompt, openAiKey);
+          const gptPath = filePath.replace(/\.[^.]+$/, ".jpg");
+          await fs.writeFile(gptPath, gptBuffer);
+          slide.asset_path = gptPath;
+          continue;
+        } catch (gptError) {
+          console.warn(`[image-generator] GPT Image 2 fallback also failed: ${(gptError as Error).message}`);
+        }
+      }
       const fallbackPath = filePath.replace(/\.[^.]+$/, ".svg");
       await writeMockImage(fallbackPath, slide.image_prompt, slide.slide_number, brandName, colors);
       slide.asset_path = fallbackPath;

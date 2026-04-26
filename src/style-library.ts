@@ -227,6 +227,43 @@ export const BUILTIN_PRESETS: StyleCard[] = [
     generationRequirements: { needsImage: true, needsLayoutEngine: true, needsTypographyPairing: true },
     negativeConstraints: [...NEGATIVE_DEFAULTS, "no corporate polish", "no third-person narration", "no marketing speak"],
   }),
+
+  // ── Pantry-to-Plate ────────────────────────────────────────────────────────
+  makePreset({
+    id: "pantry-to-plate",
+    name: "Pantry-to-Plate",
+    intent: "Food content: ingredient reveals, recipe ideas, pantry-to-dinner carousels. Peppera-first but brand-agnostic.",
+    imageStyle: "editorial food photography, soft natural window light, warm cream and terracotta palette, shallow depth of field, appetising and realistic, magazine home-cooking aesthetic",
+    layoutStyle: "ingredient grid → reveal → dish hero → CTA",
+    copyStyle: "helpful, warm, practical, lightly playful — never diet-focused, never calorie-deficit framing",
+    visualTraits: {
+      layout: ["ingredient flat lay top", "dish hero full-bleed", "clean text overlay bottom", "magazine carousel pacing"],
+      typography: ["editorial serif headline", "clean sans body", "warm cream on dark overlay", "minimal clutter"],
+      colorMode: "warm cream background · sage and olive accents · terracotta food warmth",
+      imageTreatment: ["editorial food photography", "soft natural window light", "warm colour grading", "shallow depth of field"],
+      composition: ["top-down ingredient shots", "45-degree dish reveals", "clean ingredient tiles", "hero dish close-ups"],
+      tone: ["warm", "helpful", "practical", "homely but premium", "never clinical", "never diet-focused"],
+    },
+    contentRules: {
+      maxTextWordsPerSlide: 25,
+      headlineRequired: true,
+      bodyRequired: false,
+      captionStyle: "conversational, practical, a little playful — never diet, never calorie-deficit",
+      avoid: [
+        "diet language", "calorie counting", "weight loss framing", "transformation before/after",
+        "clinical wellness design", "fake-looking food", "plastic food textures",
+        "text baked into generated images", "generic stock-photo food",
+      ],
+    },
+    generationRequirements: { needsImage: true, needsLayoutEngine: true, needsTypographyPairing: false },
+    negativeConstraints: [
+      ...NEGATIVE_DEFAULTS,
+      "no diet language", "no calorie counting", "no weight loss framing",
+      "no clinical wellness design", "no fake-looking food", "no plastic textures",
+      "no text baked into generated images", "no generic stock-photo food",
+      "no before/after transformation framing", "no measuring tape", "no weight scale",
+    ],
+  }),
 ];
 
 // ── Style Library ─────────────────────────────────────────────────────────────
