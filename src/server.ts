@@ -322,7 +322,9 @@ async function listOutputs(): Promise<OutputSummary[]> {
           product: metadata.product || "",
           platform: metadata.platform || "",
           caption: (metadata.caption || "").slice(0, 120),
-          slideCount: (metadata.slides?.length ?? 0) + (metadata.artifacts?.length ?? 0),
+          // Use artifacts if present (they are the generated versions of slides),
+          // fall back to slides. Never add both — they represent the same content.
+          slideCount: metadata.artifacts?.length || metadata.slides?.length || 0,
           workflowType: metadata.workflow_type || "",
           firstAssetPath: deriveFirstAssetPath(metadata),
           content_type_id: metadata.content_type_id || "",
