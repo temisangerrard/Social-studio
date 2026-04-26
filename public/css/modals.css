@@ -183,6 +183,21 @@
   transition: none;
 }
 
+/* Video mode: cursor is default (player controls must be clickable), no grab */
+.asset-lightbox__stage[data-mode="video"] {
+  cursor: default;
+}
+
+/* Video fills the stage with correct aspect ratio, centred */
+.asset-lightbox__stage[data-mode="video"] .asset-lightbox__media {
+  max-width: min(100%, calc(100vh * 16 / 9));
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  background: #000;
+  border-radius: 0;
+}
+
 /* Prev / Next arrows */
 .asset-lightbox__arrow {
   position: absolute;

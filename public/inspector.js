@@ -8,22 +8,28 @@ import { showStatus, hideStatus, capitalizeFirst } from "./ui-utils.js";
 let _lbBoards = [], _lbIdx = 0;
 let _lbZoom = 1, _lbPanX = 0, _lbPanY = 0;
 let _lbDrag = null, _lbPinch = 0;
+let _lbIsVideo = false; // zoom/pan disabled for video — native controls must be clickable
 
 function _lbTransform() {
+  // Only apply zoom/pan to images — video uses native player, no transform
   const t = `translate(${_lbPanX}px,${_lbPanY}px) scale(${_lbZoom})`;
   els.assetModalImage.style.transform = t;
-  els.assetModalVideo.style.transform = t;
+  // Never transform video — it breaks native controls hit-testing
+  els.assetModalVideo.style.transform = "";
 }
 function _lbReset() { _lbZoom = 1; _lbPanX = 0; _lbPanY = 0; _lbTransform(); }
 
 function _lbShow(idx) {
   if (!_lbBoards.length) return;
+  // Pause any currently playing video before switching
+  if (!els.assetModalVideo.paused) { els.assetModalVideo.pause(); }
   _lbReset();
   _lbIdx = (idx + _lbBoards.length) % _lbBoards.length;
   const d = _lbBoards[_lbIdx];
   const counter = document.getElementById("asset-lightbox-counter");
   const prev = document.getElementById("asset-lightbox-prev");
   const next = document.getElementById("asset-lightbox-next");
+  const stage = document.getElementById("asset-lightbox-stage");
   els.assetModalTitle.textContent = d.label || "Asset";
   if (counter) counter.textContent = `${_lbIdx + 1} / ${_lbBoards.length}`;
   const multi = _lbBoards.length > 1;
@@ -33,10 +39,18 @@ function _lbShow(idx) {
   els.assetModalDownload.href = d.assetUrl || "#";
   els.assetModalDownload.setAttribute("download",
     (d.label || "asset").toLowerCase().replace(/[^a-z0-9]+/g, "-") || "asset");
-  if (d.type === "video") {
+  _lbIsVideo = d.type === "video";
+  // Update stage cursor: video = default (controls are clickable), image = grab (pannable)
+  if (stage) stage.dataset.mode = _lbIsVideo ? "video" : "image";
+  if (_lbIsVideo) {
     els.assetModalImage.classList.add("hidden"); els.assetModalImage.removeAttribute("src");
-    els.assetModalVideo.classList.remove("hidden"); els.assetModalVideo.src = d.assetUrl || "";
+    els.assetModalVideo.classList.remove("hidden");
+    els.assetModalVideo.removeAttribute("src");
+    els.assetModalVideo.src = d.assetUrl || "";
+    // Autoplay video when opened in lightbox
+    els.assetModalVideo.play?.().catch(() => {});
   } else {
+    els.assetModalVideo.pause();
     els.assetModalVideo.classList.add("hidden"); els.assetModalVideo.removeAttribute("src");
     els.assetModalImage.classList.remove("hidden");
     els.assetModalImage.src = d.assetUrl || "";
@@ -74,15 +88,17 @@ export function initAssetModalListeners() {
     if (e.key === "ArrowRight") _lbShow(_lbIdx + 1);
   });
   if (!stage) return;
-  // Wheel zoom
+  // Wheel zoom — images only; video has its own native timeline scrub
   stage.addEventListener("wheel", (e) => {
+    if (_lbIsVideo) return;
     e.preventDefault();
     _lbZoom = Math.max(0.5, Math.min(8, _lbZoom + (e.deltaY > 0 ? -0.12 : 0.12)));
     _lbTransform();
   }, { passive: false });
-  // Mouse drag
+  // Mouse drag — images only; video player handles its own drag for scrubbing
   stage.addEventListener("mousedown", (e) => {
-    if (e.button !== 0) return; _lbDrag = { x: e.clientX - _lbPanX, y: e.clientY - _lbPanY };
+    if (_lbIsVideo || e.button !== 0) return;
+    _lbDrag = { x: e.clientX - _lbPanX, y: e.clientY - _lbPanY };
   });
   window.addEventListener("mousemove", (e) => {
     if (!_lbDrag || els.assetModal.classList.contains("hidden")) return;
