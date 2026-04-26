@@ -4,6 +4,7 @@ import { buildUgcDraftRequest, buildUgcGenerateRequest } from "./ugc-request.js"
 import { buildUgcOutputActions } from "./ugc-output.js";
 import { escapeHtml } from "./app-helpers.js";
 import { removeUploadFromLibrary } from "./upload-scope.js";
+import { loadOutputIntoCanvas } from "./library-view.js";
 
 function setText(id, value) {
   const el = document.getElementById(id);
@@ -281,6 +282,11 @@ export function initUgcListeners() {
       ugcState.lastOutput = payload;
       renderOutput();
       setStatus("UGC package generated.");
+      // Load onto canvas so the storyboard and video are inspectable as free artboards
+      if (payload.postId) {
+        document.dispatchEvent(new CustomEvent("studio:switch-view", { detail: "studio" }));
+        await loadOutputIntoCanvas(payload.postId);
+      }
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "UGC generation failed.", true);
     } finally {
