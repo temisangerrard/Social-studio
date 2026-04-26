@@ -827,9 +827,7 @@ export class ArtboardManager {
       actionBar.appendChild(btn);
     }
 
-    el.appendChild(actionBar);
-
-    return el;
+    return actionBar;
   }
 
   /**
