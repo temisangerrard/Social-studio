@@ -330,19 +330,9 @@ async function listOutputs(): Promise<OutputSummary[]> {
           routeSummary: metadata.routing_decision?.reasonSummary || ""
         });
       } catch {
-        results.push({
-          postId: entry.name,
-          createdAt: "",
-          product: "",
-          platform: "",
-          caption: "",
-          slideCount: 0,
-          workflowType: "",
-          firstAssetPath: "",
-          content_type_id: "",
-          content_recipe_id: "",
-          routeSummary: ""
-        });
+        // metadata.json missing or corrupt — skip this directory entirely.
+        // Showing ghost entries that return 404 on click is worse than hiding them.
+        continue;
       }
     }
 
