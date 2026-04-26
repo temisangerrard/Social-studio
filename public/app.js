@@ -472,18 +472,9 @@ async function loadProducts() {
 
 // ── Mobile inspector ──────────────────────────────────────────────────────────
 function initMobileInspector() {
-  const fab = document.getElementById("canvas-fab-inspector");
-  const inspector = document.getElementById("studio-inspector");
-  const closeBtn = document.getElementById("inspector-overlay-close");
-  if (!fab || !inspector) return;
-  function open() { inspector.classList.add("studio-inspector--overlay", "is-open"); inspector.style.display = ""; }
-  function close() { inspector.classList.remove("is-open"); setTimeout(() => { if (!inspector.classList.contains("is-open")) inspector.classList.remove("studio-inspector--overlay"); }, 300); }
-  fab.addEventListener("click", () => inspector.classList.contains("is-open") ? close() : open());
-  if (closeBtn) closeBtn.addEventListener("click", close);
-  const mql = window.matchMedia("(max-width: 640px)");
-  function handleMobile(e) { if (!studioState.canvasEngine) return; e.matches ? studioState.canvasEngine.arrangeVertical() : (studioState.canvasEngine.arrangeHorizontal(), close()); }
-  mql.addEventListener("change", handleMobile);
-  if (mql.matches && studioState.canvasEngine) studioState.canvasEngine.arrangeVertical();
+  // Inspector is permanently off. Mobile arrange functions removed —
+  // artboards are free canvas nodes and must not be force-rearranged
+  // by viewport width changes. Do nothing.
 }
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────

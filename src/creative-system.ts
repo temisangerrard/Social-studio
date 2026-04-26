@@ -523,28 +523,38 @@ export async function generateCreativeSystemOutput(input: CreativeInput): Promis
   const apiUrl = process.env.GLM_API_URL ?? "https://open.bigmodel.cn/api/paas/v4/chat/completions";
   const model = process.env.GLM_MODEL ?? input.brand.providers.plannerModel ?? "glm-4.5";
   try {
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.85,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content: "You are a creative director. Return production-ready structured JSON for a social content creative system. Every output must be brand-specific, platform-native, and storyboard-ready."
-          },
-          {
-            role: "user",
-            content: buildCreativeSystemPrompt(input, fallback)
-          }
-        ]
-      })
-    });
+    // 30-second timeout — GLM can hang indefinitely without one
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30_000);
+
+    let response: Response;
+    try {
+      response = await fetch(apiUrl, {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.85,
+          response_format: { type: "json_object" },
+          messages: [
+            {
+              role: "system",
+              content: "You are a creative director. Return production-ready structured JSON for a social content creative system. Every output must be brand-specific, platform-native, and storyboard-ready."
+            },
+            {
+              role: "user",
+              content: buildCreativeSystemPrompt(input, fallback)
+            }
+          ]
+        })
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
     if (!response.ok) throw new Error(`Creative system request failed (${response.status})`);
     const payload = (await response.json()) as { choices?: Array<{ message?: { content?: string } }> };
     const content = payload.choices?.[0]?.message?.content;
