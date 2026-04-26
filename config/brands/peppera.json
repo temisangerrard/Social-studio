@@ -98,5 +98,63 @@
     }
   ],
   "defaultStyleCardId": "editorial-cultural-carousel",
-  "visualModes": ["mascot-led", "food-led", "mixed"]
+  "visualModes": ["mascot-led", "food-led", "mixed"],
+  "contentRecipes": [
+    {
+      "id": "recipe-carousel",
+      "name": "Recipe Carousel",
+      "routeFamily": "recipe",
+      "workflowType": "slideshow",
+      "platformTargets": ["instagram", "tiktok"],
+      "defaultPriority": 100,
+      "preferredAssetTypes": ["food_photo"],
+      "contentTypeId": "recipe-carousel"
+    },
+    {
+      "id": "single-recipe",
+      "name": "Single Recipe Post",
+      "routeFamily": "recipe",
+      "workflowType": "slideshow",
+      "platformTargets": ["instagram", "tiktok"],
+      "defaultPriority": 90,
+      "preferredAssetTypes": ["food_photo"],
+      "contentTypeId": "single-recipe"
+    },
+    {
+      "id": "fridge_to_dinner",
+      "name": "Fridge to Dinner",
+      "routeFamily": "recipe",
+      "workflowType": "slideshow",
+      "platformTargets": ["instagram", "tiktok"],
+      "defaultPriority": 115,
+      "preferredAssetTypes": ["food_photo"],
+      "contentTypeId": "fridge_to_dinner",
+      "copyStyleHint": "What's in your fridge? → ingredient reveal → dish reveal → CTA. Warm, helpful, never diet-focused.",
+      "visualStyleHint": "pantry-to-plate"
+    },
+    {
+      "id": "waste_less_cook_more",
+      "name": "Waste Less Cook More",
+      "routeFamily": "recipe",
+      "workflowType": "slideshow",
+      "platformTargets": ["instagram", "tiktok"],
+      "defaultPriority": 110,
+      "preferredAssetTypes": ["food_photo"],
+      "contentTypeId": "waste_less_cook_more",
+      "copyStyleHint": "Don't throw this away → leftover ingredients → turn it into → dish reveal. Anti-waste, celebratory, never preachy.",
+      "visualStyleHint": "pantry-to-plate"
+    },
+    {
+      "id": "what_can_i_make",
+      "name": "What Can I Make",
+      "routeFamily": "recipe",
+      "workflowType": "slideshow",
+      "platformTargets": ["instagram", "tiktok"],
+      "defaultPriority": 105,
+      "preferredAssetTypes": ["food_photo"],
+      "contentTypeId": "what_can_i_make",
+      "copyStyleHint": "What can I make with these ingredients? → ingredient tiles → here are 3 ideas → recipe trio. Playful, engaging, question-led.",
+      "visualStyleHint": "pantry-to-plate"
+    }
+  ]
 }

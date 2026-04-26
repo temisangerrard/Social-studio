@@ -1056,6 +1056,42 @@ async function handleRequest(req: Request): Promise<Response> {
     return json(await listVoices());
   }
 
+  // ── Pantry-to-Plate Pack API ─────────────────────────────────────────────
+
+  if (url.pathname === "/api/pantry/idea" && req.method === "POST") {
+    const { generateIdea } = await import("./contentPacks/pantryToPlate/templates.ts");
+    const body = await parseJsonBody(req);
+    if (typeof body.brand !== "string" || !body.brand) return json({ error: "brand is required" }, { status: 400 });
+    if (typeof body.idea !== "string" || !body.idea) return json({ error: "idea is required" }, { status: 400 });
+    const platform = (body.platform === "instagram" || body.platform === "tiktok" || body.platform === "linkedin") ? body.platform : "instagram";
+    return json(generateIdea({ rawText: body.idea as string, brandId: body.brand as string, platform }));
+  }
+
+  if (url.pathname === "/api/pantry/brief" && req.method === "POST") {
+    const { generateIdea, generateCreativeBrief } = await import("./contentPacks/pantryToPlate/templates.ts");
+    const body = await parseJsonBody(req);
+    if (typeof body.brand !== "string" || !body.brand) return json({ error: "brand is required" }, { status: 400 });
+    if (typeof body.idea !== "string" || !body.idea) return json({ error: "idea is required" }, { status: 400 });
+    const platform = (body.platform === "instagram" || body.platform === "tiktok" || body.platform === "linkedin") ? body.platform : "instagram";
+    const idea = generateIdea({ rawText: body.idea as string, brandId: body.brand as string, platform });
+    const recipes = Array.isArray(body.recipes) ? body.recipes as Array<{ name: string; description: string; cookTime?: string }> : [];
+    return json(generateCreativeBrief(idea, body.brand as string, recipes, platform));
+  }
+
+  if (url.pathname === "/api/pantry/render-plan" && req.method === "POST") {
+    const { generateCreativeBrief, generateRenderPlan } = await import("./contentPacks/pantryToPlate/templates.ts");
+    const { generateIdea } = await import("./contentPacks/pantryToPlate/templates.ts");
+    const body = await parseJsonBody(req);
+    if (typeof body.brand !== "string" || !body.brand) return json({ error: "brand is required" }, { status: 400 });
+    if (typeof body.idea !== "string" || !body.idea) return json({ error: "idea is required" }, { status: 400 });
+    const platform = (body.platform === "instagram" || body.platform === "tiktok" || body.platform === "linkedin") ? body.platform : "instagram";
+    const idea = generateIdea({ rawText: body.idea as string, brandId: body.brand as string, platform });
+    const recipes = Array.isArray(body.recipes) ? body.recipes as Array<{ name: string; description: string; cookTime?: string }> : [];
+    const brief = generateCreativeBrief(idea, body.brand as string, recipes, platform);
+    const assets = Array.isArray(body.assets) ? body.assets as Array<{ slideNumber: number; role: string; imageUrl: string | null; prompt: null }> : [];
+    return json(generateRenderPlan(brief, assets, platform, typeof body.caption === "string" ? body.caption : undefined));
+  }
+
   if (url.pathname === "/api/ugc-brief" && req.method === "POST") {
     const body = await parseJsonBody(req);
     const idea = typeof body.idea === "string" ? body.idea.trim() : "";
