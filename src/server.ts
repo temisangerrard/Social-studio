@@ -330,19 +330,9 @@ async function listOutputs(): Promise<OutputSummary[]> {
           routeSummary: metadata.routing_decision?.reasonSummary || ""
         });
       } catch {
-        results.push({
-          postId: entry.name,
-          createdAt: "",
-          product: "",
-          platform: "",
-          caption: "",
-          slideCount: 0,
-          workflowType: "",
-          firstAssetPath: "",
-          content_type_id: "",
-          content_recipe_id: "",
-          routeSummary: ""
-        });
+        // metadata.json missing or corrupt — skip this directory entirely.
+        // Showing ghost entries that return 404 on click is worse than hiding them.
+        continue;
       }
     }
 
@@ -1066,6 +1056,42 @@ async function handleRequest(req: Request): Promise<Response> {
     return json(await listVoices());
   }
 
+  // ── Pantry-to-Plate Pack API ─────────────────────────────────────────────
+
+  if (url.pathname === "/api/pantry/idea" && req.method === "POST") {
+    const { generateIdea } = await import("./contentPacks/pantryToPlate/templates.ts");
+    const body = await parseJsonBody(req);
+    if (typeof body.brand !== "string" || !body.brand) return json({ error: "brand is required" }, { status: 400 });
+    if (typeof body.idea !== "string" || !body.idea) return json({ error: "idea is required" }, { status: 400 });
+    const platform = (body.platform === "instagram" || body.platform === "tiktok" || body.platform === "linkedin") ? body.platform : "instagram";
+    return json(generateIdea({ rawText: body.idea as string, brandId: body.brand as string, platform }));
+  }
+
+  if (url.pathname === "/api/pantry/brief" && req.method === "POST") {
+    const { generateIdea, generateCreativeBrief } = await import("./contentPacks/pantryToPlate/templates.ts");
+    const body = await parseJsonBody(req);
+    if (typeof body.brand !== "string" || !body.brand) return json({ error: "brand is required" }, { status: 400 });
+    if (typeof body.idea !== "string" || !body.idea) return json({ error: "idea is required" }, { status: 400 });
+    const platform = (body.platform === "instagram" || body.platform === "tiktok" || body.platform === "linkedin") ? body.platform : "instagram";
+    const idea = generateIdea({ rawText: body.idea as string, brandId: body.brand as string, platform });
+    const recipes = Array.isArray(body.recipes) ? body.recipes as Array<{ name: string; description: string; cookTime?: string }> : [];
+    return json(generateCreativeBrief(idea, body.brand as string, recipes, platform));
+  }
+
+  if (url.pathname === "/api/pantry/render-plan" && req.method === "POST") {
+    const { generateCreativeBrief, generateRenderPlan } = await import("./contentPacks/pantryToPlate/templates.ts");
+    const { generateIdea } = await import("./contentPacks/pantryToPlate/templates.ts");
+    const body = await parseJsonBody(req);
+    if (typeof body.brand !== "string" || !body.brand) return json({ error: "brand is required" }, { status: 400 });
+    if (typeof body.idea !== "string" || !body.idea) return json({ error: "idea is required" }, { status: 400 });
+    const platform = (body.platform === "instagram" || body.platform === "tiktok" || body.platform === "linkedin") ? body.platform : "instagram";
+    const idea = generateIdea({ rawText: body.idea as string, brandId: body.brand as string, platform });
+    const recipes = Array.isArray(body.recipes) ? body.recipes as Array<{ name: string; description: string; cookTime?: string }> : [];
+    const brief = generateCreativeBrief(idea, body.brand as string, recipes, platform);
+    const assets = Array.isArray(body.assets) ? body.assets as Array<{ slideNumber: number; role: string; imageUrl: string | null; prompt: null }> : [];
+    return json(generateRenderPlan(brief, assets, platform, typeof body.caption === "string" ? body.caption : undefined));
+  }
+
   if (url.pathname === "/api/ugc-brief" && req.method === "POST") {
     const body = await parseJsonBody(req);
     const idea = typeof body.idea === "string" ? body.idea.trim() : "";
@@ -1278,7 +1304,10 @@ async function handleRequest(req: Request): Promise<Response> {
 
   if (url.pathname === "/api/generate/quick" && req.method === "POST") {
     const body = await parseJsonBody(req);
-    const brandId = typeof body.brand === "string" ? body.brand : "peppera";
+    if (typeof body.brand !== "string" || !body.brand.trim()) {
+      return json({ error: "brand is required" }, { status: 400 });
+    }
+    const brandId = body.brand.trim();
     const idea = typeof body.idea === "string" ? body.idea.trim() : "";
     if (!idea) {
       return json({ error: "idea is required" }, { status: 400 });

@@ -57,7 +57,11 @@ export type SlideLayout =
   | "hook_cover"
   | "problem_setup"
   | "recipe_card"
-  | "cta_banner";
+  | "cta_banner"
+  // Pantry-to-Plate pack layouts
+  | "ingredient_card"   // Grid of ingredient images with labels
+  | "reveal_split"      // Before (ingredients) → After (dish) split
+  | "recipe_trio";      // Three recipe options in a tiled layout
 
 // ── Content Type System ───────────────────────────────────────────────────────
 

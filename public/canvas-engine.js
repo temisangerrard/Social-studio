@@ -152,6 +152,18 @@ const ARTBOARD_W = 540;
 /** Default artboard height (half of 1080). */
 const ARTBOARD_H = 540;
 
+/**
+ * Derive artboard height from platform so artboards have correct aspect ratios.
+ * TikTok → 9:16, Instagram → 4:5, LinkedIn → 1:1 (default).
+ * @param {string} platform
+ * @returns {number}
+ */
+function artboardHeightForPlatform(platform) {
+  if (platform === "tiktok") return Math.round(ARTBOARD_W * (16 / 9));  // 960
+  if (platform === "instagram") return Math.round(ARTBOARD_W * (5 / 4)); // 675
+  return ARTBOARD_H; // 540 — square fallback (linkedin, unknown)
+}
+
 /** Horizontal gap between artboards in the slide strip. */
 const STRIP_GAP = 48;
 
@@ -234,7 +246,8 @@ export function resolveAssetUrl(output, item, slides = [], hintSlideNumber = nul
   // Direct asset_path on the item (set by FAL generation or mock SVG)
   if (item.asset_path) {
     const filename = item.asset_path.split("/").pop();
-    if (filename && output.post_id) {
+    // Skip mock placeholder files (.txt) — they are not renderable assets
+    if (filename && output.post_id && !filename.endsWith(".txt")) {
       return `/api/assets/${output.post_id}/${filename}`;
     }
   }
@@ -242,7 +255,7 @@ export function resolveAssetUrl(output, item, slides = [], hintSlideNumber = nul
   // preview_path fallback (same value as asset_path in current pipeline)
   if (item.preview_path) {
     const filename = item.preview_path.split("/").pop();
-    if (filename && output.post_id) {
+    if (filename && output.post_id && !filename.endsWith(".txt")) {
       return `/api/assets/${output.post_id}/${filename}`;
     }
   }
@@ -290,7 +303,17 @@ export function buildArtboardDescriptors(output) {
     : (output.slides || []);
   const slides = output.slides || [];
 
-  let x = STRIP_START_X;
+  // Derive platform from output for correct aspect ratio
+  const platform = output.platform || (output.platform_targets && output.platform_targets[0]) || "";
+  const artboardH = artboardHeightForPlatform(platform);
+
+  // Place artboards in a 2-column grid so each is independently movable.
+  // Users can drag any artboard anywhere — initial layout is just the starting position.
+  const COLS = 2;
+  const COL_GAP = 64;
+  const ROW_GAP = 80;
+  const ORIGIN_X = STRIP_START_X;
+  const ORIGIN_Y = STRIP_START_Y;
 
   return items.map((item, index) => {
     const slideNumber = item.slide_number ?? (index + 1);
@@ -298,6 +321,11 @@ export function buildArtboardDescriptors(output) {
     const type = detectType(item);
     const label = `${pad2(slideNumber)} — ${capitalizeRole(role)}`;
     const assetUrl = resolveAssetUrl(output, item, slides, slideNumber);
+
+    const col = index % COLS;
+    const row = Math.floor(index / COLS);
+    const x = ORIGIN_X + col * (ARTBOARD_W + COL_GAP);
+    const y = ORIGIN_Y + row * (artboardH + ROW_GAP);
 
     const descriptor = {
       id: item.id || `artboard-${pad2(slideNumber)}`,
@@ -309,15 +337,13 @@ export function buildArtboardDescriptors(output) {
       prompt: item.image_prompt || item.prompt || "",
       text: item.text || item.title || "",
       x,
-      y: STRIP_START_Y,
+      y,
       width: ARTBOARD_W,
-      height: ARTBOARD_H,
+      height: artboardH,
       isVariant: false,
       originalId: null,
       order: index,
     };
-
-    x += ARTBOARD_W + STRIP_GAP;
 
     return descriptor;
   });
@@ -337,48 +363,55 @@ export function buildArtboardDescriptors(output) {
 export function buildOverlayDescriptors(output) {
   if (!output) return [];
 
-  const overlays = [];
-  let y = OVERLAY_START_Y;
+  // Derive artboard geometry so overlays sit directly below the artboard strip
+  const platform = output.platform || (output.platform_targets && output.platform_targets[0]) || "";
+  const artboardH = artboardHeightForPlatform(platform);
+  // Label bar is ~32px below each artboard; overlays start below that
+  const belowY = STRIP_START_Y + artboardH + 48;
+  const overlayWidth = OVERLAY_W;
 
-  // Caption overlay
+  const overlays = [];
+  let y = belowY;
+
+  // Caption — full width of the artboard strip, sits first below the images
   if (output.caption) {
     overlays.push({
       id: "overlay-caption",
       type: "caption",
       text: output.caption,
-      x: OVERLAY_X,
+      x: STRIP_START_X,
       y,
-      width: OVERLAY_W,
+      width: overlayWidth,
       height: OVERLAY_H,
     });
     y += OVERLAY_H + OVERLAY_GAP;
   }
 
-  // Hook overlays (one per hook)
+  // Hook overlays
   const hooks = output.hooks || [];
   hooks.forEach((hook, i) => {
     overlays.push({
       id: `overlay-hook-${i}`,
       type: "hook",
       text: hook,
-      x: OVERLAY_X,
+      x: STRIP_START_X,
       y,
-      width: OVERLAY_W,
+      width: overlayWidth,
       height: OVERLAY_H,
     });
     y += OVERLAY_H + OVERLAY_GAP;
   });
 
-  // Hashtags overlay
+  // Hashtags
   const hashtags = output.hashtags || [];
   if (hashtags.length) {
     overlays.push({
       id: "overlay-hashtags",
       type: "hashtag",
       text: hashtags.join(" "),
-      x: OVERLAY_X,
+      x: STRIP_START_X,
       y,
-      width: OVERLAY_W,
+      width: overlayWidth,
       height: OVERLAY_H,
     });
   }
@@ -572,12 +605,37 @@ export class ArtboardManager {
     el.dataset.type = desc.type;
     el.style.position = "absolute";
 
-    // Text-only placeholder when assetUrl is null or empty
+    // Content card — rendered when there is no image/video asset.
+    // Covers: text-only slides, CTA slides, video briefs (mock .txt), script outputs.
     if (!desc.assetUrl) {
-      const placeholder = document.createElement("div");
-      placeholder.className = "canvas-artboard__placeholder";
-      placeholder.textContent = desc.text || desc.role || "Text";
-      el.appendChild(placeholder);
+      el.classList.add("canvas-artboard--content-card");
+
+      const roleIcons = { cta: "→", hook: "🎯", benefit: "✦", recipe: "🍽", script: "📄", video: "▶", clip: "▶", ugc: "▶" };
+      const icon = roleIcons[desc.role] || "✦";
+
+      const card = document.createElement("div");
+      card.className = "canvas-artboard__content-card";
+
+      const roleBar = document.createElement("div");
+      roleBar.className = "canvas-artboard__content-role";
+      roleBar.textContent = `${icon} ${capitalizeRole(desc.role)}`;
+      card.appendChild(roleBar);
+
+      if (desc.text) {
+        const body = document.createElement("p");
+        body.className = "canvas-artboard__content-body";
+        body.textContent = desc.text;
+        card.appendChild(body);
+      }
+
+      if (desc.prompt && desc.prompt !== desc.text) {
+        const prompt = document.createElement("p");
+        prompt.className = "canvas-artboard__content-prompt";
+        prompt.textContent = desc.prompt;
+        card.appendChild(prompt);
+      }
+
+      el.appendChild(card);
 
       // Label
       const label = document.createElement("span");
@@ -599,9 +657,12 @@ export class ArtboardManager {
 
     // Media element
     if (desc.type === "video") {
+      el.classList.add("canvas-artboard--video");
+
       const video = document.createElement("video");
       video.muted = true;
       video.setAttribute("playsinline", "");
+      video.preload = "metadata";
       video.src = desc.assetUrl || "";
       video.addEventListener("loadeddata", () => {
         el.classList.remove("canvas-artboard--loading");
@@ -610,12 +671,39 @@ export class ArtboardManager {
         el.classList.remove("canvas-artboard--loading");
         el.classList.add("canvas-artboard--error");
         video.remove();
+        playBtn.remove();
         const errDiv = document.createElement("div");
         errDiv.className = "canvas-artboard__error";
         errDiv.textContent = desc.role || "Error";
         el.prepend(errDiv);
       });
+      // When video ends, restore the play overlay
+      video.addEventListener("ended", () => {
+        video.controls = false;
+        video.muted = true;
+        video.currentTime = 0;
+        playBtn.classList.remove("canvas-artboard__play--hidden");
+        el.classList.remove("canvas-artboard--playing");
+      });
       el.appendChild(video);
+
+      // Play overlay button — sits above the video, click to play inline with sound
+      const playBtn = document.createElement("button");
+      playBtn.className = "canvas-artboard__play";
+      playBtn.setAttribute("aria-label", "Play video");
+      playBtn.setAttribute("type", "button");
+      playBtn.innerHTML = `<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="18" fill="rgba(0,0,0,0.55)"/><polygon points="14,11 28,18 14,25" fill="white"/></svg>`;
+      playBtn.addEventListener("click", (e) => {
+        e.stopPropagation(); // don't bubble to selection handler
+        video.muted = false;
+        video.controls = true;
+        video.play().catch(() => {
+          // Autoplay blocked — still show controls so user can click native play
+        });
+        playBtn.classList.add("canvas-artboard__play--hidden");
+        el.classList.add("canvas-artboard--playing");
+      });
+      el.appendChild(playBtn);
     } else {
       // Image (default for image and document types)
       const img = document.createElement("img");
@@ -648,6 +736,66 @@ export class ArtboardManager {
     badge.className = "canvas-artboard__badge";
     badge.textContent = desc.type.toUpperCase();
     el.appendChild(badge);
+
+    // ── Hover action bar ────────────────────────────────────────────────────
+    // Five inline actions: Expand (fullscreen), Download, Edit (request), Duplicate, Delete.
+    // Rendered inside the artboard, shown on :hover via CSS.
+    const actionBar = document.createElement("div");
+    actionBar.className = "canvas-artboard__actions";
+
+    const actionDefs = [
+      {
+        key: "expand", title: "Expand",
+        svg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 3H5a2 2 0 00-2 2v3"/><path d="M21 8V5a2 2 0 00-2-2h-3"/><path d="M3 16v3a2 2 0 002 2h3"/><path d="M16 21h3a2 2 0 002-2v-3"/></svg>`,
+        onClick: () => {
+          // Dispatch custom event — app.js listens and opens asset modal
+          el.dispatchEvent(new CustomEvent("artboard:expand", { bubbles: true, detail: { desc } }));
+        }
+      },
+      {
+        key: "download", title: "Download",
+        svg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+        onClick: () => {
+          el.dispatchEvent(new CustomEvent("artboard:download", { bubbles: true, detail: { desc } }));
+        }
+      },
+      {
+        key: "edit", title: "Request edit",
+        svg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+        onClick: () => {
+          el.dispatchEvent(new CustomEvent("artboard:edit", { bubbles: true, detail: { desc } }));
+        }
+      },
+      {
+        key: "duplicate", title: "Duplicate",
+        svg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`,
+        onClick: () => {
+          el.dispatchEvent(new CustomEvent("artboard:duplicate", { bubbles: true, detail: { desc } }));
+        }
+      },
+      {
+        key: "delete", title: "Delete", dangerous: true,
+        svg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`,
+        onClick: () => {
+          el.dispatchEvent(new CustomEvent("artboard:delete", { bubbles: true, detail: { desc } }));
+        }
+      },
+    ];
+
+    for (const action of actionDefs) {
+      const btn = document.createElement("button");
+      btn.className = "canvas-artboard__action-btn" + (action.dangerous ? " canvas-artboard__action-btn--danger" : "");
+      btn.setAttribute("type", "button");
+      btn.setAttribute("title", action.title);
+      btn.innerHTML = action.svg;
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        action.onClick();
+      });
+      actionBar.appendChild(btn);
+    }
+
+    el.appendChild(actionBar);
 
     return el;
   }
@@ -876,14 +1024,18 @@ export class PointerStateMachine {
     if (e.button !== 0) return;
     // Suppress pan/drag while inline editing is active
     if (this._editingActive) return;
-    // Don't drag when clicking interactive elements inside overlays
-    if (e.target.closest("button, a, input, textarea, [contenteditable]")) return;
+    // Don't start drag from within text inputs or contenteditable (inline editing).
+    // Buttons are intentionally NOT in this list — action bar buttons are inside
+    // artboards and their `click` handlers use stopPropagation. Blocking drag on
+    // button pointerdown would prevent any drag that starts near the top of the artboard.
+    if (e.target.closest("input, textarea, [contenteditable]")) return;
 
     const artboard = this._findDraggable(e.target);
     this._lastPointer = { x: e.clientX, y: e.clientY };
-    const shouldPanViewport = e.pointerType === "touch";
 
-    if (artboard && !shouldPanViewport) {
+    // Allow drag for both mouse and touch pointerType on artboards.
+    // Two-finger pinch is handled separately in _onTouchStart.
+    if (artboard) {
       this.state = "dragging";
       this._dragTarget = artboard;
       this._dragOrigPos = {
@@ -921,11 +1073,6 @@ export class PointerStateMachine {
       const snappedY = Math.round(rawY / SNAP_GRID) * SNAP_GRID;
       this._dragTarget.style.left = `${snappedX}px`;
       this._dragTarget.style.top = `${snappedY}px`;
-
-      // Show drop position indicator for artboards only
-      if (this._dragTarget.classList.contains("canvas-artboard")) {
-        this._updateDropIndicator(snappedX);
-      }
     }
   }
 
@@ -949,8 +1096,15 @@ export class PointerStateMachine {
           desc.y = parseFloat(this._dragTarget.style.top) || 0;
         }
       } else {
+        // Free positioning — update the descriptor to the dropped position.
+        // Do NOT snap back to the strip. Each artboard is an independent canvas node.
         this._removeDropIndicator();
-        this._snapToStrip(this._dragTarget);
+        const id = this._dragTarget.dataset.artboardId;
+        const desc = this._artboardManager.artboards.find((d) => d.id === id);
+        if (desc) {
+          desc.x = parseFloat(this._dragTarget.style.left) || 0;
+          desc.y = parseFloat(this._dragTarget.style.top) || 0;
+        }
       }
       if (this._onDragEnd) this._onDragEnd(this._dragTarget);
       this._dragTarget = null;
@@ -1893,7 +2047,7 @@ export class PersistenceManager {
    */
   static save(postId, canvasState) {
     if (!postId) return;
-    const key = `canvas-state-${postId}`;
+    const key = `canvas-state-v2-${postId}`;
     try {
       const data = {
         postId,
@@ -1901,6 +2055,7 @@ export class PersistenceManager {
         panX: canvasState.panX,
         panY: canvasState.panY,
         artboardOrder: canvasState.artboardOrder || [],
+        artboardPositions: canvasState.artboardPositions || [],
         savedAt: new Date().toISOString(),
       };
       localStorage.setItem(key, JSON.stringify(data));
@@ -1919,7 +2074,7 @@ export class PersistenceManager {
    */
   static load(postId) {
     if (!postId) return null;
-    const key = `canvas-state-${postId}`;
+    const key = `canvas-state-v2-${postId}`;
     try {
       const raw = localStorage.getItem(key);
       if (!raw) return null;
@@ -2466,15 +2621,13 @@ export class CanvasEngine {
    * @param {Array<string>} orderedIds - Array of artboard IDs in desired order.
    */
   setArtboardOrder(orderedIds) {
-    let x = STRIP_START_X;
+    // Update order index and label only — do NOT reset x/y positions.
+    // Artboards are free canvas nodes; their position is independent of order.
     for (let i = 0; i < orderedIds.length; i++) {
       const desc = this._artboardManager.artboards.find((d) => d.id === orderedIds[i]);
       if (desc) {
-        desc.x = x;
-        desc.y = STRIP_START_Y;
         desc.order = i;
         desc.label = `${pad2(i + 1)} — ${capitalizeRole(desc.role)}`;
-        x += desc.width + STRIP_GAP;
       }
     }
     this._scheduleUpdate(() => {
@@ -2486,23 +2639,30 @@ export class CanvasEngine {
 
   /**
    * Get the current canvas state for persistence.
-   * @returns {{ zoom: number, panX: number, panY: number, artboardOrder: string[] }}
+   * Saves per-artboard x/y so free positions survive reload.
+   * @returns {{ zoom, panX, panY, artboardPositions: {id, x, y}[] }}
    */
   getCanvasState() {
-    const orderedIds = [...this._artboardManager.artboards]
-      .sort((a, b) => a.order - b.order)
-      .map((d) => d.id);
+    const artboardPositions = this._artboardManager.artboards.map((d) => ({
+      id: d.id,
+      x: d.x,
+      y: d.y,
+      order: d.order,
+    }));
     return {
       zoom: this._transform.zoom,
       panX: this._transform.panX,
       panY: this._transform.panY,
-      artboardOrder: orderedIds,
+      artboardPositions,
+      // legacy field — kept for backward compat reads
+      artboardOrder: artboardPositions.map((a) => a.id),
     };
   }
 
   /**
    * Restore a previously saved canvas state.
-   * @param {object} state - { zoom, panX, panY, artboardOrder }
+   * Restores per-artboard x/y without resetting to strip layout.
+   * @param {object} state
    */
   restoreCanvasState(state) {
     if (!state) return;
@@ -2511,8 +2671,20 @@ export class CanvasEngine {
     if (typeof state.panY === "number") this._transform.panY = state.panY;
     this._transform.clampZoom();
 
-    if (Array.isArray(state.artboardOrder) && state.artboardOrder.length) {
-      this.setArtboardOrder(state.artboardOrder);
+    // Restore free positions if saved — never call setArtboardOrder (that resets to strip)
+    if (Array.isArray(state.artboardPositions) && state.artboardPositions.length) {
+      for (const saved of state.artboardPositions) {
+        const desc = this._artboardManager.artboards.find((d) => d.id === saved.id);
+        if (desc) {
+          if (typeof saved.x === "number") desc.x = saved.x;
+          if (typeof saved.y === "number") desc.y = saved.y;
+          if (typeof saved.order === "number") desc.order = saved.order;
+        }
+      }
+      this._scheduleUpdate(() => {
+        this._artboardManager.reconcile(this._transformEl);
+        this._connectors.render();
+      });
     }
 
     this._transformEl.style.transform = this._transform.toCSSTransform();

@@ -102,6 +102,7 @@ async function generateWithFal(prompt: string, falKey: string, model: string, re
 
   const isNanoBanana = model.includes("nano-banana");
   const isFlux = model.includes("flux");
+  const isGptImage = model.includes("gpt-image");
 
   let input: Record<string, unknown>;
   if (isNanoBanana) {
@@ -111,12 +112,22 @@ async function generateWithFal(prompt: string, falKey: string, model: string, re
       num_images: 1,
     };
   } else if (isFlux) {
-    // FLUX Pro / Schnell — uses image_size enum, no num_inference_steps
+    // FLUX Pro / Schnell — uses image_size enum
     const sizeMap: Record<string, string> = { "1:1": "square_hd", "4:5": "portrait_4_3", "9:16": "portrait_16_9" };
     input = {
       prompt,
       image_size: sizeMap[aspectRatio ?? "1:1"] ?? "square_hd",
       num_images: 1,
+    };
+  } else if (isGptImage) {
+    // GPT Image 1/2 via fal — fal-ai/gpt-image-1
+    // Uses size string like "1024x1024". No negative_prompt field — fold constraints into prompt.
+    const sizeMap: Record<string, string> = { "1:1": "1024x1024", "4:5": "1024x1280", "9:16": "1024x1792" };
+    input = {
+      prompt,
+      size: sizeMap[aspectRatio ?? "1:1"] ?? "1024x1024",
+      n: 1,
+      quality: "high",
     };
   } else {
     input = {
@@ -253,22 +264,31 @@ export async function generateImagesForSlides(
     try {
       if (falKey) {
         // Determine aspect ratio from slide layout
-        const isCarouselSlide = slide.layout === "hook_cover" || slide.layout === "problem_setup" || slide.layout === "recipe_card" || slide.layout === "cta_banner";
+        const isCarouselSlide = slide.layout === "hook_cover" || slide.layout === "problem_setup" || slide.layout === "recipe_card" || slide.layout === "cta_banner" || slide.layout === "ingredient_card" || slide.layout === "reveal_split";
         const aspectRatio = isCarouselSlide ? "1:1" : "9:16";
 
-        // Only send mascot reference images for mascot-inclusive slides (not food-only recipe slides)
+        // Mascot reference images only for mascot-inclusive slides
         const isMascotSlide = slide.role === "hook" || slide.role === "problem" || slide.role === "cta";
         const refs = isMascotSlide ? mascotReferenceImages : [];
 
-        const imageBuffer = await generateWithFal(slide.image_prompt, falKey, falModel, refs, aspectRatio);
-        await fs.writeFile(filePath, imageBuffer);
-        slide.asset_path = filePath;
+        try {
+          const imageBuffer = await generateWithFal(slide.image_prompt, falKey, falModel, refs, aspectRatio);
+          await fs.writeFile(filePath, imageBuffer);
+          slide.asset_path = filePath;
+        } catch (primaryError) {
+          // fal primary model failed — retry with GPT Image 2 via fal
+          console.warn(`[image-generator] ${falModel} failed: ${(primaryError as Error).message} — retrying with fal-ai/gpt-image-1`);
+          const gptBuffer = await generateWithFal(slide.image_prompt, falKey, "fal-ai/gpt-image-1", [], aspectRatio);
+          const gptPath = filePath.replace(/\.[^.]+$/, ".jpg");
+          await fs.writeFile(gptPath, gptBuffer);
+          slide.asset_path = gptPath;
+        }
       } else {
         await writeMockImage(filePath, slide.image_prompt, slide.slide_number, brandName, colors);
         slide.asset_path = filePath;
       }
     } catch (error) {
-      console.warn(`[image-generator] Falling back to placeholder: ${(error as Error).message}`);
+      console.warn(`[image-generator] All generation attempts failed: ${(error as Error).message}`);
       const fallbackPath = filePath.replace(/\.[^.]+$/, ".svg");
       await writeMockImage(fallbackPath, slide.image_prompt, slide.slide_number, brandName, colors);
       slide.asset_path = fallbackPath;

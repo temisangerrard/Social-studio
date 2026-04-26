@@ -127,8 +127,13 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
     showCanvasProgress("Building creative directions…");
     try {
       await buildCreativeBrief();
+      // Always open the drawer so the user sees the plan before approving
       document.getElementById("studio-drawer")?.classList.remove("hidden");
-      showCanvasProgress("Review the Creative Director brief, then approve to generate.");
+      // Show a pre-generation summary on the canvas: what brand, platform, what will be built
+      const brand = els.studioProductSelect.options[els.studioProductSelect.selectedIndex]?.text || els.studioProductSelect.value;
+      const platform = els.studioPlatformSelect.value;
+      const style = els.studioStylePreset.options[els.studioStylePreset.selectedIndex]?.text || els.studioStylePreset.value;
+      showCanvasProgress(`Ready to generate → ${brand} · ${platform} · ${style} — Review the brief in the left panel, then Approve & Generate.`);
       clearButtonLoading(els.studioSubmit);
       syncStudioSubmitUi();
     } catch (err) {
@@ -510,12 +515,10 @@ async function bootstrap() {
               slideNumber: artboardDesc.slideNumber, order: artboardDesc.order
             };
             applyBrandSelectionRing(artboardDesc);
-            // Show the canvas AI prompt bar
             if (aiPrompt) aiPrompt.classList.remove("hidden");
           } else {
             studioState.selectedAsset = null;
-            clearBrandSelectionRing(); renderInspectorAsset(); hideDetailPanel();
-            if (inspector) inspector.classList.add("hidden");
+            clearBrandSelectionRing();
             if (aiPrompt) aiPrompt.classList.add("hidden");
           }
         },
@@ -623,8 +626,52 @@ async function bootstrap() {
     }
   });
 
-  // Escape key: hide inspector
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && inspector && !inspector.classList.contains("hidden")) inspector.classList.add("hidden"); });
+  // ── Artboard action bar event wiring ────────────────────────────────────────
+  // Events bubble from canvas-engine action buttons up to the stage.
+  if (stageEl) {
+    stageEl.addEventListener("artboard:expand", (e) => {
+      const { desc } = e.detail;
+      if (desc?.assetUrl) {
+        openAssetPreview(desc.assetUrl, desc.label || "Asset", desc.type || "image");
+      }
+    });
+
+    stageEl.addEventListener("artboard:download", (e) => {
+      const { desc } = e.detail;
+      if (desc) downloadArtboard(desc);
+    });
+
+    stageEl.addEventListener("artboard:edit", (e) => {
+      const { desc } = e.detail;
+      // Populate and show the canvas AI prompt bar pre-filled with the current prompt
+      const aiInput = document.getElementById("canvas-ai-input");
+      const aiPrompt = document.getElementById("canvas-ai-prompt");
+      if (aiInput && desc?.prompt) aiInput.value = desc.prompt;
+      if (aiPrompt) {
+        aiPrompt.classList.remove("hidden");
+        aiInput?.focus();
+      }
+      // Set selectedAsset so the AI submit can target the right slide
+      studioState.selectedAsset = {
+        itemId: desc.id, assetKind: desc.type, role: desc.role,
+        text: desc.text || desc.label, prompt: desc.prompt,
+        assetUrl: desc.assetUrl, sourceAssetId: null, variantGroup: null,
+        slideNumber: desc.slideNumber, order: desc.order
+      };
+    });
+
+    stageEl.addEventListener("artboard:duplicate", (e) => {
+      const { desc } = e.detail;
+      if (desc && studioState.canvasEngine) studioState.canvasEngine.duplicateArtboard(desc.id);
+    });
+
+    stageEl.addEventListener("artboard:delete", (e) => {
+      const { desc } = e.detail;
+      if (desc && studioState.canvasEngine && confirm("Delete this artboard?")) {
+        studioState.canvasEngine.removeArtboard(desc.id);
+      }
+    });
+  }
 
   // File picker → upload queue
   const fileInput = document.getElementById("toolbar-image-upload");
