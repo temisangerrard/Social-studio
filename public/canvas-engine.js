@@ -307,7 +307,13 @@ export function buildArtboardDescriptors(output) {
   const platform = output.platform || (output.platform_targets && output.platform_targets[0]) || "";
   const artboardH = artboardHeightForPlatform(platform);
 
-  let x = STRIP_START_X;
+  // Place artboards in a 2-column grid so each is independently movable.
+  // Users can drag any artboard anywhere — initial layout is just the starting position.
+  const COLS = 2;
+  const COL_GAP = 64;
+  const ROW_GAP = 80;
+  const ORIGIN_X = STRIP_START_X;
+  const ORIGIN_Y = STRIP_START_Y;
 
   return items.map((item, index) => {
     const slideNumber = item.slide_number ?? (index + 1);
@@ -315,6 +321,11 @@ export function buildArtboardDescriptors(output) {
     const type = detectType(item);
     const label = `${pad2(slideNumber)} — ${capitalizeRole(role)}`;
     const assetUrl = resolveAssetUrl(output, item, slides, slideNumber);
+
+    const col = index % COLS;
+    const row = Math.floor(index / COLS);
+    const x = ORIGIN_X + col * (ARTBOARD_W + COL_GAP);
+    const y = ORIGIN_Y + row * (artboardH + ROW_GAP);
 
     const descriptor = {
       id: item.id || `artboard-${pad2(slideNumber)}`,
@@ -326,15 +337,13 @@ export function buildArtboardDescriptors(output) {
       prompt: item.image_prompt || item.prompt || "",
       text: item.text || item.title || "",
       x,
-      y: STRIP_START_Y,
+      y,
       width: ARTBOARD_W,
       height: artboardH,
       isVariant: false,
       originalId: null,
       order: index,
     };
-
-    x += ARTBOARD_W + STRIP_GAP;
 
     return descriptor;
   });
@@ -2039,7 +2048,7 @@ export class PersistenceManager {
    */
   static save(postId, canvasState) {
     if (!postId) return;
-    const key = `canvas-state-${postId}`;
+    const key = `canvas-state-v2-${postId}`;
     try {
       const data = {
         postId,
@@ -2047,6 +2056,7 @@ export class PersistenceManager {
         panX: canvasState.panX,
         panY: canvasState.panY,
         artboardOrder: canvasState.artboardOrder || [],
+        artboardPositions: canvasState.artboardPositions || [],
         savedAt: new Date().toISOString(),
       };
       localStorage.setItem(key, JSON.stringify(data));
@@ -2065,7 +2075,7 @@ export class PersistenceManager {
    */
   static load(postId) {
     if (!postId) return null;
-    const key = `canvas-state-${postId}`;
+    const key = `canvas-state-v2-${postId}`;
     try {
       const raw = localStorage.getItem(key);
       if (!raw) return null;
@@ -2612,15 +2622,13 @@ export class CanvasEngine {
    * @param {Array<string>} orderedIds - Array of artboard IDs in desired order.
    */
   setArtboardOrder(orderedIds) {
-    let x = STRIP_START_X;
+    // Update order index and label only — do NOT reset x/y positions.
+    // Artboards are free canvas nodes; their position is independent of order.
     for (let i = 0; i < orderedIds.length; i++) {
       const desc = this._artboardManager.artboards.find((d) => d.id === orderedIds[i]);
       if (desc) {
-        desc.x = x;
-        desc.y = STRIP_START_Y;
         desc.order = i;
         desc.label = `${pad2(i + 1)} — ${capitalizeRole(desc.role)}`;
-        x += desc.width + STRIP_GAP;
       }
     }
     this._scheduleUpdate(() => {
@@ -2632,23 +2640,30 @@ export class CanvasEngine {
 
   /**
    * Get the current canvas state for persistence.
-   * @returns {{ zoom: number, panX: number, panY: number, artboardOrder: string[] }}
+   * Saves per-artboard x/y so free positions survive reload.
+   * @returns {{ zoom, panX, panY, artboardPositions: {id, x, y}[] }}
    */
   getCanvasState() {
-    const orderedIds = [...this._artboardManager.artboards]
-      .sort((a, b) => a.order - b.order)
-      .map((d) => d.id);
+    const artboardPositions = this._artboardManager.artboards.map((d) => ({
+      id: d.id,
+      x: d.x,
+      y: d.y,
+      order: d.order,
+    }));
     return {
       zoom: this._transform.zoom,
       panX: this._transform.panX,
       panY: this._transform.panY,
-      artboardOrder: orderedIds,
+      artboardPositions,
+      // legacy field — kept for backward compat reads
+      artboardOrder: artboardPositions.map((a) => a.id),
     };
   }
 
   /**
    * Restore a previously saved canvas state.
-   * @param {object} state - { zoom, panX, panY, artboardOrder }
+   * Restores per-artboard x/y without resetting to strip layout.
+   * @param {object} state
    */
   restoreCanvasState(state) {
     if (!state) return;
@@ -2657,8 +2672,20 @@ export class CanvasEngine {
     if (typeof state.panY === "number") this._transform.panY = state.panY;
     this._transform.clampZoom();
 
-    if (Array.isArray(state.artboardOrder) && state.artboardOrder.length) {
-      this.setArtboardOrder(state.artboardOrder);
+    // Restore free positions if saved — never call setArtboardOrder (that resets to strip)
+    if (Array.isArray(state.artboardPositions) && state.artboardPositions.length) {
+      for (const saved of state.artboardPositions) {
+        const desc = this._artboardManager.artboards.find((d) => d.id === saved.id);
+        if (desc) {
+          if (typeof saved.x === "number") desc.x = saved.x;
+          if (typeof saved.y === "number") desc.y = saved.y;
+          if (typeof saved.order === "number") desc.order = saved.order;
+        }
+      }
+      this._scheduleUpdate(() => {
+        this._artboardManager.reconcile(this._transformEl);
+        this._connectors.render();
+      });
     }
 
     this._transformEl.style.transform = this._transform.toCSSTransform();
