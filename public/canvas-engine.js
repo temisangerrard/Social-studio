@@ -641,9 +641,12 @@ export class ArtboardManager {
 
     // Media element
     if (desc.type === "video") {
+      el.classList.add("canvas-artboard--video");
+
       const video = document.createElement("video");
       video.muted = true;
       video.setAttribute("playsinline", "");
+      video.preload = "metadata";
       video.src = desc.assetUrl || "";
       video.addEventListener("loadeddata", () => {
         el.classList.remove("canvas-artboard--loading");
@@ -652,12 +655,39 @@ export class ArtboardManager {
         el.classList.remove("canvas-artboard--loading");
         el.classList.add("canvas-artboard--error");
         video.remove();
+        playBtn.remove();
         const errDiv = document.createElement("div");
         errDiv.className = "canvas-artboard__error";
         errDiv.textContent = desc.role || "Error";
         el.prepend(errDiv);
       });
+      // When video ends, restore the play overlay
+      video.addEventListener("ended", () => {
+        video.controls = false;
+        video.muted = true;
+        video.currentTime = 0;
+        playBtn.classList.remove("canvas-artboard__play--hidden");
+        el.classList.remove("canvas-artboard--playing");
+      });
       el.appendChild(video);
+
+      // Play overlay button — sits above the video, click to play inline with sound
+      const playBtn = document.createElement("button");
+      playBtn.className = "canvas-artboard__play";
+      playBtn.setAttribute("aria-label", "Play video");
+      playBtn.setAttribute("type", "button");
+      playBtn.innerHTML = `<svg width="36" height="36" viewBox="0 0 36 36" fill="none"><circle cx="18" cy="18" r="18" fill="rgba(0,0,0,0.55)"/><polygon points="14,11 28,18 14,25" fill="white"/></svg>`;
+      playBtn.addEventListener("click", (e) => {
+        e.stopPropagation(); // don't bubble to selection handler
+        video.muted = false;
+        video.controls = true;
+        video.play().catch(() => {
+          // Autoplay blocked — still show controls so user can click native play
+        });
+        playBtn.classList.add("canvas-artboard__play--hidden");
+        el.classList.add("canvas-artboard--playing");
+      });
+      el.appendChild(playBtn);
     } else {
       // Image (default for image and document types)
       const img = document.createElement("img");
