@@ -2382,9 +2382,19 @@ textarea {
   padding-left: 10px;
 }
 
-/* ── Inspector — hidden permanently in canvas-first mode ────────────────────── */
-/* The inspector sidebar is replaced by inline action bars on the artboards.     */
-#studio-inspector { display: none !important; }
+/* ── Inspector — permanently removed from canvas-first mode ─────────────────── */
+/* Replaced by inline hover action bars on each artboard. Zero tolerance rules.  */
+#studio-inspector,
+.studio-inspector,
+.view--studio .studio-inspector,
+.view--studio .studio-inspector.hidden,
+.view--studio .studio-inspector:not(.hidden) {
+  display: none !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  width: 0 !important;
+}
 
 /* ── Hover action bar — floats at the top of each artboard on hover ──────────── */
 
