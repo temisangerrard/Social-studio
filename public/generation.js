@@ -79,6 +79,11 @@ export async function runGeneration(rawIdea, notes) {
     }
   };
 
+  // ── Pre-flight summary — show exactly what's going to the AI ────────────────
+  showCanvasProgress(
+    `Sending to AI → ${request.brandProfileId} · ${(request.platformTargets || []).join(",")} · ${request.workflowType || "slideshow"} · "${(request.rawIdea || "").slice(0, 60)}${(request.rawIdea || "").length > 60 ? "…" : ""}"`
+  );
+
   const res = await fetch("/api/generate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

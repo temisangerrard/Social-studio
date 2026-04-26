@@ -127,8 +127,13 @@ els.studioQuickForm.addEventListener("submit", async (e) => {
     showCanvasProgress("Building creative directions…");
     try {
       await buildCreativeBrief();
+      // Always open the drawer so the user sees the plan before approving
       document.getElementById("studio-drawer")?.classList.remove("hidden");
-      showCanvasProgress("Review the Creative Director brief, then approve to generate.");
+      // Show a pre-generation summary on the canvas: what brand, platform, what will be built
+      const brand = els.studioProductSelect.options[els.studioProductSelect.selectedIndex]?.text || els.studioProductSelect.value;
+      const platform = els.studioPlatformSelect.value;
+      const style = els.studioStylePreset.options[els.studioStylePreset.selectedIndex]?.text || els.studioStylePreset.value;
+      showCanvasProgress(`Ready to generate → ${brand} · ${platform} · ${style} — Review the brief in the left panel, then Approve & Generate.`);
       clearButtonLoading(els.studioSubmit);
       syncStudioSubmitUi();
     } catch (err) {
