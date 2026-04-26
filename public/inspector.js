@@ -4,44 +4,126 @@ import { escapeHtml, titleCase, getArtifactPreviewUrl, getWorkspaceAssetUrl } fr
 import { downloadArtboard } from "./canvas-engine.js";
 import { showStatus, hideStatus, capitalizeFirst } from "./ui-utils.js";
 
-// ── Asset modal ───────────────────────────────────────────────────────────────
-export function openAssetPreview(url, title, kind = "image") {
-  els.assetModalTitle.textContent = title;
-  els.assetModalOpen.href = url;
-  els.assetModalDownload.href = url;
+// ── Asset Lightbox — full-bleed viewer with zoom/pan/nav ─────────────────────
+let _lbBoards = [], _lbIdx = 0;
+let _lbZoom = 1, _lbPanX = 0, _lbPanY = 0;
+let _lbDrag = null, _lbPinch = 0;
+let _lbIsVideo = false; // zoom/pan disabled for video — native controls must be clickable
+
+function _lbTransform() {
+  // Only apply zoom/pan to images — video uses native player, no transform
+  const t = `translate(${_lbPanX}px,${_lbPanY}px) scale(${_lbZoom})`;
+  els.assetModalImage.style.transform = t;
+  // Never transform video — it breaks native controls hit-testing
+  els.assetModalVideo.style.transform = "";
+}
+function _lbReset() { _lbZoom = 1; _lbPanX = 0; _lbPanY = 0; _lbTransform(); }
+
+function _lbShow(idx) {
+  if (!_lbBoards.length) return;
+  // Pause any currently playing video before switching
+  if (!els.assetModalVideo.paused) { els.assetModalVideo.pause(); }
+  _lbReset();
+  _lbIdx = (idx + _lbBoards.length) % _lbBoards.length;
+  const d = _lbBoards[_lbIdx];
+  const counter = document.getElementById("asset-lightbox-counter");
+  const prev = document.getElementById("asset-lightbox-prev");
+  const next = document.getElementById("asset-lightbox-next");
+  const stage = document.getElementById("asset-lightbox-stage");
+  els.assetModalTitle.textContent = d.label || "Asset";
+  if (counter) counter.textContent = `${_lbIdx + 1} / ${_lbBoards.length}`;
+  const multi = _lbBoards.length > 1;
+  prev?.classList.toggle("hidden", !multi);
+  next?.classList.toggle("hidden", !multi);
+  els.assetModalOpen.href = d.assetUrl || "#";
+  els.assetModalDownload.href = d.assetUrl || "#";
   els.assetModalDownload.setAttribute("download",
-    title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "asset"
-  );
-  if (kind === "video") {
-    els.assetModalImage.classList.add("hidden");
-    els.assetModalImage.removeAttribute("src");
+    (d.label || "asset").toLowerCase().replace(/[^a-z0-9]+/g, "-") || "asset");
+  _lbIsVideo = d.type === "video";
+  // Update stage cursor: video = default (controls are clickable), image = grab (pannable)
+  if (stage) stage.dataset.mode = _lbIsVideo ? "video" : "image";
+  if (_lbIsVideo) {
+    els.assetModalImage.classList.add("hidden"); els.assetModalImage.removeAttribute("src");
     els.assetModalVideo.classList.remove("hidden");
-    els.assetModalVideo.src = url;
-  } else {
-    els.assetModalVideo.classList.add("hidden");
     els.assetModalVideo.removeAttribute("src");
+    els.assetModalVideo.src = d.assetUrl || "";
+    // Autoplay video when opened in lightbox
+    els.assetModalVideo.play?.().catch(() => {});
+  } else {
+    els.assetModalVideo.pause();
+    els.assetModalVideo.classList.add("hidden"); els.assetModalVideo.removeAttribute("src");
     els.assetModalImage.classList.remove("hidden");
-    els.assetModalImage.src = url;
-    els.assetModalImage.alt = title;
+    els.assetModalImage.src = d.assetUrl || "";
+    els.assetModalImage.alt = d.label || "";
   }
+}
+
+export function openAssetPreview(url, title, kind = "image", artboards = [], startIndex = 0) {
+  _lbBoards = artboards.length ? artboards : [{ id: "s", label: title, type: kind, assetUrl: url }];
+  _lbShow(startIndex);
   els.assetModal.classList.remove("hidden");
+  document.body.style.overflow = "hidden";
 }
 
 export function closeAssetPreview() {
   els.assetModal.classList.add("hidden");
-  els.assetModalImage.removeAttribute("src");
-  els.assetModalVideo.pause();
-  els.assetModalVideo.removeAttribute("src");
+  document.body.style.overflow = "";
+  els.assetModalImage.removeAttribute("src"); els.assetModalImage.style.transform = "";
+  els.assetModalVideo.pause(); els.assetModalVideo.removeAttribute("src"); els.assetModalVideo.style.transform = "";
+  _lbBoards = []; _lbReset();
 }
 
 export function initAssetModalListeners() {
+  const stage = document.getElementById("asset-lightbox-stage");
   els.assetModal.addEventListener("click", (e) => {
     if (e.target instanceof HTMLElement && e.target.dataset.closeModal === "true") closeAssetPreview();
   });
   els.assetModalClose.addEventListener("click", closeAssetPreview);
+  document.getElementById("asset-lightbox-prev")?.addEventListener("click", () => _lbShow(_lbIdx - 1));
+  document.getElementById("asset-lightbox-next")?.addEventListener("click", () => _lbShow(_lbIdx + 1));
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !els.assetModal.classList.contains("hidden")) closeAssetPreview();
+    if (els.assetModal.classList.contains("hidden")) return;
+    if (e.key === "Escape") closeAssetPreview();
+    if (e.key === "ArrowLeft") _lbShow(_lbIdx - 1);
+    if (e.key === "ArrowRight") _lbShow(_lbIdx + 1);
   });
+  if (!stage) return;
+  // Wheel zoom — images only; video has its own native timeline scrub
+  stage.addEventListener("wheel", (e) => {
+    if (_lbIsVideo) return;
+    e.preventDefault();
+    _lbZoom = Math.max(0.5, Math.min(8, _lbZoom + (e.deltaY > 0 ? -0.12 : 0.12)));
+    _lbTransform();
+  }, { passive: false });
+  // Mouse drag — images only; video player handles its own drag for scrubbing
+  stage.addEventListener("mousedown", (e) => {
+    if (_lbIsVideo || e.button !== 0) return;
+    _lbDrag = { x: e.clientX - _lbPanX, y: e.clientY - _lbPanY };
+  });
+  window.addEventListener("mousemove", (e) => {
+    if (!_lbDrag || els.assetModal.classList.contains("hidden")) return;
+    _lbPanX = e.clientX - _lbDrag.x; _lbPanY = e.clientY - _lbDrag.y; _lbTransform();
+  });
+  window.addEventListener("mouseup", () => { _lbDrag = null; });
+  stage.addEventListener("dblclick", () => _lbReset());
+  // Touch pinch/pan
+  stage.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 2) {
+      const d = e.touches; _lbPinch = Math.hypot(d[0].clientX-d[1].clientX, d[0].clientY-d[1].clientY);
+    } else if (e.touches.length === 1) {
+      _lbDrag = { x: e.touches[0].clientX - _lbPanX, y: e.touches[0].clientY - _lbPanY };
+    }
+  }, { passive: true });
+  stage.addEventListener("touchmove", (e) => {
+    e.preventDefault();
+    if (e.touches.length === 2) {
+      const dist = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY);
+      _lbZoom = Math.max(0.5, Math.min(8, _lbZoom * (dist / _lbPinch))); _lbPinch = dist; _lbTransform();
+    } else if (e.touches.length === 1 && _lbDrag) {
+      _lbPanX = e.touches[0].clientX - _lbDrag.x; _lbPanY = e.touches[0].clientY - _lbDrag.y; _lbTransform();
+    }
+  }, { passive: false });
+  stage.addEventListener("touchend", () => { _lbDrag = null; });
 }
 
 // ── Output assets helper ──────────────────────────────────────────────────────

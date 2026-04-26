@@ -106,6 +106,56 @@ export async function runGeneration(rawIdea, notes) {
   });
 }
 
+// ── Caption bar ───────────────────────────────────────────────────────────────
+// Copy buttons are wired once at init time and read current text on every click.
+// showCaptionBar() only updates the displayed text and show/hide state —
+// it never adds listeners, so stale handlers cannot accumulate.
+
+let _captionBarInitialised = false;
+
+function _initCaptionBarListeners() {
+  if (_captionBarInitialised) return;
+  _captionBarInitialised = true;
+
+  const copyCapBtn  = document.getElementById("output-copy-caption");
+  const copyHashBtn = document.getElementById("output-copy-hashtags");
+
+  copyCapBtn?.addEventListener("click", () => {
+    const text = document.getElementById("output-caption-text")?.textContent || "";
+    navigator.clipboard?.writeText(text).catch(() => {});
+    if (copyCapBtn) {
+      copyCapBtn.textContent = "✓ Copied";
+      setTimeout(() => { copyCapBtn.textContent = "Copy caption"; }, 1800);
+    }
+  });
+
+  copyHashBtn?.addEventListener("click", () => {
+    const text = document.getElementById("output-hashtags-text")?.textContent || "";
+    navigator.clipboard?.writeText(text).catch(() => {});
+    if (copyHashBtn) {
+      copyHashBtn.textContent = "✓ Copied";
+      setTimeout(() => { copyHashBtn.textContent = "# Copy tags"; }, 1800);
+    }
+  });
+}
+
+export function showCaptionBar(output) {
+  const bar = document.getElementById("output-caption-bar");
+  if (!bar || !output) return;
+
+  _initCaptionBarListeners(); // no-op after first call
+
+  const caption  = output.caption || "";
+  const hashtags = Array.isArray(output.hashtags) ? output.hashtags.join(" ") : "";
+
+  const captionEl = document.getElementById("output-caption-text");
+  const hashEl    = document.getElementById("output-hashtags-text");
+  if (captionEl) captionEl.textContent = caption;
+  if (hashEl)    hashEl.textContent    = hashtags;
+
+  bar.classList.toggle("hidden", !caption && !hashtags);
+}
+
 export function finishGeneration(output) {
   studioState.canvasLoadingStage = null;
   studioState.generatedOutput = output;
@@ -118,6 +168,7 @@ export function finishGeneration(output) {
   hideCanvasProgress();
   hideStatus();
   loadOutputToEngine(output);
+  showCaptionBar(output);
   renderRoutePreview();
 }
 

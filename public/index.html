@@ -75,6 +75,20 @@
         </form>
       </div>
 
+      <!-- OUTPUT CAPTION BAR — shows caption + hashtags + publish links after generation -->
+      <div id="output-caption-bar" class="output-caption-bar hidden">
+        <div class="output-caption-bar__content">
+          <p id="output-caption-text" class="output-caption-bar__caption"></p>
+          <p id="output-hashtags-text" class="output-caption-bar__hashtags"></p>
+        </div>
+        <div class="output-caption-bar__actions">
+          <button id="output-copy-caption" class="output-caption-bar__btn" type="button" title="Copy caption">Copy caption</button>
+          <button id="output-copy-hashtags" class="output-caption-bar__btn" type="button" title="Copy hashtags"># Copy tags</button>
+          <a id="output-post-instagram" class="output-caption-bar__btn output-caption-bar__btn--publish" href="https://www.instagram.com/create/select/" target="_blank" rel="noreferrer">Post to Instagram</a>
+          <a id="output-post-tiktok" class="output-caption-bar__btn output-caption-bar__btn--publish" href="https://www.tiktok.com/upload" target="_blank" rel="noreferrer">Post to TikTok</a>
+        </div>
+      </div>
+
       <!-- INLINE ROUTE PREVIEW — compact bar above toolbar -->
       <div id="studio-route-inline" class="route-inline hidden" aria-live="polite"></div>
 
@@ -691,21 +705,35 @@
       </div>
     </div>
 
-    <!-- ═══ ASSET MODAL ════════════════════════════════════════════════════════ -->
-    <div id="asset-modal" class="asset-modal hidden">
-      <div class="asset-modal__scrim" data-close-modal="true"></div>
-      <div class="asset-modal__dialog" role="dialog" aria-modal="true" aria-label="Asset preview">
-        <button id="asset-modal-close" class="asset-modal__close" type="button">Close</button>
-        <img id="asset-modal-image" class="asset-modal__image hidden" alt="" />
-        <video id="asset-modal-video" class="asset-modal__video hidden" controls playsinline></video>
-        <div class="asset-modal__meta">
-          <p id="asset-modal-title" class="asset-modal__title"></p>
-          <div class="asset-modal__actions">
-            <a id="asset-modal-open" class="ghost-button" href="#" target="_blank" rel="noreferrer">Open</a>
-            <a id="asset-modal-download" class="primary-button" href="#" download>Download</a>
-          </div>
+    <!-- ═══ ASSET LIGHTBOX ══════════════════════════════════════════════════════ -->
+    <!-- Full-bleed viewer: zoom, pan, keyboard prev/next, download -->
+    <div id="asset-modal" class="asset-lightbox hidden" role="dialog" aria-modal="true" aria-label="Asset viewer">
+      <div class="asset-lightbox__scrim" data-close-modal="true"></div>
+      <div class="asset-lightbox__topbar">
+        <span id="asset-modal-title" class="asset-lightbox__title"></span>
+        <span id="asset-lightbox-counter" class="asset-lightbox__counter"></span>
+        <div class="asset-lightbox__topbar-actions">
+          <a id="asset-modal-download" class="asset-lightbox__btn" href="#" download title="Download">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </a>
+          <a id="asset-modal-open" class="asset-lightbox__btn" href="#" target="_blank" rel="noreferrer" title="Open full size">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+          <button id="asset-modal-close" class="asset-lightbox__btn" type="button" title="Close (Esc)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
       </div>
+      <div class="asset-lightbox__stage" id="asset-lightbox-stage">
+        <img id="asset-modal-image" class="asset-lightbox__media hidden" alt="" draggable="false" />
+        <video id="asset-modal-video" class="asset-lightbox__media hidden" controls playsinline></video>
+      </div>
+      <button class="asset-lightbox__arrow asset-lightbox__arrow--prev hidden" id="asset-lightbox-prev" type="button" title="Previous (←)">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="asset-lightbox__arrow asset-lightbox__arrow--next hidden" id="asset-lightbox-next" type="button" title="Next (→)">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
     </div>
 
     <!-- ═══ CREATE BRAND MODAL ══════════════════════════════════════════════ -->
