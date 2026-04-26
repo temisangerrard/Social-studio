@@ -62,6 +62,14 @@
   object-fit: cover;
 }
 
+/* Images must not intercept pointer events — the artboard div handles all drag.
+   Native image drag hijacks pointermove and prevents canvas drag from working. */
+.canvas-artboard img {
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
 .canvas-artboard--selected {
   outline: 3px solid var(--highlight, rgba(111, 92, 69, 0.55));
   outline-offset: 2px;

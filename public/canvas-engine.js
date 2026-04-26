@@ -732,6 +732,8 @@ export class ArtboardManager {
       img.src = desc.assetUrl || "";
       img.alt = desc.label || "";
       img.loading = "lazy";
+      // Prevent browser native image drag (which hijacks pointer events and breaks canvas drag)
+      img.draggable = false;
       img.addEventListener("load", () => {
         el.classList.remove("canvas-artboard--loading");
       });
@@ -1066,6 +1068,8 @@ export class PointerStateMachine {
     // Allow drag for both mouse and touch pointerType on artboards.
     // Two-finger pinch is handled separately in _onTouchStart.
     if (artboard) {
+      // Prevent browser native drag (e.g. image drag) from hijacking pointer events
+      e.preventDefault();
       this.state = "dragging";
       this._dragTarget = artboard;
       this._dragOrigPos = {
