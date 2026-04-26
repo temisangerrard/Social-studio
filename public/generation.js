@@ -106,6 +106,36 @@ export async function runGeneration(rawIdea, notes) {
   });
 }
 
+// ── Caption bar ───────────────────────────────────────────────────────────────
+export function showCaptionBar(output) {
+  const bar = document.getElementById("output-caption-bar");
+  if (!bar || !output) return;
+  const captionEl = document.getElementById("output-caption-text");
+  const hashEl = document.getElementById("output-hashtags-text");
+  const copyCapBtn = document.getElementById("output-copy-caption");
+  const copyHashBtn = document.getElementById("output-copy-hashtags");
+
+  const caption = output.caption || "";
+  const hashtags = Array.isArray(output.hashtags) ? output.hashtags.join(" ") : "";
+
+  if (captionEl) captionEl.textContent = caption;
+  if (hashEl) hashEl.textContent = hashtags;
+
+  copyCapBtn?.addEventListener("click", () => {
+    navigator.clipboard?.writeText(caption).catch(() => {});
+    copyCapBtn.textContent = "✓ Copied";
+    setTimeout(() => { copyCapBtn.textContent = "Copy caption"; }, 1800);
+  }, { once: true });
+
+  copyHashBtn?.addEventListener("click", () => {
+    navigator.clipboard?.writeText(hashtags).catch(() => {});
+    copyHashBtn.textContent = "✓ Copied";
+    setTimeout(() => { copyHashBtn.textContent = "# Copy tags"; }, 1800);
+  }, { once: true });
+
+  bar.classList.toggle("hidden", !caption && !hashtags);
+}
+
 export function finishGeneration(output) {
   studioState.canvasLoadingStage = null;
   studioState.generatedOutput = output;
@@ -118,6 +148,7 @@ export function finishGeneration(output) {
   hideCanvasProgress();
   hideStatus();
   loadOutputToEngine(output);
+  showCaptionBar(output);
   renderRoutePreview();
 }
 
