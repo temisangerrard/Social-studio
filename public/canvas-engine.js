@@ -363,11 +363,15 @@ export function buildArtboardDescriptors(output) {
 export function buildOverlayDescriptors(output) {
   if (!output) return [];
 
-  // Derive artboard geometry so overlays sit directly below the artboard strip
+  // Derive artboard geometry so overlays sit below the FULL 2-column grid
   const platform = output.platform || (output.platform_targets && output.platform_targets[0]) || "";
   const artboardH = artboardHeightForPlatform(platform);
-  // Label bar is ~32px below each artboard; overlays start below that
-  const belowY = STRIP_START_Y + artboardH + 48;
+  const items = (output.artifacts && output.artifacts.length) ? output.artifacts : (output.slides || []);
+  const COLS = 2;
+  const ROW_GAP = 80;
+  const numRows = Math.max(1, Math.ceil(items.length / COLS));
+  // Bottom of the grid + label bar (~32px) + gap
+  const belowY = STRIP_START_Y + numRows * (artboardH + ROW_GAP) - ROW_GAP + 56;
   const overlayWidth = OVERLAY_W;
 
   const overlays = [];
@@ -510,6 +514,21 @@ export class ArtboardManager {
       // Update badge
       const badgeEl = el.querySelector(".canvas-artboard__badge");
       if (badgeEl) badgeEl.textContent = desc.type.toUpperCase();
+
+      // Update media src — critical when loading a different output whose artboards
+      // share the same IDs (e.g. slide-01, slide-02) as the previously loaded output.
+      // Without this, img.src stays pointing at the old output's images.
+      const img = el.querySelector("img");
+      if (img && desc.assetUrl && img.src !== desc.assetUrl) {
+        img.src = desc.assetUrl;
+        el.classList.remove("canvas-artboard--error");
+        el.classList.add("canvas-artboard--loading");
+        img.addEventListener("load", () => el.classList.remove("canvas-artboard--loading"), { once: true });
+      }
+      const video = el.querySelector("video");
+      if (video && desc.assetUrl && video.src !== desc.assetUrl) {
+        video.src = desc.assetUrl;
+      }
     }
 
     // Remove stale artboard elements
@@ -649,6 +668,9 @@ export class ArtboardManager {
       badge.textContent = desc.type.toUpperCase();
       el.appendChild(badge);
 
+      // Action bar — content cards get the same inline actions as image artboards
+      el.appendChild(this._createActionBar(desc, el));
+
       return el;
     }
 
@@ -737,9 +759,19 @@ export class ArtboardManager {
     badge.textContent = desc.type.toUpperCase();
     el.appendChild(badge);
 
-    // ── Hover action bar ────────────────────────────────────────────────────
-    // Five inline actions: Expand (fullscreen), Download, Edit (request), Duplicate, Delete.
-    // Rendered inside the artboard, shown on :hover via CSS.
+    el.appendChild(this._createActionBar(desc, el));
+
+    return el;
+  }
+
+  /**
+   * Build the hover action bar element for an artboard.
+   * Shared by both image/video artboards and content-card artboards.
+   * @param {object} desc - ArtboardDescriptor.
+   * @param {HTMLElement} el - The parent artboard element (for event dispatch).
+   * @returns {HTMLElement}
+   */
+  _createActionBar(desc, el) {
     const actionBar = document.createElement("div");
     actionBar.className = "canvas-artboard__actions";
 

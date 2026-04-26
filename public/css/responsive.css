@@ -126,32 +126,32 @@
     display: none;
   }
 
-  /* Inspector */
-  .studio-inspector {
+  /* Inspector — permanently off, no mobile FAB either */
+  .studio-inspector,
+  .canvas-fab-inspector,
+  .studio-inspector--overlay,
+  .view--studio .studio-inspector {
+    display: none !important;
+  }
+
+  /* Toolbar input group — show brand/platform selects on mobile as a scrollable row */
+  .toolbar-input-group {
+    display: flex;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 6px;
+    flex-shrink: 0;
+    scrollbar-width: none;
+  }
+
+  .toolbar-input-group::-webkit-scrollbar {
     display: none;
   }
 
-  .canvas-fab-inspector {
-    display: grid;
-  }
-
-  .studio-inspector--overlay {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .inspector-overlay-close {
-    display: block;
-  }
-
-  .view--studio .studio-inspector {
-    width: calc(100% - 24px);
-    left: 12px;
-    right: 12px;
-    top: calc(var(--topbar-h) + 12px);
-    bottom: 80px;
-    border-radius: 14px;
+  .toolbar-input-group select {
+    min-width: 90px;
+    font-size: 0.72rem;
+    padding: 6px 8px;
   }
 
   /* Library */
