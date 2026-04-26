@@ -4,7 +4,7 @@ import { escapeHtml, titleCase } from "./app-helpers.js";
 import { showStatus } from "./ui-utils.js";
 import { outputAssets, renderInspectorAsset, renderCanvas } from "./inspector.js";
 import { renderRoutePreview } from "./references.js";
-import { loadOutputToEngine } from "./generation.js";
+import { loadOutputToEngine, showCaptionBar } from "./generation.js";
 
 let libraryOutputs = [];
 let libraryStorageInfo = null;
@@ -223,6 +223,7 @@ export async function loadOutputIntoCanvas(postId) {
   if (output.routing_decision) { studioState.routePreview = { decision: output.routing_decision, trace: output.routing_trace }; renderRoutePreview(); }
   document.dispatchEvent(new CustomEvent("studio:switch-view", { detail: "studio" }));
   loadOutputToEngine(output);
+  showCaptionBar(output);
   renderInspectorAsset();
 }
 

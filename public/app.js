@@ -553,13 +553,14 @@ async function bootstrap() {
           return;
         }
 
-        // Double-click on artboard → open inspector
+        // Double-click on artboard → open lightbox viewer
         const artboardEl = e.target.closest(".canvas-artboard");
-        if (artboardEl && studioState.selectedAsset) {
-          const desc = studioState.canvasEngine._artboardManager.artboards.find((a) => a.id === artboardEl.dataset.artboardId);
-          if (desc) {
-            renderInspectorPackage(); renderInspectorAsset(); populateDetailPanel(desc);
-            if (inspector) inspector.classList.remove("hidden");
+        if (artboardEl) {
+          const desc = studioState.canvasEngine?._artboardManager.artboards.find((a) => a.id === artboardEl.dataset.artboardId);
+          if (desc?.assetUrl) {
+            const allBoards = (studioState.canvasEngine?.getArtboards() || []).filter((a) => a.assetUrl);
+            const startIdx = allBoards.findIndex((a) => a.id === desc.id);
+            openAssetPreview(desc.assetUrl, desc.label || "Asset", desc.type || "image", allBoards, Math.max(0, startIdx));
           }
         }
       });
@@ -623,7 +624,9 @@ async function bootstrap() {
     stageEl.addEventListener("artboard:expand", (e) => {
       const { desc } = e.detail;
       if (desc?.assetUrl) {
-        openAssetPreview(desc.assetUrl, desc.label || "Asset", desc.type || "image");
+        const allBoards = (studioState.canvasEngine?.getArtboards() || []).filter((a) => a.assetUrl);
+        const startIdx = allBoards.findIndex((a) => a.id === desc.id);
+        openAssetPreview(desc.assetUrl, desc.label || "Asset", desc.type || "image", allBoards, Math.max(0, startIdx));
       }
     });
 
