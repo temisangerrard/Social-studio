@@ -1024,14 +1024,18 @@ export class PointerStateMachine {
     if (e.button !== 0) return;
     // Suppress pan/drag while inline editing is active
     if (this._editingActive) return;
-    // Don't drag when clicking interactive elements inside overlays
-    if (e.target.closest("button, a, input, textarea, [contenteditable]")) return;
+    // Don't start drag from within text inputs or contenteditable (inline editing).
+    // Buttons are intentionally NOT in this list — action bar buttons are inside
+    // artboards and their `click` handlers use stopPropagation. Blocking drag on
+    // button pointerdown would prevent any drag that starts near the top of the artboard.
+    if (e.target.closest("input, textarea, [contenteditable]")) return;
 
     const artboard = this._findDraggable(e.target);
     this._lastPointer = { x: e.clientX, y: e.clientY };
-    const shouldPanViewport = e.pointerType === "touch";
 
-    if (artboard && !shouldPanViewport) {
+    // Allow drag for both mouse and touch pointerType on artboards.
+    // Two-finger pinch is handled separately in _onTouchStart.
+    if (artboard) {
       this.state = "dragging";
       this._dragTarget = artboard;
       this._dragOrigPos = {
@@ -1069,11 +1073,6 @@ export class PointerStateMachine {
       const snappedY = Math.round(rawY / SNAP_GRID) * SNAP_GRID;
       this._dragTarget.style.left = `${snappedX}px`;
       this._dragTarget.style.top = `${snappedY}px`;
-
-      // Show drop position indicator for artboards only
-      if (this._dragTarget.classList.contains("canvas-artboard")) {
-        this._updateDropIndicator(snappedX);
-      }
     }
   }
 
