@@ -82,9 +82,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["idea"],
+                "required": ["brand", "idea"],
                 "properties": {
-                  "brand": { "type": "string", "default": "peppera", "description": "Brand ID" },
+                  "brand": { "type": "string", "description": "Brand ID (required). Use GET /api/brands to list valid IDs. Example: peppera, settley, autobett, temisangerrard." },
                   "idea": { "type": "string", "description": "Content idea in plain language" },
                   "platform": { "type": "string", "default": "tiktok", "enum": ["tiktok", "instagram", "linkedin"] },
                   "visualMode": { "type": "string", "default": "mascot-led", "enum": ["mascot-led", "food-led", "mixed"] }

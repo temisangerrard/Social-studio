@@ -1278,7 +1278,10 @@ async function handleRequest(req: Request): Promise<Response> {
 
   if (url.pathname === "/api/generate/quick" && req.method === "POST") {
     const body = await parseJsonBody(req);
-    const brandId = typeof body.brand === "string" ? body.brand : "peppera";
+    if (typeof body.brand !== "string" || !body.brand.trim()) {
+      return json({ error: "brand is required" }, { status: 400 });
+    }
+    const brandId = body.brand.trim();
     const idea = typeof body.idea === "string" ? body.idea.trim() : "";
     if (!idea) {
       return json({ error: "idea is required" }, { status: 400 });
