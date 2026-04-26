@@ -1088,8 +1088,15 @@ export class PointerStateMachine {
           desc.y = parseFloat(this._dragTarget.style.top) || 0;
         }
       } else {
+        // Free positioning — update the descriptor to the dropped position.
+        // Do NOT snap back to the strip. Each artboard is an independent canvas node.
         this._removeDropIndicator();
-        this._snapToStrip(this._dragTarget);
+        const id = this._dragTarget.dataset.artboardId;
+        const desc = this._artboardManager.artboards.find((d) => d.id === id);
+        if (desc) {
+          desc.x = parseFloat(this._dragTarget.style.left) || 0;
+          desc.y = parseFloat(this._dragTarget.style.top) || 0;
+        }
       }
       if (this._onDragEnd) this._onDragEnd(this._dragTarget);
       this._dragTarget = null;
