@@ -209,4 +209,15 @@
   }
 
   /* Push toolbar above tab bar */
+
+  /* Route inline preview — move above toolbar so it doesn't block buttons */
+  .route-inline {
+    bottom: 124px; /* toolbar (68px) + toolbar height (~48px) + 8px gap */
+    left: 12px;
+    right: 12px;
+    transform: none;
+    max-width: calc(100vw - 24px);
+    justify-content: center;
+    font-size: 12px;
+  }
 }
