@@ -2382,6 +2382,70 @@ textarea {
   padding-left: 10px;
 }
 
+/* ── Inspector — hidden permanently in canvas-first mode ────────────────────── */
+/* The inspector sidebar is replaced by inline action bars on the artboards.     */
+#studio-inspector { display: none !important; }
+
+/* ── Hover action bar — floats at the top of each artboard on hover ──────────── */
+
+.canvas-artboard__actions {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  background: rgba(20, 20, 18, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+  z-index: 20;
+  white-space: nowrap;
+}
+
+.canvas-artboard:hover .canvas-artboard__actions,
+.canvas-artboard--selected .canvas-artboard__actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.canvas-artboard__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.88);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 110ms ease, color 110ms ease;
+  padding: 0;
+}
+
+.canvas-artboard__action-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.canvas-artboard__action-btn--danger:hover {
+  background: rgba(220, 60, 60, 0.35);
+  color: #ff7878;
+}
+
+/* Divider between edit and duplicate */
+.canvas-artboard__action-btn:nth-child(4) {
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+  margin-left: 2px;
+  padding-left: 2px;
+}
+
 /* ── Video artboard ──────────────────────────────────────────────────────────── */
 
 .canvas-artboard--video {

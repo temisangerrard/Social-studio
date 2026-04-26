@@ -354,48 +354,55 @@ export function buildArtboardDescriptors(output) {
 export function buildOverlayDescriptors(output) {
   if (!output) return [];
 
-  const overlays = [];
-  let y = OVERLAY_START_Y;
+  // Derive artboard geometry so overlays sit directly below the artboard strip
+  const platform = output.platform || (output.platform_targets && output.platform_targets[0]) || "";
+  const artboardH = artboardHeightForPlatform(platform);
+  // Label bar is ~32px below each artboard; overlays start below that
+  const belowY = STRIP_START_Y + artboardH + 48;
+  const overlayWidth = OVERLAY_W;
 
-  // Caption overlay
+  const overlays = [];
+  let y = belowY;
+
+  // Caption — full width of the artboard strip, sits first below the images
   if (output.caption) {
     overlays.push({
       id: "overlay-caption",
       type: "caption",
       text: output.caption,
-      x: OVERLAY_X,
+      x: STRIP_START_X,
       y,
-      width: OVERLAY_W,
+      width: overlayWidth,
       height: OVERLAY_H,
     });
     y += OVERLAY_H + OVERLAY_GAP;
   }
 
-  // Hook overlays (one per hook)
+  // Hook overlays
   const hooks = output.hooks || [];
   hooks.forEach((hook, i) => {
     overlays.push({
       id: `overlay-hook-${i}`,
       type: "hook",
       text: hook,
-      x: OVERLAY_X,
+      x: STRIP_START_X,
       y,
-      width: OVERLAY_W,
+      width: overlayWidth,
       height: OVERLAY_H,
     });
     y += OVERLAY_H + OVERLAY_GAP;
   });
 
-  // Hashtags overlay
+  // Hashtags
   const hashtags = output.hashtags || [];
   if (hashtags.length) {
     overlays.push({
       id: "overlay-hashtags",
       type: "hashtag",
       text: hashtags.join(" "),
-      x: OVERLAY_X,
+      x: STRIP_START_X,
       y,
-      width: OVERLAY_W,
+      width: overlayWidth,
       height: OVERLAY_H,
     });
   }
@@ -720,6 +727,66 @@ export class ArtboardManager {
     badge.className = "canvas-artboard__badge";
     badge.textContent = desc.type.toUpperCase();
     el.appendChild(badge);
+
+    // ── Hover action bar ────────────────────────────────────────────────────
+    // Five inline actions: Expand (fullscreen), Download, Edit (request), Duplicate, Delete.
+    // Rendered inside the artboard, shown on :hover via CSS.
+    const actionBar = document.createElement("div");
+    actionBar.className = "canvas-artboard__actions";
+
+    const actionDefs = [
+      {
+        key: "expand", title: "Expand",
+        svg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 3H5a2 2 0 00-2 2v3"/><path d="M21 8V5a2 2 0 00-2-2h-3"/><path d="M3 16v3a2 2 0 002 2h3"/><path d="M16 21h3a2 2 0 002-2v-3"/></svg>`,
+        onClick: () => {
+          // Dispatch custom event — app.js listens and opens asset modal
+          el.dispatchEvent(new CustomEvent("artboard:expand", { bubbles: true, detail: { desc } }));
+        }
+      },
+      {
+        key: "download", title: "Download",
+        svg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`,
+        onClick: () => {
+          el.dispatchEvent(new CustomEvent("artboard:download", { bubbles: true, detail: { desc } }));
+        }
+      },
+      {
+        key: "edit", title: "Request edit",
+        svg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>`,
+        onClick: () => {
+          el.dispatchEvent(new CustomEvent("artboard:edit", { bubbles: true, detail: { desc } }));
+        }
+      },
+      {
+        key: "duplicate", title: "Duplicate",
+        svg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`,
+        onClick: () => {
+          el.dispatchEvent(new CustomEvent("artboard:duplicate", { bubbles: true, detail: { desc } }));
+        }
+      },
+      {
+        key: "delete", title: "Delete", dangerous: true,
+        svg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>`,
+        onClick: () => {
+          el.dispatchEvent(new CustomEvent("artboard:delete", { bubbles: true, detail: { desc } }));
+        }
+      },
+    ];
+
+    for (const action of actionDefs) {
+      const btn = document.createElement("button");
+      btn.className = "canvas-artboard__action-btn" + (action.dangerous ? " canvas-artboard__action-btn--danger" : "");
+      btn.setAttribute("type", "button");
+      btn.setAttribute("title", action.title);
+      btn.innerHTML = action.svg;
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        action.onClick();
+      });
+      actionBar.appendChild(btn);
+    }
+
+    el.appendChild(actionBar);
 
     return el;
   }
