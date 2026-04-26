@@ -2382,6 +2382,53 @@ textarea {
   padding-left: 10px;
 }
 
+/* ── Video artboard ──────────────────────────────────────────────────────────── */
+
+.canvas-artboard--video {
+  /* Slight tint so the play button has context */
+}
+
+/* When playing: allow native controls to show at bottom of video */
+.canvas-artboard--playing video {
+  object-fit: contain;
+  background: #000;
+  border-radius: 14px 14px 0 0;
+}
+
+/* Play overlay button — centred over the video thumbnail */
+.canvas-artboard__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  z-index: 10;
+  transition: opacity 140ms ease, transform 140ms ease;
+  pointer-events: auto;
+}
+
+.canvas-artboard__play:hover {
+  transform: translate(-50%, -50%) scale(1.12);
+  opacity: 0.9;
+}
+
+.canvas-artboard__play:active {
+  transform: translate(-50%, -50%) scale(0.96);
+}
+
+.canvas-artboard__play--hidden {
+  display: none;
+}
+
+/* Video badge accent */
+.canvas-artboard--video .canvas-artboard__badge {
+  background: rgba(220, 50, 50, 0.75);
+}
+
 /* Selected artboard */
 .canvas-artboard--selected {
   outline: 3px solid rgba(111, 92, 69, 0.55);
