@@ -152,6 +152,18 @@ const ARTBOARD_W = 540;
 /** Default artboard height (half of 1080). */
 const ARTBOARD_H = 540;
 
+/**
+ * Derive artboard height from platform so artboards have correct aspect ratios.
+ * TikTok → 9:16, Instagram → 4:5, LinkedIn → 1:1 (default).
+ * @param {string} platform
+ * @returns {number}
+ */
+function artboardHeightForPlatform(platform) {
+  if (platform === "tiktok") return Math.round(ARTBOARD_W * (16 / 9));  // 960
+  if (platform === "instagram") return Math.round(ARTBOARD_W * (5 / 4)); // 675
+  return ARTBOARD_H; // 540 — square fallback (linkedin, unknown)
+}
+
 /** Horizontal gap between artboards in the slide strip. */
 const STRIP_GAP = 48;
 
@@ -234,7 +246,8 @@ export function resolveAssetUrl(output, item, slides = [], hintSlideNumber = nul
   // Direct asset_path on the item (set by FAL generation or mock SVG)
   if (item.asset_path) {
     const filename = item.asset_path.split("/").pop();
-    if (filename && output.post_id) {
+    // Skip mock placeholder files (.txt) — they are not renderable assets
+    if (filename && output.post_id && !filename.endsWith(".txt")) {
       return `/api/assets/${output.post_id}/${filename}`;
     }
   }
@@ -242,7 +255,7 @@ export function resolveAssetUrl(output, item, slides = [], hintSlideNumber = nul
   // preview_path fallback (same value as asset_path in current pipeline)
   if (item.preview_path) {
     const filename = item.preview_path.split("/").pop();
-    if (filename && output.post_id) {
+    if (filename && output.post_id && !filename.endsWith(".txt")) {
       return `/api/assets/${output.post_id}/${filename}`;
     }
   }
@@ -290,6 +303,10 @@ export function buildArtboardDescriptors(output) {
     : (output.slides || []);
   const slides = output.slides || [];
 
+  // Derive platform from output for correct aspect ratio
+  const platform = output.platform || (output.platform_targets && output.platform_targets[0]) || "";
+  const artboardH = artboardHeightForPlatform(platform);
+
   let x = STRIP_START_X;
 
   return items.map((item, index) => {
@@ -311,7 +328,7 @@ export function buildArtboardDescriptors(output) {
       x,
       y: STRIP_START_Y,
       width: ARTBOARD_W,
-      height: ARTBOARD_H,
+      height: artboardH,
       isVariant: false,
       originalId: null,
       order: index,
@@ -572,12 +589,37 @@ export class ArtboardManager {
     el.dataset.type = desc.type;
     el.style.position = "absolute";
 
-    // Text-only placeholder when assetUrl is null or empty
+    // Content card — rendered when there is no image/video asset.
+    // Covers: text-only slides, CTA slides, video briefs (mock .txt), script outputs.
     if (!desc.assetUrl) {
-      const placeholder = document.createElement("div");
-      placeholder.className = "canvas-artboard__placeholder";
-      placeholder.textContent = desc.text || desc.role || "Text";
-      el.appendChild(placeholder);
+      el.classList.add("canvas-artboard--content-card");
+
+      const roleIcons = { cta: "→", hook: "🎯", benefit: "✦", recipe: "🍽", script: "📄", video: "▶", clip: "▶", ugc: "▶" };
+      const icon = roleIcons[desc.role] || "✦";
+
+      const card = document.createElement("div");
+      card.className = "canvas-artboard__content-card";
+
+      const roleBar = document.createElement("div");
+      roleBar.className = "canvas-artboard__content-role";
+      roleBar.textContent = `${icon} ${capitalizeRole(desc.role)}`;
+      card.appendChild(roleBar);
+
+      if (desc.text) {
+        const body = document.createElement("p");
+        body.className = "canvas-artboard__content-body";
+        body.textContent = desc.text;
+        card.appendChild(body);
+      }
+
+      if (desc.prompt && desc.prompt !== desc.text) {
+        const prompt = document.createElement("p");
+        prompt.className = "canvas-artboard__content-prompt";
+        prompt.textContent = desc.prompt;
+        card.appendChild(prompt);
+      }
+
+      el.appendChild(card);
 
       // Label
       const label = document.createElement("span");
