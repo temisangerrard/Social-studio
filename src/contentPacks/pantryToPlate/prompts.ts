@@ -69,7 +69,7 @@ export function buildWhatCanIMakePrompts(
     role: "dish_reveal" as SlideRole, requiresImage: true, aspectRatio: "1:1" as const,
     prompt: `${brand.imageStyle}. Close-up hero shot of ${r.name}. ${r.description ?? ""} Premium ceramic, warm cream and terracotta tones, soft natural light. ${FOOD_BASE}. Square 1:1.`,
     negativePrompt: NEG_BASE,
-    primaryModel: "fal-ai/gpt-image-1", fallbackModel: null as const,
+    primaryModel: "fal-ai/gpt-image-1", fallbackModel: null,
   }));
   return [
     TEXT_SLIDE("hook"),
