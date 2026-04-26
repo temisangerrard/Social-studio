@@ -2971,15 +2971,41 @@ export class CanvasEngine {
   }
 
   /**
-   * Update the grid background to scale with the current zoom level.
+   * Update the canvas grid background to match Figma's infinite canvas standard.
+   *
+   * Two-tier dot grid on dark background:
+   * - Base dots: 20px logical spacing, drawn at every grid point
+   * - Major dots: every 4th point (80px), slightly brighter
+   * Both tiers scale with zoom and track with pan so the grid feels fixed in canvas space.
+   *
+   * At zoom >= 2.5 (zoomed-in editing mode) the dots grow slightly for better visibility.
    */
   _updateGridBackground() {
-    const gridSize = 24 * this._transform.zoom;
-    const offsetX = this._transform.panX % gridSize;
-    const offsetY = this._transform.panY % gridSize;
-    this._stageEl.style.backgroundImage =
-      `radial-gradient(circle, rgba(175,179,170,0.35) 1px, transparent 1px)`;
-    this._stageEl.style.backgroundSize = `${gridSize}px ${gridSize}px`;
-    this._stageEl.style.backgroundPosition = `${offsetX}px ${offsetY}px`;
+    const zoom   = this._transform.zoom;
+    const BASE   = 20;  // logical canvas-space grid spacing (px)
+
+    const cellPx   = BASE * zoom;   // screen-space cell size
+    const majorPx  = cellPx * 4;    // major grid cell (every 4 base cells = 80px logical)
+
+    const ox = this._transform.panX % cellPx;
+    const oy = this._transform.panY % cellPx;
+    const mox = this._transform.panX % majorPx;
+    const moy = this._transform.panY % majorPx;
+
+    // Dot sizes — crisp at 1px, slightly larger at high zoom
+    const dotBase  = zoom >= 2.5 ? "1.5px" : "1px";
+    const dotMajor = zoom >= 2.5 ? "2px"   : "1.5px";
+
+    // Dot colours on the dark (#1c1c1c) canvas
+    const colBase  = "rgba(255,255,255,0.12)";
+    const colMajor = "rgba(255,255,255,0.28)";
+
+    // Two radial-gradient layers: major dots on top, base dots underneath
+    this._stageEl.style.backgroundImage = [
+      `radial-gradient(circle, ${colMajor} ${dotMajor}, transparent ${dotMajor})`,
+      `radial-gradient(circle, ${colBase}  ${dotBase},  transparent ${dotBase})`,
+    ].join(", ");
+    this._stageEl.style.backgroundSize     = `${majorPx}px ${majorPx}px, ${cellPx}px ${cellPx}px`;
+    this._stageEl.style.backgroundPosition = `${mox}px ${moy}px, ${ox}px ${oy}px`;
   }
 }
