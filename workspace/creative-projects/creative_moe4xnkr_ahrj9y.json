@@ -1,0 +1,290 @@
+{
+  "id": "creative_moe4xnkr_ahrj9y",
+  "brandProfileId": "peppera",
+  "rawIntent": "easy dinner from whatever is in the fridge",
+  "selectedDirectionId": "the-specific-moment-1",
+  "creativePlan": {
+    "brief_interpretation": {
+      "product": "Peppera",
+      "goal": "installs",
+      "audience": "busy home cooks",
+      "format": "educational-carousel",
+      "tone": "helpful, witty, clean",
+      "platform": "tiktok",
+      "confidence": 0.82,
+      "inferredContext": [
+        "A meal-planning assistant that turns rough ingredients into practical dinner ideas.",
+        "A meal-planning assistant that turns rough ingredients into practical dinner ideas."
+      ]
+    },
+    "proposed_directions": [
+      {
+        "title": "The Specific Moment",
+        "angle": "Show Peppera through a concrete, specific moment that busy home cooks will immediately recognise — not a product pitch, a real human situation that A meal-planning assistant that turns rough ingredients into practical dinner ideas..",
+        "why_it_works": "Specificity creates credibility. A real moment beats a product claim every time. Viewers see themselves.",
+        "emotional_driver": "recognition and relief",
+        "visual_style": "helpful, witty, clean texture, close-up real-world detail, A cute anthropomorphic green bell pepper character named Peppera in scene, no corporate polish",
+        "hook_style": "specific situation",
+        "hook_examples": [
+          "The moment Peppera actually clicks for you.",
+          "This is what busy home cooks do when easy dinner from whatever is in the fridge."
+        ],
+        "id": "the-specific-moment-1",
+        "format": "educational-carousel",
+        "recommended_platform_fit": [
+          "tiktok",
+          "instagram"
+        ],
+        "performance_score": 92,
+        "brand_fit_score": 88
+      },
+      {
+        "title": "Tension to Transformation",
+        "angle": "Open on the friction busy home cooks feel before Peppera — then let the product do the work visually. No explanation, just the before and after.",
+        "why_it_works": "Demonstrated transformation beats described features. The before/after arc is universally relatable across any category.",
+        "emotional_driver": "relief and earned control",
+        "visual_style": "before/after sequence, Peppera in action, payoff frame with brand color #f04d23",
+        "hook_style": "problem-first contrast",
+        "hook_examples": [
+          "This used to take so much longer.",
+          "I didn't know Peppera could do this until I tried."
+        ],
+        "id": "tension-to-transformation-2",
+        "format": "educational-carousel",
+        "recommended_platform_fit": [
+          "tiktok",
+          "instagram"
+        ],
+        "performance_score": 86,
+        "brand_fit_score": 84
+      },
+      {
+        "title": "The Peppera Angle on easy dinner from whatever is in the fridge",
+        "angle": "Give busy home cooks a sharp, specific insight about easy dinner from whatever is in the fridge that only someone who built Peppera would know — then let the product be the natural answer.",
+        "why_it_works": "Insider knowledge signals authority without pitching. It earns trust, saves, and shares because it teaches something real.",
+        "emotional_driver": "authority, curiosity, and earned trust",
+        "visual_style": "clean editorial, helpful, witty, clean, proof or data moment, brand-consistent typography",
+        "hook_style": "contrarian or insider insight",
+        "hook_examples": [
+          "Here is what most busy home cooks get wrong about easy dinner from whatever is in the fridge.",
+          "The thing Peppera users know that everyone else is still guessing at."
+        ],
+        "id": "the-peppera-angle-on-easy-dinner-from-whatever-is-in-the-fridge-3",
+        "format": "educational-carousel",
+        "recommended_platform_fit": [
+          "tiktok",
+          "instagram"
+        ],
+        "performance_score": 80,
+        "brand_fit_score": 80
+      }
+    ],
+    "recommended_direction_id": "the-specific-moment-1",
+    "content_blueprint": {
+      "narrative_arc": [
+        "start with tension",
+        "make it visual",
+        "show the product doing work",
+        "land the transformation",
+        "close with a native CTA"
+      ],
+      "beat_sheet": [
+        "cover hook",
+        "problem frame",
+        "insight or mechanism",
+        "proof moment",
+        "CTA or save-worthy takeaway"
+      ],
+      "creative_notes": [
+        "specific > generic",
+        "demonstrated outcome > described feature",
+        "first frame must create a question",
+        "emotional driver: recognition and relief"
+      ],
+      "editing_style": "clean sequence, one idea per slide, strong cover contrast",
+      "cta_style": "soft direct-response, show why to act now",
+      "pacing_guidance": "one thought per frame; make slide 2 earn the swipe",
+      "on_screen_text_strategy": "short, spoken-language overlays that add tension rather than repeating the script"
+    },
+    "production_assets": {
+      "script": [
+        "The moment Peppera actually clicks for you.",
+        "Show Peppera through a concrete, specific moment that busy home cooks will immediately recognise — not a product pitch, a real human situation that A meal-planning assistant that turns rough ingredients into practical dinner ideas..",
+        "Then Peppera creates the proof moment: Specificity creates credibility. A real moment beats a product claim every time. Viewers see themselves.",
+        "Download Peppera"
+      ],
+      "on_screen_text": [
+        "The moment Peppera actually clicks for you.",
+        "recognition and relief",
+        "Download Peppera"
+      ],
+      "shot_list": [
+        "Opening frame: specific situation with a clear pattern interrupt",
+        "Context frame: show the user situation for busy home cooks",
+        "Product frame: Peppera doing the actual work",
+        "Payoff frame: visible before/after or conclusion",
+        "CTA frame: Download Peppera, native and low-friction"
+      ],
+      "image_prompts": [
+        "helpful, witty, clean texture, close-up real-world detail, A cute anthropomorphic green bell pepper character named Peppera in scene, no corporate polish, Peppera, helpful, witty, clean, first-frame hook, no generic ad polish",
+        "specific proof visual for Show Peppera through a concrete, specific moment that busy home cooks will immediately recognise — not a product pitch, a real human situation that A meal-planning assistant that turns rough ingredients into practical dinner ideas.., brand colors #f04d23 and #ffd9c8",
+        "final payoff visual, recognition and relief, platform-native composition"
+      ],
+      "slide_plan": [
+        "Hook cover: Show Peppera through a concrete, specific moment that busy home cooks will immediately recognise — not a product pitch, a real human situation that A meal-planning assistant that turns rough ingredients into practical dinner ideas..",
+        "The tension: Show Peppera through a concrete, specific moment that busy home cooks will immediately recognise — not a product pitch, a real human situation that A meal-planning assistant that turns rough ingredients into practical dinner ideas..",
+        "The shift: Show Peppera through a concrete, specific moment that busy home cooks will immediately recognise — not a product pitch, a real human situation that A meal-planning assistant that turns rough ingredients into practical dinner ideas..",
+        "The proof: Show Peppera through a concrete, specific moment that busy home cooks will immediately recognise — not a product pitch, a real human situation that A meal-planning assistant that turns rough ingredients into practical dinner ideas..",
+        "The takeaway: Show Peppera through a concrete, specific moment that busy home cooks will immediately recognise — not a product pitch, a real human situation that A meal-planning assistant that turns rough ingredients into practical dinner ideas..",
+        "CTA: Show Peppera through a concrete, specific moment that busy home cooks will immediately recognise — not a product pitch, a real human situation that A meal-planning assistant that turns rough ingredients into practical dinner ideas.."
+      ],
+      "caption_options": [
+        "The moment Peppera actually clicks for you. Specificity creates credibility. A real moment beats a product claim every time. Viewers see themselves. Download Peppera.",
+        "The Specific Moment: Show Peppera through a concrete, specific moment that busy home cooks will immediately recognise — not a product pitch, a real human situation that A meal-planning assistant that turns rough ingredients into practical dinner ideas.. Download Peppera."
+      ],
+      "headline_options": [
+        "The moment Peppera actually clicks for you.",
+        "This is what busy home cooks do when easy dinner from whatever is in the fridge."
+      ],
+      "render_prompts": [
+        "Render as educational-carousel for tiktok; keep visual style: helpful, witty, clean texture, close-up real-world detail, A cute anthropomorphic green bell pepper character named Peppera in scene, no corporate polish",
+        "Avoid corporate templates; preserve Peppera brand tone: helpful, witty, clean"
+      ],
+      "voiceover_version": [
+        "The moment Peppera actually clicks for you.",
+        "Show Peppera through a concrete, specific moment that busy home cooks will immediately recognise — not a product pitch, a real human situation that A meal-planning assistant that turns rough ingredients into practical dinner ideas..",
+        "Then Peppera creates the proof moment: Specificity creates credibility. A real moment beats a product claim every time. Viewers see themselves.",
+        "Download Peppera"
+      ],
+      "thumbnail_or_cover_text": [
+        "The moment Peppera actually clicks for you.",
+        "The Specific Moment"
+      ]
+    },
+    "storyboard": [
+      {
+        "slide_number": 1,
+        "role": "hook",
+        "copy": "The moment Peppera actually clicks for you.",
+        "image_strategy": "no_image_text_only",
+        "visual_notes": "Bold text on high-contrast background. #f04d23 or deep neutral. Make slide 1 earn the swipe — no image needed, the words carry it.",
+        "layout": "hook_cover"
+      },
+      {
+        "slide_number": 2,
+        "role": "problem",
+        "copy": "Show Peppera through a concrete, specific moment that busy home cooks will immediately recognise — not a product pitch, a real human situation that A meal-planning assistant that turns rough ingredients into practical dinner ideas",
+        "image_strategy": "ai_generated",
+        "image_prompt": "helpful, witty, clean texture, close-up real-world detail, A cute anthropomorphic green bell pepper character named Peppera in scene, no corporate polish, tension or friction moment for busy home cooks, emotionally resonant scene, helpful, witty, clean texture, editorial composition, no stock photo look",
+        "visual_notes": "Image carries the tension. Copy is one sharp line — don't explain, make them feel it.",
+        "layout": "image_text_split"
+      },
+      {
+        "slide_number": 3,
+        "role": "reveal",
+        "copy": "Peppera changes this.",
+        "image_strategy": "ai_generated",
+        "image_prompt": "Peppera product moment, helpful, witty, clean texture, close-up real-world detail, A cute anthropomorphic green bell pepper character named Peppera in scene, no corporate polish, clean proof visual, brand-authentic not corporate, #ffd9c8 accent tone, editorial composition",
+        "visual_notes": "The product earns its place here. Show it doing real work, not being advertised.",
+        "layout": "image_focus"
+      },
+      {
+        "slide_number": 4,
+        "role": "payoff",
+        "copy": "The result: recognition and relief.",
+        "image_strategy": "ai_generated",
+        "image_prompt": "Visible transformation outcome, helpful, witty, clean tone, helpful, witty, clean texture, close-up real-world detail, A cute anthropomorphic green bell pepper character named Peppera in scene, no corporate polish, positive payoff, warm optimistic lighting, #f04d23 accent",
+        "visual_notes": "Viewer sees the after-state clearly. Demonstrated outcome only — no describing what they're seeing.",
+        "layout": "image_text_split"
+      },
+      {
+        "slide_number": 5,
+        "role": "insight",
+        "copy": "What most busy home cooks miss: Show Peppera through a concrete.",
+        "image_strategy": "no_image_text_only",
+        "visual_notes": "Text-only clarity slide. One sharp statement. High save and share rate on this slide type.",
+        "layout": "statement"
+      },
+      {
+        "slide_number": 6,
+        "role": "cta",
+        "copy": "Download Peppera",
+        "image_strategy": "reusable_template",
+        "visual_notes": "Branded CTA template. #f04d23. Low friction ask — tell them exactly what to do next.",
+        "layout": "cta_banner"
+      }
+    ],
+    "caption": "The moment Peppera actually clicks for you. Show Peppera through a concrete, specific moment that busy home cooks will immediately recognise — not a product pitch, a real human situation that A meal-planning assistant that turns rough ingredients into practical dinner ideas.. Download Peppera",
+    "hashtags": [
+      "#mealideas",
+      "#easydinners",
+      "#cooksmarter"
+    ],
+    "variants": [
+      {
+        "label": "safer / cleaner",
+        "difference": "More polished and brand-safe.",
+        "script_adjustments": [
+          "reduce slang",
+          "make proof clearer"
+        ],
+        "visual_adjustments": [
+          "cleaner framing",
+          "less chaotic cuts"
+        ]
+      },
+      {
+        "label": "bolder / more viral",
+        "difference": "Stronger first-frame tension and faster payoff.",
+        "script_adjustments": [
+          "sharpen the confession",
+          "increase contrast"
+        ],
+        "visual_adjustments": [
+          "more motion",
+          "harder first-frame pattern interrupt"
+        ]
+      },
+      {
+        "label": "funnier",
+        "difference": "More self-aware and native.",
+        "script_adjustments": [
+          "add human aside",
+          "make the problem more relatable"
+        ],
+        "visual_adjustments": [
+          "reaction shot",
+          "messier real-world texture"
+        ]
+      },
+      {
+        "label": "premium",
+        "difference": "More restrained and elevated.",
+        "script_adjustments": [
+          "less slang",
+          "more confidence"
+        ],
+        "visual_adjustments": [
+          "more whitespace",
+          "slower camera"
+        ]
+      },
+      {
+        "label": "more direct-response",
+        "difference": "Clearer action and product benefit.",
+        "script_adjustments": [
+          "stronger CTA",
+          "show outcome earlier"
+        ],
+        "visual_adjustments": [
+          "product UI closer",
+          "CTA end frame"
+        ]
+      }
+    ],
+    "review_flags": []
+  },
+  "refinementNotes": [],
+  "createdAt": "2026-04-25T09:23:45.308Z",
+  "updatedAt": "2026-04-25T09:23:45.308Z"
+}

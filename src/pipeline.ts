@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { generateFalImageAsset, generateFalVideoAsset } from "./fal-media.ts";
+import { completeGenerationMetadata } from "./generation-provider.ts";
 import { generateImagesForSlides } from "./image-generator.ts";
 import { planSocialPackage, assignUploadedAssetsToSlides, assignUploadedAssetsToCarouselSlides } from "./planner.ts";
 import { renderSlides } from "./renderer.ts";
@@ -423,7 +424,7 @@ async function createImageArtifact(params: {
 }): Promise<GeneratedArtifact> {
   const recipe = buildWorkflowRecipe(params.request);
   const references = buildWorkflowReferenceAssets(params.request, params.brandProfile);
-  let assetPath = await generateFalImageAsset({
+  let generated = await generateFalImageAsset({
     prompt: params.prompt,
     assetsDir: params.assetsDir,
     fileStem: params.artifactId,
@@ -431,8 +432,10 @@ async function createImageArtifact(params: {
     recipe,
     references
   });
+  let assetPath = generated?.assetPath ?? null;
+  let generation = generated?.generation ?? null;
 
-  if (!assetPath) {
+  if (!assetPath && !generation) {
     assetPath = await createPlaceholderImageArtifact({
       prompt: params.prompt,
       title: params.title,
@@ -444,6 +447,15 @@ async function createImageArtifact(params: {
         secondaryColor: params.brandProfile.visual.secondaryColor
       }
     });
+    if (!generation) {
+      generation = completeGenerationMetadata({
+        provider: "mock",
+        model: "mock-svg",
+        payload: { prompt: params.prompt },
+        outputUrl: null,
+        assetPath,
+      });
+    }
   }
 
   return {
@@ -455,20 +467,17 @@ async function createImageArtifact(params: {
     asset_path: assetPath,
     preview_path: assetPath,
     source_asset_id: params.sourceAssetId ?? null,
-    variant_group: params.request.workflowType === "mascot-variants" ? "variant-pack" : null
+    variant_group: params.request.workflowType === "mascot-variants" ? "variant-pack" : null,
+    provider: generation?.provider,
+    model: generation?.model,
+    request_id: generation?.request_id,
+    status: generation?.status,
+    error: generation?.error,
+    payload: generation?.payload,
+    output_url: generation?.output_url,
+    generated_at: generation?.generated_at,
+    retryable: generation?.retryable,
   };
-}
-
-async function createPlaceholderVideoArtifact(params: {
-  prompt: string;
-  title: string;
-  assetsDir: string;
-  fileStem: string;
-}): Promise<string> {
-  await fs.mkdir(params.assetsDir, { recursive: true });
-  const placeholderPath = path.join(params.assetsDir, `${params.fileStem}.txt`);
-  await fs.writeFile(placeholderPath, `[MOCK VIDEO]\nPrompt: ${params.prompt}\nTitle: ${params.title}\n`, "utf8");
-  return placeholderPath;
 }
 
 async function createVideoArtifact(params: {
@@ -483,7 +492,7 @@ async function createVideoArtifact(params: {
   const recipe = buildWorkflowRecipe(params.request);
   const references = buildWorkflowReferenceAssets(params.request, params.brandProfile);
   const videoOptions = resolveVideoOptions(params.request);
-  let assetPath = await generateFalVideoAsset({
+  const generated = await generateFalVideoAsset({
     prompt: params.prompt,
     assetsDir: params.assetsDir,
     fileStem: params.artifactId,
@@ -492,16 +501,8 @@ async function createVideoArtifact(params: {
     references,
     videoOptions
   });
-
-  if (!assetPath) {
-    console.warn(`[pipeline] Video generation returned null for ${params.artifactId}, writing placeholder`);
-    assetPath = await createPlaceholderVideoArtifact({
-      prompt: params.prompt,
-      title: params.title,
-      assetsDir: params.assetsDir,
-      fileStem: params.artifactId
-    });
-  }
+  const assetPath = generated?.assetPath ?? null;
+  const generation = generated?.generation ?? null;
 
   return {
     id: params.artifactId,
@@ -512,7 +513,16 @@ async function createVideoArtifact(params: {
     asset_path: assetPath,
     preview_path: assetPath,
     source_asset_id: params.request.targetAssetId ?? null,
-    variant_group: params.request.workflowType === "reel-package" ? "reel-clips" : null
+    variant_group: params.request.workflowType === "reel-package" ? "reel-clips" : null,
+    provider: generation?.provider ?? (process.env.FAL_KEY ? "fal" : "mock"),
+    model: generation?.model ?? recipe.model,
+    request_id: generation?.request_id,
+    status: generation?.status ?? (assetPath ? "complete" : "failed"),
+    error: generation?.error ?? (assetPath ? null : "Video generation is unavailable because no provider key is configured."),
+    payload: generation?.payload ?? { prompt: params.prompt, videoOptions },
+    output_url: generation?.output_url,
+    generated_at: generation?.generated_at ?? new Date().toISOString(),
+    retryable: generation?.retryable ?? false,
   };
 }
 
@@ -704,6 +714,15 @@ export async function runPipelineFromRequest(
         slide_number: slideNumber,
         source_asset_id: null,
         variant_group: null,
+        provider: slide.generation?.provider ?? (process.env.FAL_KEY ? "fal" : "mock"),
+        model: slide.generation?.model ?? (process.env.FAL_MODEL ?? brandProfile.providers.imageModel),
+        request_id: slide.generation?.request_id,
+        status: slide.generation?.status ?? (slide.asset_path ? "complete" : "failed"),
+        error: slide.generation?.error ?? null,
+        payload: slide.generation?.payload ?? { prompt: slide.image_prompt ?? slide.text },
+        output_url: slide.generation?.output_url,
+        generated_at: slide.generation?.generated_at,
+        retryable: slide.generation?.retryable,
       };
     });
 
@@ -755,19 +774,18 @@ export async function runPipelineFromRequest(
   } else if (workflowType === "mascot-variants") {
     const count = resolveVariantCount(request);
     const variantAngles = ["hero framing", "playful kitchen pose", "product showcase", "reaction moment", "overhead layout", "close-up expression", "editorial composition", "social cover composition"];
-    metadata.artifacts = await Promise.all(
-      Array.from({ length: count }, (_, index) =>
-        createImageArtifact({
-          prompt: `${request.rawIdea}. Variant direction: ${variantAngles[index] ?? "social variation"}.`,
-          title: `${brandProfile.name} Variant ${index + 1}`,
-          role: "variant",
-          artifactId: `variant-${index + 1}`,
-          assetsDir,
-          brandProfile,
-          request
-        })
-      )
-    );
+    metadata.artifacts = [];
+    for (let index = 0; index < count; index += 1) {
+      metadata.artifacts.push(await createImageArtifact({
+        prompt: `${request.rawIdea}. Variant direction: ${variantAngles[index] ?? "social variation"}.`,
+        title: `${brandProfile.name} Variant ${index + 1}`,
+        role: "variant",
+        artifactId: `variant-${index + 1}`,
+        assetsDir,
+        brandProfile,
+        request
+      }));
+    }
     metadata.render_status = "skipped";
   } else if (workflowType === "reference-edit") {
     metadata.artifacts = [
@@ -802,19 +820,18 @@ export async function runPipelineFromRequest(
       ...request,
       workflowType: "video-clip"
     };
-    metadata.artifacts = await Promise.all(
-      metadata.reel_package.clipBriefs.map((clip, index) =>
-        createVideoArtifact({
-          prompt: clip.prompt,
-          title: clip.title,
-          role: "reel-clip",
-          artifactId: `reel-clip-${index + 1}`,
-          assetsDir,
-          brandProfile,
-          request: clipRequest
-        })
-      )
-    );
+    metadata.artifacts = [];
+    for (const [index, clip] of metadata.reel_package.clipBriefs.entries()) {
+      metadata.artifacts.push(await createVideoArtifact({
+        prompt: clip.prompt,
+        title: clip.title,
+        role: "reel-clip",
+        artifactId: `reel-clip-${index + 1}`,
+        assetsDir,
+        brandProfile,
+        request: clipRequest
+      }));
+    }
 
     // Generate voiceover for the reel package
     const voiceResult = await generateVoiceover(

@@ -1,0 +1,292 @@
+{
+  "id": "creative_moe51w1o_4tmnop",
+  "brandProfileId": "autobett",
+  "rawIntent": "show how the AI agent places bets automatically",
+  "selectedDirectionId": "betting-agent-never-sleeps-2",
+  "creativePlan": {
+    "brief_interpretation": {
+      "product": "AutoBett",
+      "goal": "awareness",
+      "audience": "crypto degens, DeFi users, sports bettors exploring onchain, web3 early adopters",
+      "format": "video",
+      "tone": "bold, hype, crypto-native, confident",
+      "platform": "tiktok",
+      "confidence": 0.87,
+      "inferredContext": [
+        "AutoBett needs to demonstrate the core feature of AI agents autonomously placing bets",
+        "The audience is tech-savvy and responds well to crypto-native content with real utility",
+        "TikTok requires visually engaging content with a strong hook in the first few seconds",
+        "The value proposition centers around passive betting through AI automation"
+      ]
+    },
+    "proposed_directions": [
+      {
+        "title": "Set & Forget Betting",
+        "angle": "Show the simplicity of setting your AI agent parameters and letting it work 24/7 without your intervention",
+        "why_it_works": "Highlights the passive income aspect that appeals to crypto degens and DeFi users who want exposure without constant monitoring",
+        "emotional_driver": "freedom from manual trading and constant screen time",
+        "visual_style": "split screen before/after, futuristic UI elements, betting action happening automatically",
+        "hook_style": "time-saving benefit",
+        "hook_examples": [
+          "I haven't touched my betting positions in 7 days...",
+          "Your betting strategy shouldn't require your eyeballs glued to the screen 24/7"
+        ],
+        "id": "set-forget-betting-1",
+        "format": "video",
+        "recommended_platform_fit": [
+          "tiktok",
+          "twitter"
+        ],
+        "performance_score": 85,
+        "brand_fit_score": 90
+      },
+      {
+        "title": "Your Betting Agent Never Sleeps",
+        "angle": "Show the AI agent placing bets 24/7 while humans are occupied with other activities or sleeping",
+        "why_it_works": "Highlights the always-on advantage of AI which humans can't replicate, creating FOMO about missed opportunities",
+        "emotional_driver": "FOMO and desire for constant market exposure",
+        "visual_style": "time-lapse betting action, contrast between human activities and AI betting, notification avalanche",
+        "hook_style": "urgency and FOMO",
+        "hook_examples": [
+          "While you were sleeping, your AI agent was placing these bets...",
+          "The market never closes. Your betting shouldn't stop either."
+        ],
+        "id": "betting-agent-never-sleeps-2",
+        "format": "video",
+        "recommended_platform_fit": [
+          "tiktok",
+          "instagram"
+        ],
+        "performance_score": 92,
+        "brand_fit_score": 88
+      },
+      {
+        "title": "AI vs. Human Betting",
+        "angle": "Directly contrast manual betting processes with AI-powered automation to highlight the efficiency advantage",
+        "why_it_works": "Creates a clear before/after transformation that demonstrates the product's value proposition visually",
+        "emotional_driver": "superiority and efficiency of AI over manual processes",
+        "visual_style": "side-by-side comparison, speed of execution contrast, multiple simultaneous actions",
+        "hook_examples": [
+          "Stop betting like it's 2021. This is how onchain degens win now.",
+          "Manual bettors are playing checkers while AutoBett users are playing chess."
+        ],
+        "id": "ai-vs-human-betting-3",
+        "format": "video",
+        "recommended_platform_fit": [
+          "tiktok",
+          "youtube"
+        ],
+        "performance_score": 88,
+        "brand_fit_score": 85
+      }
+    ],
+    "recommended_direction_id": "betting-agent-never-sleeps-2",
+    "content_blueprint": {
+      "narrative_arc": [
+        "start with human limitation",
+        "introduce the AI solution",
+        "show how it works",
+        "demonstrate the advantage",
+        "close with action"
+      ],
+      "beat_sheet": [
+        "hook with FOMO",
+        "problem visualization",
+        "AI introduction",
+        "mechanism explanation",
+        "advantage demonstration",
+        "CTA"
+      ],
+      "creative_notes": [
+        "keep energy high throughout",
+        "use text overlays to reinforce key points",
+        "show actual betting positions being placed, not just UI",
+        "emphasize the 24/7 nature visually",
+        "maintain crypto-native aesthetic throughout"
+      ],
+      "editing_style": "fast-paced cuts, dynamic transitions, text overlays, split screens",
+      "cta_style": "bold, direct, low-friction",
+      "pacing_guidance": "hook within 2 seconds, new visual every 1.5-2 seconds, 15-20 seconds total",
+      "on_screen_text_strategy": "short, punchy text overlays that reinforce spoken elements"
+    },
+    "production_assets": {
+      "script": [
+        "While you were sleeping, your AI agent was placing these bets...",
+        "Manual bettors miss 70% of market moves",
+        "AutoBett AI agents never sleep",
+        "Set your risk parameters. Let the AI handle the rest.",
+        "Position diversification without the manual work",
+        "Connect Wallet"
+      ],
+      "on_screen_text": [
+        "24/7 AI BETTING",
+        "NEVER SLEEP",
+        "SET & FORGET",
+        "MULTIPLE MARKETS",
+        "NO MANUAL WORK"
+      ],
+      "shot_list": [
+        "Person sleeping while phone notifications multiply",
+        "Split screen: frustrated manual bettor vs. active AI",
+        "AI agent visual placing bets across platforms",
+        "Close up of AutoBett interface with risk parameters",
+        "Network visualization of diverse betting positions",
+        "AutoBett CTA with wallet connection"
+      ],
+      "image_prompts": [
+        "Dark bedroom scene with person sleeping, phone screen showing multiple crypto betting position notifications popping up, neon glow, cyberpunk aesthetic, with AutoBett brand colors #f0a500 and #1a1a2e, cinematic lighting",
+        "Split screen comparison showing frustrated person watching sports game versus flashing crypto betting opportunities timeline they're missing, high energy sports betting atmosphere, charts with up and down movements in brand colors #f0a500, #1a1a2e, and accent #e94560",
+        "Futuristic AI agent visualization placing bets across multiple sports, prediction markets, and onchain games simultaneously, neon interface elements in AutoBett brand colors #f0a500, #1a1a2e, #e94560, cyberpunk crypto aesthetic",
+        "Clean, futuristic interface showing AutoBett dashboard with risk parameter settings and automated betting workflow, simplified UI elements in brand colors #f0a500 (primary), #1a1a2e (secondary), and #16213e (surface)",
+        "Visualization of multiple diverse betting positions across sports, prediction markets, and onchain games all being managed by AutoBett AI agent, shown as connected nodes in a network with glowing lines, using brand colors #f0a500, #1a1a2e, and accent #e94560"
+      ],
+      "slide_plan": [
+        "Hook: Sleeping person with multiplying betting notifications",
+        "Problem: Manual bettors missing opportunities",
+        "Solution: AutoBett AI agents never sleep",
+        "How it works: Setting risk parameters",
+        "Advantage: Diversification without manual work",
+        "CTA: Connect Wallet"
+      ],
+      "caption_options": [
+        "While you're scrolling TikTok, AutoBett's AI agents are placing bets 24/7 across sports, prediction markets, and onchain games. Set your risk parameters once and let the AI handle the rest. Stop missing opportunities while you sleep. #ConnectWallet",
+        "Manual bettors are asleep at the wheel while the market keeps moving. AutoBett's AI agents work 24/7 so you never miss an opportunity. Set your parameters once and let the AI do the work."
+      ],
+      "headline_options": [
+        "Your Betting Agent Never Sleeps",
+        "AI Betting While You're AFK"
+      ],
+      "render_prompts": [
+        "Render as dynamic 15-second TikTok video with fast cuts, text overlays, and crypto-native aesthetic",
+        "Use AutoBett brand colors #f0a500, #1a1a2e, #e94560, #16213e throughout",
+        "Add subtle motion to all graphics to maintain engagement"
+      ],
+      "voiceover_version": [
+        "While you were sleeping, your AI agent was placing these bets...",
+        "Manual bettors miss 70% of market moves",
+        "AutoBett AI agents never sleep",
+        "Set your risk parameters. Let the AI handle the rest.",
+        "Position diversification without the manual work",
+        "Connect Wallet"
+      ],
+      "thumbnail_or_cover_text": [
+        "Your Betting Agent Never Sleeps",
+        "AI Places Bets 24/7"
+      ]
+    },
+    "storyboard": [
+      {
+        "slide_number": 1,
+        "role": "hook",
+        "copy": "While you were sleeping, your AI agent was placing these bets...",
+        "image_strategy": "ai_generated",
+        "image_prompt": "Dark bedroom scene with person sleeping, phone screen showing multiple crypto betting position notifications popping up, neon glow, cyberpunk aesthetic, with AutoBett brand colors #f0a500 and #1a1a2e, cinematic lighting, high contrast",
+        "visual_notes": "Start with a strong visual contrast between the peaceful sleeper and the chaotic, active betting notifications. Create instant FOMO.",
+        "layout": "full_screen"
+      },
+      {
+        "slide_number": 2,
+        "role": "problem",
+        "copy": "Manual bettors miss 70% of market moves",
+        "image_strategy": "ai_generated",
+        "image_prompt": "Split screen comparison showing frustrated person watching sports game versus flashing crypto betting opportunities timeline they're missing, high energy sports betting atmosphere, charts with up and down movements in brand colors #f0a500, #1a1a2e, and accent #e94560",
+        "visual_notes": "The frustration should be palpable. Use fast cuts and dynamic chart movements to show the opportunities being missed.",
+        "layout": "split_screen"
+      },
+      {
+        "slide_number": 3,
+        "role": "solution",
+        "copy": "AutoBett AI agents never sleep",
+        "image_strategy": "ai_generated",
+        "image_prompt": "Futuristic AI agent visualization placing bets across multiple sports, prediction markets, and onchain games simultaneously, neon interface elements in AutoBett brand colors #f0a500, #1a1a2e, #e94560, cyberpunk crypto aesthetic, holographic elements",
+        "visual_notes": "Show the AI in action across multiple markets simultaneously. The visual should feel futuristic and technologically advanced.",
+        "layout": "full_screen"
+      },
+      {
+        "slide_number": 4,
+        "role": "explanation",
+        "copy": "Set your risk parameters. Let the AI handle the rest.",
+        "image_strategy": "ai_generated",
+        "image_prompt": "Clean, futuristic interface showing AutoBett dashboard with risk parameter settings and automated betting workflow, simplified UI elements in brand colors #f0a500 (primary), #1a1a2e (secondary), and #16213e (surface), glowing buttons and sliders",
+        "visual_notes": "Focus on the simplicity of the interface. Make it look approachable yet sophisticated. The settings should look intuitive.",
+        "layout": "interface_focus"
+      },
+      {
+        "slide_number": 5,
+        "role": "payoff",
+        "copy": "Position diversification without the manual work",
+        "image_strategy": "ai_generated",
+        "image_prompt": "Visualization of multiple diverse betting positions across sports, prediction markets, and onchain games all being managed by AutoBett AI agent, shown as connected nodes in a network with glowing lines, using brand colors #f0a500, #1a1a2e, and accent #e94560",
+        "visual_notes": "The network visualization should clearly show the diversification advantage. The connections should pulse with energy to indicate activity.",
+        "layout": "network_visualization"
+      },
+      {
+        "slide_number": 6,
+        "role": "cta",
+        "copy": "Connect Wallet",
+        "image_strategy": "reusable_template",
+        "visual_notes": "Clean, bold CTA with primary brand color #f0a500 on a dark #1a1a2e background. Minimal design to emphasize action. Add wallet connection icon for clarity.",
+        "layout": "cta_banner"
+      }
+    ],
+    "caption": "While you're scrolling TikTok, AutoBett's AI agents are placing bets 24/7 across sports, prediction markets, and onchain games. Set your risk parameters once and let the AI handle the rest. Stop missing opportunities while you sleep. #ConnectWallet",
+    "hashtags": [
+      "#autobett",
+      "#onchainbetting",
+      "#defi",
+      "#cryptobetting",
+      "#web3",
+      "#aiagents",
+      "#cryptoai",
+      "#passiveincome",
+      "#betting",
+      "#cryptogains"
+    ],
+    "variants": [
+      {
+        "label": "faster paced",
+        "difference": "Quicker cuts and more dynamic transitions",
+        "script_adjustments": [
+          "shorten hook to first 3 words",
+          "add text overlays throughout"
+        ],
+        "visual_adjustments": [
+          "increase cut frequency",
+          "add more kinetic text"
+        ]
+      },
+      {
+        "label": "more technical",
+        "difference": "Deeper dive into the betting mechanism",
+        "script_adjustments": [
+          "add specific betting markets mentioned",
+          "include smart contract reference"
+        ],
+        "visual_adjustments": [
+          "show code snippets briefly",
+          "add blockchain network visualization"
+        ]
+      },
+      {
+        "label": "benefit-focused",
+        "difference": "Emphasize user outcomes over mechanics",
+        "script_adjustments": [
+          "add profit metric",
+          "include time savings statistic"
+        ],
+        "visual_adjustments": [
+          "add performance metrics",
+          "include before/after portfolio comparison"
+        ]
+      }
+    ],
+    "review_flags": [
+      "Ensure the AI betting mechanism is clearly demonstrated, not just mentioned",
+      "Avoid making the AI look like magic - ground it in the smart contract technology",
+      "Check that all visuals maintain crypto-native aesthetic rather than generic tech look"
+    ]
+  },
+  "refinementNotes": [],
+  "createdAt": "2026-04-25T09:28:14.602Z",
+  "updatedAt": "2026-04-25T09:28:14.602Z"
+}

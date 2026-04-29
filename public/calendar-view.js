@@ -1,6 +1,7 @@
 import { els, calEls } from "./dom-refs.js";
 import { studioState, calendarState } from "./state.js";
 import { escapeHtml } from "./app-helpers.js";
+import { loadOutputIntoCanvas } from "./library-view.js";
 
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -49,12 +50,21 @@ function renderCalendar() {
     const slotsHtml = daySlots.map((slot) => {
       const selected = calendarState.selectedSlotIds.has(slot.id);
       const brand = studioState.brands.find((b) => b.id === slot.brandProfileId);
+      const pillar = calendarState.pillars.find((p) => p.id === slot.pillar);
+      const outputButton = slot.outputPostId ? `<button class="calendar-slot__open" data-open-post="${escapeHtml(slot.outputPostId)}" type="button">Open</button>` : "";
+      const thumb = slot.thumbnailUrl ? `<img class="calendar-slot__thumb" src="${escapeHtml(slot.thumbnailUrl)}" alt="" loading="lazy" />` : "";
+      const detail = [slot.angle, slot.format || slot.workflowType, pillar?.name].filter(Boolean).join(" · ");
       return `<div class="calendar-slot${selected ? " is-selected" : ""}" data-slot-id="${slot.id}">
+        ${thumb}
         <div class="calendar-slot__meta">
           <span class="calendar-slot__status" data-status="${slot.status}"></span>
           <span>${brand?.name || slot.brandProfileId}</span><span>· ${slot.platform || "—"}</span>
         </div>
         <div class="calendar-slot__idea">${escapeHtml(slot.idea || "No idea yet")}</div>
+        ${detail ? `<div class="calendar-slot__detail">${escapeHtml(detail)}</div>` : ""}
+        ${slot.captionPreview ? `<div class="calendar-slot__caption">${escapeHtml(slot.captionPreview)}</div>` : ""}
+        ${slot.error ? `<div class="calendar-slot__error">${escapeHtml(slot.error)}</div>` : ""}
+        ${outputButton}
       </div>`;
     }).join("");
     return `<div class="calendar-day${isToday ? " is-today" : ""}">
@@ -79,8 +89,14 @@ export function initCalendarListeners() {
 
   // Click slot to select or edit
   calEls.grid.addEventListener("click", (e) => {
+    const openBtn = e.target.closest("[data-open-post]");
     const slotEl = e.target.closest("[data-slot-id]");
     const addBtn = e.target.closest("[data-add-date]");
+    if (openBtn) {
+      e.stopPropagation();
+      loadOutputIntoCanvas(openBtn.dataset.openPost);
+      return;
+    }
     if (addBtn) {
       calendarState.editingSlotId = null;
       calendarState.editingSlotDate = addBtn.dataset.addDate;
@@ -88,6 +104,8 @@ export function initCalendarListeners() {
       calEls.slotIdea.value = "";
       calEls.slotPillar.innerHTML = `<option value="">None</option>` + calendarState.pillars.map((p) => `<option value="${p.id}">${p.name}</option>`).join("");
       calEls.slotPlatform.value = "instagram"; calEls.slotStatus.value = "idea";
+      calEls.slotAngle.value = "proof"; calEls.slotFormat.value = "carousel"; calEls.slotWorkflow.value = "slideshow";
+      calEls.slotStyleCard.value = ""; calEls.slotAudience.value = ""; calEls.slotCta.value = ""; calEls.slotNotes.value = "";
       calEls.slotModal.classList.remove("hidden");
       return;
     }
@@ -106,6 +124,13 @@ export function initCalendarListeners() {
         calEls.slotPillar.innerHTML = `<option value="">None</option>` + calendarState.pillars.map((p) => `<option value="${p.id}"${p.id === slot.pillar ? " selected" : ""}>${p.name}</option>`).join("");
         calEls.slotPlatform.value = slot.platform || "instagram";
         calEls.slotStatus.value = slot.status || "idea";
+        calEls.slotAngle.value = slot.angle || "proof";
+        calEls.slotFormat.value = slot.format || "carousel";
+        calEls.slotWorkflow.value = slot.workflowType || (slot.platform === "linkedin" ? "linkedin-carousel" : "slideshow");
+        calEls.slotStyleCard.value = slot.styleCardId || "";
+        calEls.slotAudience.value = slot.audience || "";
+        calEls.slotCta.value = slot.cta || "";
+        calEls.slotNotes.value = slot.notes || "";
         calEls.slotModal.classList.remove("hidden");
       }
     }
@@ -118,7 +143,14 @@ export function initCalendarListeners() {
       date: calendarState.editingSlotDate,
       brandProfileId: calEls.brandSelect.value || els.studioProductSelect.value || "peppera",
       platform: calEls.slotPlatform.value, pillar: calEls.slotPillar.value,
-      idea: calEls.slotIdea.value.trim(), status: calEls.slotStatus.value, tags: []
+      idea: calEls.slotIdea.value.trim(), status: calEls.slotStatus.value,
+      angle: calEls.slotAngle.value, format: calEls.slotFormat.value,
+      workflowType: calEls.slotWorkflow.value,
+      styleCardId: calEls.slotStyleCard.value.trim(),
+      audience: calEls.slotAudience.value.trim(),
+      cta: calEls.slotCta.value.trim(),
+      notes: calEls.slotNotes.value.trim(),
+      tags: [calEls.slotAngle.value, calEls.slotFormat.value].filter(Boolean)
     };
     if (calendarState.editingSlotId) {
       await fetch(`/api/calendar/${calendarState.editingSlotId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -205,23 +237,13 @@ export function initCalendarListeners() {
     if (!calendarState.pillars.length) { showCalendarStatus("Add content pillars first."); setTimeout(hideCalendarStatus, 2000); return; }
     const dates = getWeekDates(calendarState.weekOffset);
     const brandId = calEls.brandSelect.value || els.studioProductSelect.value || "peppera";
-    const existingDates = new Set(calendarState.slots.filter((s) => s.brandProfileId === brandId).map((s) => s.date));
-    let created = 0;
-    for (const pillar of calendarState.pillars) {
-      if (pillar.brandProfileId && pillar.brandProfileId !== brandId) continue;
-      const ideas = pillar.exampleIdeas || [];
-      if (!ideas.length) continue;
-      for (const date of dates) {
-        const dateStr = formatDate(date);
-        if (existingDates.has(dateStr) || date.getDay() === 0 || date.getDay() === 6) continue;
-        await fetch("/api/calendar", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ date: dateStr, brandProfileId: brandId, platform: pillar.platforms?.[0] || "instagram", pillar: pillar.id, idea: ideas[Math.floor(Math.random() * ideas.length)], status: "idea", tags: [pillar.name] })
-        });
-        existingDates.add(dateStr); created++; break;
-      }
-    }
-    showCalendarStatus(created ? `Added ${created} slot${created > 1 ? "s" : ""} from pillars.` : "No empty weekday slots available.");
+    const res = await fetch("/api/calendar/auto-plan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ brandProfileId: brandId, weekDates: dates.map(formatDate) })
+    });
+    const { created = [] } = await res.json();
+    showCalendarStatus(created.length ? `Added ${created.length} slot${created.length > 1 ? "s" : ""} from pillars.` : "No empty weekday slots available.");
     await loadCalendar();
     setTimeout(hideCalendarStatus, 2500);
   });

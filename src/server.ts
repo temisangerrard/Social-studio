@@ -15,6 +15,12 @@ import { buildPreviewPlan, buildStructuredPrompt } from "./creative-director.ts"
 import { generateCreativeSystemOutput, refineCreativeProject } from "./creative-system.ts";
 import { listVoices } from "./voice-generator.ts";
 import { generateUgcPackage, normalizeUgcDraft, type UgcScriptDraft } from "./ugc.ts";
+import {
+  buildCalendarGenerationRequest,
+  createWeeklyCalendarPlan,
+  normalizeCalendarSlotInput,
+  summarizeCalendarOutput,
+} from "./calendar-production.ts";
 
 async function generateUgcBrief(idea: string, brand: BrandProfile): Promise<Record<string, string>> {
   const fallback = {
@@ -528,12 +534,35 @@ async function startGeneration(body: Record<string, unknown>): Promise<{ jobId: 
       job.status = "done";
       job.stage = "done";
       await saveJob(job);
+      if (request.calendarSlotId) {
+        const slot = await storage.getCalendarSlot(request.calendarSlotId);
+        if (slot) {
+          await storage.saveCalendarSlot({
+            ...slot,
+            ...summarizeCalendarOutput(result),
+            jobId: job.id,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
     } catch (error) {
       console.error(`[job ${job.id}] Generation failed:`, error instanceof Error ? error.message : error);
       job.status = "failed";
       job.stage = "failed";
       job.error = error instanceof Error ? error.message : String(error);
       await saveJob(job);
+      if (job.request?.calendarSlotId) {
+        const slot = await storage.getCalendarSlot(job.request.calendarSlotId);
+        if (slot) {
+          await storage.saveCalendarSlot({
+            ...slot,
+            status: "failed",
+            jobId: job.id,
+            error: job.error,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
     }
   })();
 
@@ -971,20 +1000,10 @@ async function handleRequest(req: Request): Promise<Response> {
 
   if (url.pathname === "/api/calendar" && req.method === "POST") {
     const body = await parseJsonBody(req);
-    const slot: CalendarSlot = {
-      id: body.id as string || makeId("slot"),
-      date: body.date as string || new Date().toISOString().slice(0, 10),
-      brandProfileId: body.brandProfileId as string || "peppera",
-      platform: (body.platform as CalendarSlot["platform"]) || "instagram",
-      pillar: body.pillar as string || "",
-      idea: body.idea as string || "",
-      status: (body.status as CalendarSlot["status"]) || "idea",
-      outputPostId: body.outputPostId as string | undefined,
-      jobId: body.jobId as string | undefined,
-      tags: Array.isArray(body.tags) ? body.tags as string[] : [],
-      createdAt: body.createdAt as string || new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+    const slot = normalizeCalendarSlotInput({
+      ...body,
+      id: typeof body.id === "string" && body.id ? body.id : makeId("slot"),
+    });
     await storage.saveCalendarSlot(slot);
     return json(slot);
   }
@@ -994,13 +1013,13 @@ async function handleRequest(req: Request): Promise<Response> {
     const existing = await storage.getCalendarSlot(slotId);
     if (!existing) return json({ error: "Slot not found" }, { status: 404 });
     const body = await parseJsonBody(req);
-    const updated: CalendarSlot = {
+    const updated = normalizeCalendarSlotInput({
       ...existing,
       ...body as Partial<CalendarSlot>,
       id: slotId,
       createdAt: existing.createdAt,
       updatedAt: new Date().toISOString()
-    };
+    });
     await storage.saveCalendarSlot(updated);
     return json(updated);
   }
@@ -1027,14 +1046,10 @@ async function handleRequest(req: Request): Promise<Response> {
         results.push({ slotId, error: "Brand not found" });
         continue;
       }
+      const pillars = await storage.listContentPillars();
+      const pillar = pillars.find((item) => item.id === slot.pillar || item.name === slot.pillar) ?? null;
       const request: Record<string, unknown> = {
-        brandProfileId: slot.brandProfileId,
-        rawIdea: slot.idea,
-        cards: [],
-        references: [],
-        platformTargets: [slot.platform],
-        goal: brand.defaults?.goal || "awareness",
-        workflowType: "slideshow",
+        ...buildCalendarGenerationRequest(slot, brand, pillar),
         visualMode: body.visualMode || "mascot-led",
         deliveryTargets: body.deliveryTargets || slot.platform
       };
@@ -1042,6 +1057,7 @@ async function handleRequest(req: Request): Promise<Response> {
         const { jobId } = await startGeneration(request);
         slot.status = "generating";
         slot.jobId = jobId;
+        slot.error = null;
         slot.updatedAt = new Date().toISOString();
         await storage.saveCalendarSlot(slot);
         results.push({ slotId, jobId });
@@ -1050,6 +1066,26 @@ async function handleRequest(req: Request): Promise<Response> {
       }
     }
     return json({ results });
+  }
+
+  if (url.pathname === "/api/calendar/auto-plan" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const brandProfileId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    const weekDates = Array.isArray(body.weekDates) ? body.weekDates.filter((date): date is string => typeof date === "string") : [];
+    if (!weekDates.length) return json({ error: "weekDates is required" }, { status: 400 });
+    const created = createWeeklyCalendarPlan({
+      weekDates,
+      brandProfileId,
+      pillars: await storage.listContentPillars(),
+      existingSlots: await storage.listCalendarSlots(),
+    });
+    const saved: CalendarSlot[] = [];
+    for (const slot of created) {
+      const withId = { ...slot, id: slot.id || makeId("slot") };
+      await storage.saveCalendarSlot(withId);
+      saved.push(withId);
+    }
+    return json({ created: saved });
   }
 
   // --- Style Library API ---
@@ -1273,6 +1309,11 @@ async function handleRequest(req: Request): Promise<Response> {
       frequency: (body.frequency as ContentPillar["frequency"]) || "weekly",
       platforms: Array.isArray(body.platforms) ? body.platforms as ContentPillar["platforms"] : ["instagram"],
       defaultTone: body.defaultTone as string | undefined,
+      defaultWorkflowType: body.defaultWorkflowType as ContentPillar["defaultWorkflowType"],
+      defaultStyleCardId: body.defaultStyleCardId as string | undefined,
+      defaultContentTypeId: body.defaultContentTypeId as string | undefined,
+      defaultGoal: body.defaultGoal as string | undefined,
+      defaultCta: body.defaultCta as string | undefined,
       exampleIdeas: Array.isArray(body.exampleIdeas) ? body.exampleIdeas as string[] : []
     };
     await storage.saveContentPillar(pillar);

@@ -1,0 +1,302 @@
+{
+  "id": "creative_moe4z68z_0zj2eg",
+  "brandProfileId": "peppera",
+  "rawIntent": "easy dinner from whatever is in the fridge",
+  "selectedDirectionId": "the-fridge-rescue-1",
+  "creativePlan": {
+    "brief_interpretation": {
+      "product": "Peppera",
+      "goal": "installs",
+      "audience": "busy home cooks",
+      "format": "educational-carousel",
+      "tone": "helpful, witty, clean",
+      "platform": "tiktok",
+      "confidence": 0.9,
+      "inferredContext": [
+        "Busy home cooks struggle with using random ingredients to make meals",
+        "People need practical dinner ideas from what they already have",
+        "TikTok audience wants quick, relatable content that solves a real problem"
+      ]
+    },
+    "proposed_directions": [
+      {
+        "title": "The Fridge Rescue",
+        "angle": "Focus on that universal moment when you open the fridge, see random ingredients, and feel stuck – then show how Peppera transforms that exact moment.",
+        "why_it_works": "Creates immediate recognition with busy home cooks. Shows the exact problem-solution dynamic in a relatable, visual way that demonstrates the product's core value instantly.",
+        "emotional_driver": "relief and empowerment",
+        "visual_style": "kitchen realism, before/after progression, warm home lighting with clean composition",
+        "hook_style": "relatable problem statement",
+        "hook_examples": [
+          "When your fridge has 'nothing' to eat",
+          "That moment you stare into the fridge and have no ideas"
+        ],
+        "id": "the-fridge-rescue-1",
+        "format": "educational-carousel",
+        "recommended_platform_fit": [
+          "tiktok",
+          "instagram"
+        ],
+        "performance_score": 94,
+        "brand_fit_score": 92
+      },
+      {
+        "title": "The 5-Minute Meal Plan",
+        "angle": "Show the time-drain of traditional meal planning versus how quickly Peppera can generate ideas from your existing ingredients.",
+        "why_it_works": "Highlights the time-saving benefit in a tangible, comparative way. Busy home cooks value efficiency and this demonstrates it visually.",
+        "emotional_driver": "efficiency and regained time",
+        "visual_style": "split screen time comparison, clean and modern app interface",
+        "hook_style": "time-saving claim",
+        "hook_examples": [
+          "What if meal planning took 5 minutes instead of 30?",
+          "Stop wasting time on 'what's for dinner'"
+        ],
+        "id": "the-5-minute-meal-plan-2",
+        "format": "educational-carousel",
+        "recommended_platform_fit": [
+          "tiktok",
+          "instagram"
+        ],
+        "performance_score": 88,
+        "brand_fit_score": 86
+      },
+      {
+        "title": "The Ingredient Translator",
+        "angle": "Frame Peppera as a translator that understands the language of random ingredients and turns them into delicious meals.",
+        "why_it_works": "Uses a clever metaphor that makes the product's value memorable and unique. Positions Peppera as having special insight that busy home cooks need.",
+        "emotional_driver": "curiosity and 'aha' moment",
+        "visual_style": "translation metaphor, ingredients transforming into meals",
+        "hook_style": "intriguing metaphor",
+        "hook_examples": [
+          "What your leftovers are actually trying to tell you",
+          "Let me translate your fridge into dinner"
+        ],
+        "id": "the-ingredient-translator-3",
+        "format": "educational-carousel",
+        "recommended_platform_fit": [
+          "tiktok",
+          "instagram"
+        ],
+        "performance_score": 84,
+        "brand_fit_score": 82
+      }
+    ],
+    "recommended_direction_id": "the-fridge-rescue-1",
+    "content_blueprint": {
+      "narrative_arc": [
+        "problem hook",
+        "frustration visualization",
+        "solution introduction",
+        "demonstration",
+        "meal reveal",
+        "call to action"
+      ],
+      "beat_sheet": [
+        "open with relatable problem",
+        "show the frustration moment",
+        "introduce Peppera as solution",
+        "demonstrate how it works",
+        "reveal the meal result",
+        "clear CTA with benefit reminder"
+      ],
+      "creative_notes": [
+        "keep it real - no perfect ingredients",
+        "show a typical fridge, not a styled one",
+        "Peppera mascot appears in all non-food slides",
+        "food slide should look appetizing but achievable"
+      ],
+      "editing_style": "clean progression, one clear thought per slide",
+      "cta_style": "direct, benefit-focused, low-friction",
+      "pacing_guidance": "first slide grabs attention, middle slides build value, last slide prompts action",
+      "on_screen_text_strategy": "short, spoken-language text that overlays adds context rather than repeating narration"
+    },
+    "production_assets": {
+      "script": [
+        "When your fridge has 'nothing' to eat",
+        "We've all been there. Staring at random ingredients with no idea what to make.",
+        "Meet Peppera. Your kitchen's new best friend.",
+        "Just input what you have. Peppera turns it into dinner ideas.",
+        "From random ingredients to: Creamy Chicken & Pepper Stir-fry",
+        "Download Peppera. Turn your 'nothing' into dinner."
+      ],
+      "on_screen_text": [
+        "When your fridge has 'nothing' to eat",
+        "No idea what to make",
+        "Your kitchen's new best friend",
+        "Ingredients → Dinner Ideas",
+        "Creamy Chicken & Pepper Stir-fry",
+        "Download Peppera"
+      ],
+      "shot_list": [
+        "Text hook with brand color background",
+        "Person staring into fridge with random ingredients",
+        "Close-up of smartphone showing Peppera app",
+        "Hand using app with ingredient selection",
+        "Final plated meal with clean food styling",
+        "Branded CTA with app store buttons"
+      ],
+      "image_prompts": [
+        "A person with a confused expression standing in front of a refrigerator containing random leftover ingredients: half an onion, some chicken breast, bell peppers, yogurt, and carrots. Interior kitchen scene, warm lighting, realistic food photography style. Include Peppera mascot in background watching curiously.",
+        "Close-up of a smartphone screen showing the Peppera app interface. The app is displaying a simple, clean interface showing the random ingredients from the fridge (half onion, chicken breast, bell peppers, yogurt, carrots). Peppera mascot is on the screen giving a thumbs up. Clean, modern app design with the brand colors #f04d23 and #fff7f0.",
+        "Beautifully plated, appetizing creamy chicken and bell pepper stir-fry dish made with the ingredients shown earlier (chicken, bell peppers, onions, carrots). Professional food photography style, warm lighting, garnished elegantly. No mascot in this food-only shot according to brand guidelines."
+      ],
+      "slide_plan": [
+        "Hook cover: Text-only with relatable fridge problem",
+        "Problem frame: Visual of fridge confusion moment",
+        "Solution frame: Introduction to Peppera app",
+        "Demonstration frame: How the app works with ingredients",
+        "Result frame: The final meal made from those ingredients",
+        "CTA frame: Download prompt with brand colors"
+      ],
+      "caption_options": [
+        "Stop staring into your fridge wondering what to make! Peppera turns your random ingredients into actual dinner ideas. No more 'there's nothing to eat' when your fridge is full!",
+        "That moment when you open the fridge and have no idea what to make... Peppera transforms your random ingredients into dinner you'll actually want to eat."
+      ],
+      "headline_options": [
+        "When your fridge has 'nothing' to eat",
+        "Turn your random ingredients into dinner"
+      ],
+      "render_prompts": [
+        "Render as educational-carousel for TikTok; maintain brand visual style: clean, helpful approach with brand colors #f04d23, #ffd9c8, #fff7f0",
+        "Include Peppera mascot in non-food slides only, following brand guidelines"
+      ],
+      "voiceover_version": [
+        "When your fridge has 'nothing' to eat...",
+        "We've all been there. Staring at random ingredients with no idea what to make.",
+        "Meet Peppera. Your kitchen's new best friend.",
+        "Just input what you have. Peppera turns it into dinner ideas.",
+        "From random ingredients to: Creamy Chicken & Pepper Stir-fry",
+        "Download Peppera. Turn your 'nothing' into dinner."
+      ],
+      "thumbnail_or_cover_text": [
+        "When your fridge has 'nothing' to eat",
+        "Turn your random ingredients into dinner"
+      ]
+    },
+    "storyboard": [
+      {
+        "slide_number": 1,
+        "role": "hook",
+        "copy": "When your fridge has 'nothing' to eat",
+        "image_strategy": "no_image_text_only",
+        "visual_notes": "Bold text on high-contrast background using brand's primary color #f04d23. No image needed - the text alone creates the hook.",
+        "layout": "hook_cover"
+      },
+      {
+        "slide_number": 2,
+        "role": "problem",
+        "copy": "We've all been there. Staring at random ingredients with no idea what to make.",
+        "image_strategy": "ai_generated",
+        "image_prompt": "A person with a confused expression standing in front of a refrigerator containing random leftover ingredients: half an onion, some chicken breast, bell peppers, yogurt, and carrots. Interior kitchen scene, warm lighting, realistic food photography style. Include Peppera mascot in background watching curiously with a helpful expression. Mascot should have red bandana and green pepper body as per brand guidelines.",
+        "visual_notes": "Realistic home kitchen setting, not staged. Ingredients should look like actual leftovers, not perfect. Person's expression should convey genuine confusion.",
+        "layout": "image_text_split"
+      },
+      {
+        "slide_number": 3,
+        "role": "reveal",
+        "copy": "Meet Peppera. Your kitchen's new best friend.",
+        "image_strategy": "ai_generated",
+        "image_prompt": "Close-up of a smartphone screen showing the Peppera app interface. The app is displaying a simple, clean interface showing the random ingredients from the fridge (half onion, chicken breast, bell peppers, yogurt, carrots). Peppera mascot is on the screen giving a helpful smile and thumbs up. Clean, modern app design with the brand colors #f04d23 and #fff7f0 background. Use brand font style.",
+        "visual_notes": "App interface should look simple and intuitive, not cluttered. Mascot should be friendly and approachable, maintaining brand design specifications exactly.",
+        "layout": "image_focus"
+      },
+      {
+        "slide_number": 4,
+        "role": "demonstration",
+        "copy": "Just input what you have. Peppera turns it into dinner ideas.",
+        "image_strategy": "ai_generated",
+        "image_prompt": "A hand using the Peppera app on a smartphone, showing the process of selecting ingredients. The screen shows the app suggesting meal options based on the random ingredients. Clean, minimal interface design with brand colors #f04d23 and #fff7f0. Peppera mascot is on screen demonstrating with a pointer gesture. The app screen should show actual dinner ideas, not just ingredients.",
+        "visual_notes": "Focus on the simplicity of the process. The screen should clearly show how the app works in just a few steps. Hand should look natural, not posed.",
+        "layout": "image_text_split"
+      },
+      {
+        "slide_number": 5,
+        "role": "meal_reveal",
+        "copy": "From random ingredients to: Creamy Chicken & Pepper Stir-fry",
+        "image_strategy": "ai_generated",
+        "image_prompt": "Beautifully plated, appetizing creamy chicken and bell pepper stir-fry dish made with the ingredients shown earlier (chicken, bell peppers, onions, carrots). Professional food photography style, warm lighting, garnished elegantly with fresh herbs. This is a food-only shot with no mascot according to brand guidelines. Style should look home-cooked but polished.",
+        "visual_notes": "The food should look delicious and clearly made from the ingredients shown earlier. This is the payoff slide where we see the solution to the problem.",
+        "layout": "image_focus"
+      },
+      {
+        "slide_number": 6,
+        "role": "cta",
+        "copy": "Download Peppera. Turn your 'nothing' into dinner.",
+        "image_strategy": "reusable_template",
+        "visual_notes": "Simple, clean design using brand's primary color #f04d23 and secondary color #ffd9c8. Include app store and Google Play logos. Peppera mascot giving a friendly wave. Use brand font family and ensure CTA is clear and direct.",
+        "layout": "cta_banner"
+      }
+    ],
+    "caption": "Stop staring into your fridge wondering what to make! Peppera turns your random ingredients into actual dinner ideas. No more 'there's nothing to eat' when your fridge is full! Just input what you have and get recipes you'll actually want to make. Download now and make dinner decisions easy tonight! 🙌",
+    "hashtags": [
+      "#mealideas",
+      "#easydinners",
+      "#cooksmarter"
+    ],
+    "variants": [
+      {
+        "label": "faster paced",
+        "difference": "Quicker transitions, more direct copy",
+        "script_adjustments": [
+          "shorter sentences",
+          "more direct benefit statements"
+        ],
+        "visual_adjustments": [
+          "faster transitions between slides",
+          "more dynamic camera angles"
+        ]
+      },
+      {
+        "label": "more humorous",
+        "difference": "Add relatable humor to the frustration",
+        "script_adjustments": [
+          "add humorous asides",
+          "exaggerate the problem slightly"
+        ],
+        "visual_adjustments": [
+          "add comedic facial expressions",
+          "include relatable kitchen fails"
+        ]
+      },
+      {
+        "label": "more focused on food",
+        "difference": "Emphasize the delicious outcome more",
+        "script_adjustments": [
+          "add more sensory food descriptions",
+          "emphasize taste over convenience"
+        ],
+        "visual_adjustments": [
+          "more food close-ups",
+          "add ingredient beauty shots"
+        ]
+      },
+      {
+        "label": "ingredient-specific",
+        "difference": "Focus on common leftover ingredients",
+        "script_adjustments": [
+          "name specific common leftovers",
+          "add tips for storing ingredients"
+        ],
+        "visual_adjustments": [
+          "show specific ingredients",
+          "add text overlays of ingredient names"
+        ]
+      },
+      {
+        "label": "time-focused",
+        "difference": "Emphasize the time-saving aspect",
+        "script_adjustments": [
+          "add time references",
+          "emphasize quick decision-making"
+        ],
+        "visual_adjustments": [
+          "add clock elements",
+          "include time-based transitions"
+        ]
+      }
+    ],
+    "review_flags": []
+  },
+  "refinementNotes": [],
+  "createdAt": "2026-04-25T09:26:06.834Z",
+  "updatedAt": "2026-04-25T09:26:06.834Z"
+}

@@ -1,5 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import {
+  completeGenerationMetadata,
+  failedGenerationMetadata,
+} from "./generation-provider.ts";
 import type {
   BrandProfile,
   GeneratedArtifact,
@@ -380,10 +384,7 @@ export async function executeVideoStrategy(params: {
   const { scenes, config, assetsDir, falKey, brand, request } = params;
 
   if (!falKey) {
-    // Write mock placeholders
-    await fs.mkdir(assetsDir, { recursive: true });
-    const mockPath = path.join(assetsDir, "mock-video.txt");
-    await fs.writeFile(mockPath, `[MOCK VIDEO — strategy: ${config.strategy}]\n${scenes.map((s) => s.prompt).join("\n")}\n`);
+    const prompt = scenes.map((s) => s.prompt).join("\n");
     return {
       strategy: config.strategy,
       artifacts: [{
@@ -391,11 +392,18 @@ export async function executeVideoStrategy(params: {
         kind: "video",
         role: "ugc-video",
         title: `${brand.name} Video (mock)`,
-        prompt: request.rawIdea,
-        asset_path: mockPath,
-        preview_path: mockPath,
+        prompt,
+        asset_path: null,
+        preview_path: null,
         source_asset_id: null,
         variant_group: null,
+        provider: "mock",
+        model: "mock-video",
+        status: "failed",
+        error: "Video generation skipped because no provider key is configured.",
+        payload: { strategy: config.strategy, prompt },
+        generated_at: new Date().toISOString(),
+        retryable: false,
       }],
     };
   }
@@ -424,6 +432,11 @@ export async function executeVideoStrategy(params: {
           asset_path: videoPath, preview_path: videoPath,
           source_asset_id: storyboardPath ? "storyboard-grid" : null,
           variant_group: null,
+          ...completeGenerationMetadata({
+            provider: "fal", model: storyboardPath ? MODELS.seedanceImage : MODELS.seedanceText,
+            payload: { strategy: config.strategy, prompt: combinedPrompt, config },
+            assetPath: videoPath,
+          }),
         });
         return { strategy: config.strategy, artifacts };
       }
@@ -437,6 +450,11 @@ export async function executeVideoStrategy(params: {
             title: `${brand.name} Multi-Shot Video`, prompt: combinedPrompt,
             asset_path: videoPath, preview_path: videoPath,
             source_asset_id: null, variant_group: null,
+            ...completeGenerationMetadata({
+              provider: "fal", model: MODELS.seedanceText,
+              payload: { strategy: config.strategy, prompt: combinedPrompt, config },
+              assetPath: videoPath,
+            }),
           }],
         };
       }
@@ -450,6 +468,11 @@ export async function executeVideoStrategy(params: {
             title: `${brand.name} Reference Video`, prompt: combinedPrompt,
             asset_path: videoPath, preview_path: videoPath,
             source_asset_id: null, variant_group: null,
+            ...completeGenerationMetadata({
+              provider: "fal", model: MODELS.seedanceRef,
+              payload: { strategy: config.strategy, prompt: combinedPrompt, config },
+              assetPath: videoPath,
+            }),
           }],
         };
       }
@@ -463,6 +486,11 @@ export async function executeVideoStrategy(params: {
             title: `${brand.name} Video`, prompt: combinedPrompt,
             asset_path: videoPath, preview_path: videoPath,
             source_asset_id: null, variant_group: null,
+            ...completeGenerationMetadata({
+              provider: "fal", model: MODELS.klingText,
+              payload: { strategy: config.strategy, prompt: combinedPrompt, config },
+              assetPath: videoPath,
+            }),
           }],
         };
       }
@@ -476,22 +504,40 @@ export async function executeVideoStrategy(params: {
             title: `${brand.name} Animated Video`, prompt: combinedPrompt,
             asset_path: videoPath, preview_path: videoPath,
             source_asset_id: null, variant_group: null,
+            ...completeGenerationMetadata({
+              provider: "fal", model: MODELS.seedanceImage,
+              payload: { strategy: config.strategy, prompt: combinedPrompt, config },
+              assetPath: videoPath,
+            }),
           }],
         };
       }
     }
   } catch (err) {
     console.error(`[video-strategy] ${config.strategy} failed: ${err instanceof Error ? err.message : err}`);
-    // Write fallback placeholder
-    const mockPath = path.join(assetsDir, "fallback-video.txt");
-    await fs.writeFile(mockPath, `[VIDEO FAILED — strategy: ${config.strategy}]\nError: ${err instanceof Error ? err.message : err}\nPrompt: ${combinedPrompt}\n`);
+    const generation = failedGenerationMetadata({
+      provider: "fal",
+      model: config.strategy,
+      prompt: combinedPrompt,
+      payload: { strategy: config.strategy, prompt: combinedPrompt, config },
+      error: err,
+    });
     return {
       strategy: config.strategy,
       artifacts: [{
         id: "fallback-video", kind: "video", role: "ugc-video",
         title: `${brand.name} Video (failed)`, prompt: combinedPrompt,
-        asset_path: mockPath, preview_path: mockPath,
+        asset_path: null, preview_path: null,
         source_asset_id: null, variant_group: null,
+        provider: generation.provider,
+        model: generation.model,
+        request_id: generation.request_id,
+        status: generation.status,
+        error: generation.error,
+        payload: generation.payload,
+        output_url: generation.output_url,
+        generated_at: generation.generated_at,
+        retryable: generation.retryable,
       }],
     };
   }
