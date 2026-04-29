@@ -32,6 +32,8 @@ export interface VideoStrategyConfig {
   storyboardPrompt?: string;
   /** Override the video generation prompt (Seedance / Kling) */
   videoPrompt?: string;
+  /** Pre-generated storyboard image path — skips GPT Image 2 step */
+  storyboardImagePath?: string;
 }
 export type AssetType = "food_photo" | "product_photo" | "person_photo" | "screenshot" | "logo" | "document" | "unknown";
 export type ContentRouteFamily = "carousel" | "edited-image" | "recipe" | "flyer" | "linkedin-post" | "infographic";

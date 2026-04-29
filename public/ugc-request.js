@@ -7,13 +7,23 @@ export function buildUgcDraftRequest({ brandId, platform, idea, notes } = {}) {
   };
 }
 
+export function buildUgcStoryboardRequest({ brandId, platform, visualMode, script } = {}) {
+  return {
+    brandProfileId: brandId || "peppera",
+    platform: platform || "tiktok",
+    visualMode: visualMode || "story-led",
+    script: script || {}
+  };
+}
+
 export function buildUgcGenerateRequest({
   brandId,
   platform,
   voiceId,
   visualMode,
   script,
-  uploadedAssetIds
+  uploadedAssetIds,
+  storyboardPreviewId
 } = {}) {
   return {
     brandProfileId: brandId || "peppera",
@@ -21,6 +31,7 @@ export function buildUgcGenerateRequest({
     voiceId: voiceId || "mock",
     visualMode: visualMode || "story-led",
     script: script || {},
-    uploadedAssetIds: Array.isArray(uploadedAssetIds) ? uploadedAssetIds : []
+    uploadedAssetIds: Array.isArray(uploadedAssetIds) ? uploadedAssetIds : [],
+    ...(storyboardPreviewId ? { storyboardPreviewId } : {})
   };
 }

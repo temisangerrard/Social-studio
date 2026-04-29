@@ -304,13 +304,14 @@
     <!-- ═══ UGC VIEW ════════════════════════════════════════════════════════ -->
     <div id="view-ugc" class="view view--ugc hidden">
       <div class="ugc-layout">
-        <section class="ugc-panel">
+
+        <!-- ── LEFT: Brief input (always visible) ──────────────────────── -->
+        <section class="ugc-panel ugc-panel--input">
           <div class="ugc-panel__header">
             <div>
-              <p class="eyebrow">Dedicated UGC Workspace</p>
-              <h1 class="ugc-panel__title">Script, voice, and video</h1>
+              <p class="eyebrow">UGC Workspace</p>
+              <h1 class="ugc-panel__title">Write the brief</h1>
             </div>
-            <span class="ugc-panel__meta">No Studio routing or style overrides</span>
           </div>
 
           <div class="ugc-stack">
@@ -353,56 +354,156 @@
           </div>
         </section>
 
-        <section class="ugc-panel">
-          <div class="ugc-panel__header">
-            <div>
-              <p class="eyebrow">UGC Production</p>
-              <h2 class="ugc-panel__title" style="font-size:1.7rem">Approve and generate</h2>
+        <!-- ── RIGHT: Pipeline stages ────────────────────────────────────── -->
+        <section class="ugc-panel ugc-panel--pipeline">
+
+          <!-- Pipeline stepper -->
+          <div class="ugc-pipeline-stepper">
+            <div class="ugc-step" id="ugc-step-1">
+              <div class="ugc-step__dot"><span>1</span></div>
+              <span class="ugc-step__label">Script</span>
+            </div>
+            <div class="ugc-step-line"></div>
+            <div class="ugc-step" id="ugc-step-2">
+              <div class="ugc-step__dot"><span>2</span></div>
+              <span class="ugc-step__label">Storyboard</span>
+            </div>
+            <div class="ugc-step-line"></div>
+            <div class="ugc-step" id="ugc-step-3">
+              <div class="ugc-step__dot"><span>3</span></div>
+              <span class="ugc-step__label">Generate</span>
+            </div>
+            <div class="ugc-step-line"></div>
+            <div class="ugc-step" id="ugc-step-4">
+              <div class="ugc-step__dot"><span>4</span></div>
+              <span class="ugc-step__label">Output</span>
             </div>
           </div>
 
-          <form id="ugc-generate-form" class="ugc-stack">
-            <div id="ugc-draft-panel" class="ugc-stack hidden">
-
-              <!-- Readable brief card — populated by renderDraft() -->
-              <div id="ugc-brief-card" class="ugc-brief-card hidden"></div>
-
-              <!-- Hidden form inputs — kept for collectDraftScript() -->
-              <div class="hidden">
-                <input id="ugc-script-hook" type="text" />
-                <input id="ugc-script-problem" type="text" />
-                <input id="ugc-script-product-moment" type="text" />
-                <input id="ugc-script-outcome" type="text" />
-                <input id="ugc-script-cta" type="text" />
-                <input id="ugc-script-tone-notes" type="text" />
-                <textarea id="ugc-script-full"></textarea>
-                <textarea id="ugc-script-beats"></textarea>
-                <textarea id="ugc-script-onscreen"></textarea>
-              </div>
-
-              <div class="field-row">
-                <div class="field-group">
-                  <label class="field-label" for="ugc-voice-select">Voice</label>
-                  <select id="ugc-voice-select"></select>
-                </div>
-                <div class="field-group">
-                  <label class="field-label" for="ugc-visual-mode">Video treatment</label>
-                  <select id="ugc-visual-mode">
-                    <option value="story-led">Story-led</option>
-                    <option value="product-demo">Product demo</option>
-                    <option value="faceless-b-roll">Faceless B-roll</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div class="gen-form__footer">
-              <button id="ugc-generate-button" class="primary-button" type="submit">Generate UGC Video</button>
-            </div>
-          </form>
-
-          <div id="ugc-output" class="ugc-stack">
-            <p class="drawer-empty-hint">Draft a script, then generate the UGC package here.</p>
+          <!-- Stage: Empty -->
+          <div id="ugc-stage-empty" class="ugc-stage">
+            <p class="drawer-empty-hint ugc-stage-hint">Fill in the brief on the left and click <strong>Draft Script</strong> to begin.</p>
           </div>
+
+          <!-- Stage: Brief review (editable) -->
+          <div id="ugc-stage-brief" class="ugc-stage hidden">
+            <div class="ugc-stage__header">
+              <h3 class="ugc-stage__title">Script draft</h3>
+              <span class="ugc-stage__hint">Edit any field before generating the storyboard</span>
+            </div>
+
+            <!-- Editable brief card — fields are live textareas -->
+            <div id="ugc-brief-card" class="ugc-brief-card">
+              <div class="ugc-brief-field ugc-brief-field--hook">
+                <span class="ugc-brief-label">Hook</span>
+                <textarea id="ugc-script-hook" class="ugc-brief-textarea" rows="2"></textarea>
+              </div>
+              <div class="ugc-brief-grid">
+                <div class="ugc-brief-field">
+                  <span class="ugc-brief-label">Problem</span>
+                  <textarea id="ugc-script-problem" class="ugc-brief-textarea" rows="2"></textarea>
+                </div>
+                <div class="ugc-brief-field">
+                  <span class="ugc-brief-label">Product moment</span>
+                  <textarea id="ugc-script-product-moment" class="ugc-brief-textarea" rows="2"></textarea>
+                </div>
+                <div class="ugc-brief-field">
+                  <span class="ugc-brief-label">Outcome</span>
+                  <textarea id="ugc-script-outcome" class="ugc-brief-textarea" rows="2"></textarea>
+                </div>
+                <div class="ugc-brief-field">
+                  <span class="ugc-brief-label">CTA</span>
+                  <textarea id="ugc-script-cta" class="ugc-brief-textarea" rows="2"></textarea>
+                </div>
+              </div>
+              <div class="ugc-brief-field">
+                <span class="ugc-brief-label">Beat sheet</span>
+                <textarea id="ugc-script-beats" class="ugc-brief-textarea" rows="4" placeholder="One beat per line"></textarea>
+              </div>
+              <div class="ugc-brief-field">
+                <span class="ugc-brief-label">On-screen text</span>
+                <textarea id="ugc-script-onscreen" class="ugc-brief-textarea" rows="3" placeholder="One line of text per row"></textarea>
+              </div>
+              <div class="ugc-brief-field">
+                <span class="ugc-brief-label">Full script</span>
+                <textarea id="ugc-script-full" class="ugc-brief-textarea ugc-brief-textarea--script" rows="4"></textarea>
+              </div>
+              <input id="ugc-script-tone-notes" type="hidden" />
+            </div>
+
+            <!-- Visual mode + storyboard trigger -->
+            <div class="ugc-stack ugc-brief-actions">
+              <div class="field-group">
+                <label class="field-label" for="ugc-visual-mode">Video treatment</label>
+                <select id="ugc-visual-mode">
+                  <option value="story-led">Story-led</option>
+                  <option value="product-demo">Product demo</option>
+                  <option value="faceless-b-roll">Faceless B-roll</option>
+                </select>
+              </div>
+              <div class="gen-form__footer">
+                <button id="ugc-storyboard-button" class="primary-button" type="button">Preview Storyboard →</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Stage: Storyboard approval -->
+          <div id="ugc-stage-storyboard" class="ugc-stage hidden">
+            <div class="ugc-stage__header">
+              <h3 class="ugc-stage__title">3×3 Storyboard</h3>
+              <span class="ugc-stage__hint">Approve the visual direction before committing to generation</span>
+            </div>
+
+            <!-- Loading skeleton -->
+            <div id="ugc-storyboard-loading" class="ugc-storyboard-loading hidden">
+              <div class="ugc-storyboard-skeleton">
+                <div class="ugc-panel-skel"></div><div class="ugc-panel-skel"></div><div class="ugc-panel-skel"></div>
+                <div class="ugc-panel-skel"></div><div class="ugc-panel-skel"></div><div class="ugc-panel-skel"></div>
+                <div class="ugc-panel-skel"></div><div class="ugc-panel-skel"></div><div class="ugc-panel-skel"></div>
+              </div>
+              <p class="ugc-storyboard-loading__label">Generating 9-panel grid via ChatGPT Image 2…</p>
+            </div>
+
+            <!-- Storyboard preview image -->
+            <div id="ugc-storyboard-preview" class="ugc-storyboard-preview hidden">
+              <img id="ugc-storyboard-img" class="ugc-storyboard-img" alt="3×3 storyboard grid" />
+              <div class="ugc-storyboard-meta" id="ugc-storyboard-panel-labels"></div>
+            </div>
+
+            <!-- Approve / Regenerate actions -->
+            <div id="ugc-storyboard-actions" class="ugc-storyboard-actions hidden">
+              <button id="ugc-storyboard-regenerate" class="ghost-button" type="button">Regenerate</button>
+              <button id="ugc-storyboard-approve" class="primary-button" type="button">Approve →</button>
+            </div>
+          </div>
+
+          <!-- Stage: Generate (shown after storyboard approved) -->
+          <div id="ugc-generate-section" class="ugc-stage hidden">
+            <div class="ugc-stage__header">
+              <h3 class="ugc-stage__title">Generate UGC</h3>
+              <span class="ugc-stage__hint">Choose voice then run the full pipeline</span>
+            </div>
+            <form id="ugc-generate-form" class="ugc-stack">
+              <div class="field-group">
+                <label class="field-label" for="ugc-voice-select">Voice</label>
+                <select id="ugc-voice-select"></select>
+              </div>
+              <div class="gen-form__footer">
+                <button id="ugc-generate-button" class="primary-button" type="submit">Generate UGC Video</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Stage: Output -->
+          <div id="ugc-stage-output" class="ugc-stage hidden">
+            <div class="ugc-stage__header">
+              <h3 class="ugc-stage__title">Output</h3>
+            </div>
+            <div id="ugc-output" class="ugc-stack">
+              <p class="drawer-empty-hint">Output will appear here.</p>
+            </div>
+          </div>
+
         </section>
       </div>
     </div>

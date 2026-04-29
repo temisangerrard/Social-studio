@@ -85,13 +85,29 @@ export const els = {
   ugcUploadsList: document.getElementById("ugc-uploads-list"),
   ugcDraftForm: document.getElementById("ugc-draft-form"),
   ugcGenerateForm: document.getElementById("ugc-generate-form"),
-  ugcDraftPanel: document.getElementById("ugc-draft-panel"),
   ugcDraftButton: document.getElementById("ugc-draft-button"),
   ugcGenerateButton: document.getElementById("ugc-generate-button"),
+  ugcStoryboardButton: document.getElementById("ugc-storyboard-button"),
+  ugcStoryboardApprove: document.getElementById("ugc-storyboard-approve"),
+  ugcStoryboardRegenerate: document.getElementById("ugc-storyboard-regenerate"),
   ugcVoiceSelect: document.getElementById("ugc-voice-select"),
   ugcVisualMode: document.getElementById("ugc-visual-mode"),
   ugcStatus: document.getElementById("ugc-status"),
-  ugcOutput: document.getElementById("ugc-output")
+  ugcOutput: document.getElementById("ugc-output"),
+  ugcStageEmpty: document.getElementById("ugc-stage-empty"),
+  ugcStageBrief: document.getElementById("ugc-stage-brief"),
+  ugcStageStoryboard: document.getElementById("ugc-stage-storyboard"),
+  ugcStageOutput: document.getElementById("ugc-stage-output"),
+  ugcBriefCard: document.getElementById("ugc-brief-card"),
+  ugcStoryboardLoading: document.getElementById("ugc-storyboard-loading"),
+  ugcStoryboardPreview: document.getElementById("ugc-storyboard-preview"),
+  ugcStoryboardImg: document.getElementById("ugc-storyboard-img"),
+  ugcStoryboardActions: document.getElementById("ugc-storyboard-actions"),
+  ugcGenerateSection: document.getElementById("ugc-generate-section"),
+  ugcStep1: document.getElementById("ugc-step-1"),
+  ugcStep2: document.getElementById("ugc-step-2"),
+  ugcStep3: document.getElementById("ugc-step-3"),
+  ugcStep4: document.getElementById("ugc-step-4")
 };
 
 export const adminEls = {

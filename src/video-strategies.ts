@@ -142,22 +142,13 @@ function buildPanelBeats(panels: number): string[] {
   return selected.map((b, i) => `Panel ${i + 1}: ${b.label} — ${b.desc}.`);
 }
 
-// ── Strategy: GPT Image 2 storyboard → Seedance 2.0 image-to-video ───────────
+// ── Storyboard prompt builder (shared) ────────────────────────────────────────
 
-async function runStoryboardToVideo(params: {
-  prompt: string;
-  config: VideoStrategyConfig;
-  assetsDir: string;
-  falKey: string;
-  brand: BrandProfile;
-}): Promise<{ videoPath: string; storyboardPath: string | null }> {
-  const { prompt, config, assetsDir, falKey, brand } = params;
-  const panels = config.storyboardPanels ?? 9;
+function buildStoryboardPrompt(prompt: string, brand: BrandProfile, panels: number, override?: string): string {
+  if (override) return override;
   const cols = Math.ceil(Math.sqrt(panels));
-
-  // Step 1: Generate storyboard grid via GPT Image 2
   const panelBeats = buildPanelBeats(panels);
-  const storyboardPrompt = config.storyboardPrompt || [
+  return [
     `Create a ${cols}×${cols} storyboard grid (${panels} panels) for a vertical 9:16 short-form video ad.`,
     `Brand: ${brand.name} — ${brand.description || ""}.`,
     `Visual tone: ${brand.tone || "bold, modern"}.`,
@@ -169,21 +160,71 @@ async function runStoryboardToVideo(params: {
     `Panels should have clear visual progression and cinematic composition.`,
     `No text overlays in the panels. Pure visual storytelling.`,
   ].filter(Boolean).join(" ");
+}
 
+// ── Standalone storyboard preview generator (called by /api/ugc/storyboard) ──
+
+export async function generateStoryboardPreview(params: {
+  prompt: string;
+  brand: BrandProfile;
+  panels?: number;
+  outputDir: string;
+  falKey: string;
+  promptOverride?: string;
+}): Promise<{ storyboardPath: string }> {
+  const { prompt, brand, panels = 9, outputDir, falKey, promptOverride } = params;
+  const storyboardPrompt = buildStoryboardPrompt(prompt, brand, panels, promptOverride);
+  const imgResult = await submitAndPoll(MODELS.gptImage2, {
+    prompt: storyboardPrompt,
+    size: "1024x1024",
+    quality: "high",
+  }, falKey);
+  const imgUrl = extractImageUrl(imgResult);
+  if (!imgUrl) throw new Error("Storyboard generation returned no image URL");
+  await fs.mkdir(outputDir, { recursive: true });
+  const storyboardPath = path.join(outputDir, "storyboard-grid.png");
+  await downloadAsset(imgUrl, storyboardPath);
+  return { storyboardPath };
+}
+
+// ── Strategy: GPT Image 2 storyboard → Seedance 2.0 image-to-video ───────────
+
+async function runStoryboardToVideo(params: {
+  prompt: string;
+  config: VideoStrategyConfig;
+  assetsDir: string;
+  falKey: string;
+  brand: BrandProfile;
+}): Promise<{ videoPath: string; storyboardPath: string | null }> {
+  const { prompt, config, assetsDir, falKey, brand } = params;
+  const panels = config.storyboardPanels ?? 9;
+
+  // Step 1: Use pre-generated storyboard or generate via GPT Image 2
   let storyboardPath: string | null = null;
-  try {
-    const imgResult = await submitAndPoll(MODELS.gptImage2, {
-      prompt: storyboardPrompt,
-      size: "1024x1024",
-      quality: "high",
-    }, falKey);
-    const imgUrl = extractImageUrl(imgResult);
-    if (imgUrl) {
-      storyboardPath = path.join(assetsDir, "storyboard-grid.png");
-      await downloadAsset(imgUrl, storyboardPath);
+  if (config.storyboardImagePath) {
+    storyboardPath = path.join(assetsDir, "storyboard-grid.png");
+    try {
+      await fs.copyFile(config.storyboardImagePath, storyboardPath);
+    } catch (err) {
+      console.warn(`[video-strategy] Failed to copy pre-generated storyboard: ${err instanceof Error ? err.message : err}`);
+      storyboardPath = null;
     }
-  } catch (err) {
-    console.warn(`[video-strategy] Storyboard generation failed: ${err instanceof Error ? err.message : err}`);
+  } else {
+    const storyboardPrompt = buildStoryboardPrompt(prompt, brand, panels, config.storyboardPrompt);
+    try {
+      const imgResult = await submitAndPoll(MODELS.gptImage2, {
+        prompt: storyboardPrompt,
+        size: "1024x1024",
+        quality: "high",
+      }, falKey);
+      const imgUrl = extractImageUrl(imgResult);
+      if (imgUrl) {
+        storyboardPath = path.join(assetsDir, "storyboard-grid.png");
+        await downloadAsset(imgUrl, storyboardPath);
+      }
+    } catch (err) {
+      console.warn(`[video-strategy] Storyboard generation failed: ${err instanceof Error ? err.message : err}`);
+    }
   }
 
   // Step 2: Use storyboard as input to Seedance 2.0 image-to-video

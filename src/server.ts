@@ -14,7 +14,8 @@ import { ingestReferencesAndCreateStyleCard } from "./reference-ingestion.ts";
 import { buildPreviewPlan, buildStructuredPrompt } from "./creative-director.ts";
 import { generateCreativeSystemOutput, refineCreativeProject } from "./creative-system.ts";
 import { listVoices } from "./voice-generator.ts";
-import { generateUgcPackage, normalizeUgcDraft, type UgcScriptDraft } from "./ugc.ts";
+import { generateUgcPackage, normalizeUgcDraft, buildUgcPromptContext, type UgcScriptDraft } from "./ugc.ts";
+import { generateStoryboardPreview } from "./video-strategies.ts";
 import {
   buildCalendarGenerationRequest,
   createWeeklyCalendarPlan,
@@ -1174,6 +1175,7 @@ async function handleRequest(req: Request): Promise<Response> {
       }
     }
     const script = normalizeUgcScriptInput(body.script && typeof body.script === "object" ? body.script as Record<string, unknown> : {}, brand);
+    const storyboardPreviewId = typeof body.storyboardPreviewId === "string" ? body.storyboardPreviewId : undefined;
 
     return json(await generateUgcPackage({
       brand,
@@ -1182,8 +1184,37 @@ async function handleRequest(req: Request): Promise<Response> {
       visualMode,
       script,
       uploadedAssets,
-      outputRoot: OUTPUTS_ROOT
+      outputRoot: OUTPUTS_ROOT,
+      storyboardPreviewId,
     }));
+  }
+
+  if (url.pathname === "/api/ugc/storyboard" && req.method === "POST") {
+    const body = await parseJsonBody(req);
+    const brandId = typeof body.brandProfileId === "string" ? body.brandProfileId : "peppera";
+    const platform = (body.platform === "instagram" || body.platform === "linkedin") ? body.platform : "tiktok";
+    const visualMode = typeof body.visualMode === "string" ? body.visualMode : "story-led";
+    const brand = await storage.getBrandProfile(brandId);
+    if (!brand) return json({ error: "Brand not found" }, { status: 404 });
+    const falKey = process.env.FAL_KEY || "";
+    if (!falKey) return json({ error: "FAL_KEY not configured" }, { status: 503 });
+    const script = normalizeUgcScriptInput(body.script && typeof body.script === "object" ? body.script as Record<string, unknown> : {}, brand);
+    const prompt = buildUgcPromptContext({ brand, platform, visualMode, script });
+    const previewId = crypto.randomUUID();
+    const previewDir = path.join(OUTPUTS_ROOT, "storyboard-previews", previewId);
+    await generateStoryboardPreview({ prompt, brand, outputDir: previewDir, falKey });
+    return json({
+      previewId,
+      storyboardUrl: `/api/storyboard-previews/${previewId}/storyboard-grid.png`,
+      panels: 9
+    });
+  }
+
+  if (url.pathname.startsWith("/api/storyboard-previews/") && req.method === "GET") {
+    const parts = url.pathname.replace("/api/storyboard-previews/", "").split("/");
+    const previewId = parts[0];
+    const filename = path.basename(parts[1] || "storyboard-grid.png");
+    return serveFile(path.join(OUTPUTS_ROOT, "storyboard-previews", previewId, filename));
   }
 
   if (url.pathname === "/api/styles" && req.method === "GET") {
