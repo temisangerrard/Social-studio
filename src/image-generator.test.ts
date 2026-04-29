@@ -37,7 +37,7 @@ test("image generator writes placeholders without a fal key", async () => {
   assert.match(contents, /Peppera Placeholder/);
 });
 
-test("image generator falls back to placeholders when fal requests fail", async () => {
+test("image generator marks real fal failures without writing placeholders", async () => {
   const assetsDir = await fs.mkdtemp(path.join(os.tmpdir(), "social-studio-images-fallback-"));
   const slides: Slide[] = [
     {
@@ -69,10 +69,10 @@ test("image generator falls back to placeholders when fal requests fail", async 
       }
     });
 
-    assert.ok(result[0].asset_path);
-    assert.equal(path.extname(result[0].asset_path ?? ""), ".svg");
-    const contents = await fs.readFile(result[0].asset_path!, "utf8");
-    assert.match(contents, /Peppera Placeholder/);
+    assert.equal(result[0].asset_path, null);
+    assert.equal(result[0].generation?.status, "failed");
+    assert.equal(result[0].generation?.provider, "fal");
+    assert.match(result[0].generation?.error ?? "", /network unavailable/);
   } finally {
     globalThis.fetch = originalFetch;
   }

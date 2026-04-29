@@ -290,6 +290,54 @@ test("buildArtboardDescriptors resolves artifact asset URLs", () => {
   assert.equal(descriptors[1].assetUrl, "/api/assets/peppera_ig_0015/clip.mp4");
 });
 
+test("buildArtboardDescriptors preserves playable video and failed generation metadata", () => {
+  const output = {
+    post_id: "peppera_tt_0020",
+    platform: "tiktok",
+    slides: [],
+    artifacts: [
+      {
+        id: "video-ok",
+        kind: "video",
+        role: "ugc-video",
+        title: "Playable video",
+        prompt: "final prompt",
+        asset_path: "workspace/outputs/peppera_tt_0020/assets/generated/video-ok.mp4",
+        provider: "fal",
+        model: "bytedance/seedance-2.0/text-to-video",
+        request_id: "req_123",
+        status: "complete",
+        payload: { prompt: "final prompt", generate_audio: true },
+      },
+      {
+        id: "video-failed",
+        kind: "video",
+        role: "ugc-video",
+        title: "Failed video",
+        prompt: "failed prompt",
+        asset_path: null,
+        provider: "fal",
+        model: "fal-ai/kling-video/v3/pro/text-to-video",
+        status: "failed",
+        error: "rate limited",
+        payload: { prompt: "failed prompt" },
+      },
+    ],
+    render_status: "skipped",
+  };
+
+  const descriptors = buildArtboardDescriptors(output);
+  assert.equal(descriptors[0].type, "video");
+  assert.equal(descriptors[0].assetUrl, "/api/assets/peppera_tt_0020/video-ok.mp4");
+  assert.equal(descriptors[0].status, "complete");
+  assert.equal(descriptors[0].provider, "fal");
+  assert.deepEqual(descriptors[0].payload, { prompt: "final prompt", generate_audio: true });
+  assert.equal(descriptors[1].type, "video");
+  assert.equal(descriptors[1].assetUrl, null);
+  assert.equal(descriptors[1].status, "failed");
+  assert.match(descriptors[1].error, /rate limited/);
+});
+
 test("buildArtboardDescriptors falls back to rendered slide PNGs for artifact entries without asset paths", () => {
   const output = {
     post_id: "peppera_ig_0016",

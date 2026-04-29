@@ -336,6 +336,15 @@ export function buildArtboardDescriptors(output) {
       slideNumber,
       prompt: item.image_prompt || item.prompt || "",
       text: item.text || item.title || "",
+      provider: item.provider || item.generation?.provider || "",
+      model: item.model || item.generation?.model || "",
+      requestId: item.request_id || item.generation?.request_id || null,
+      status: item.status || item.generation?.status || (assetUrl ? "complete" : ""),
+      error: item.error || item.generation?.error || null,
+      payload: item.payload || item.generation?.payload || null,
+      outputUrl: item.output_url || item.generation?.output_url || null,
+      generatedAt: item.generated_at || item.generation?.generated_at || null,
+      retryable: item.retryable ?? item.generation?.retryable ?? false,
       x,
       y,
       width: ARTBOARD_W,
@@ -628,6 +637,7 @@ export class ArtboardManager {
     // Covers: text-only slides, CTA slides, video briefs (mock .txt), script outputs.
     if (!desc.assetUrl) {
       el.classList.add("canvas-artboard--content-card");
+      if (desc.status === "failed") el.classList.add("canvas-artboard--error");
 
       const roleIcons = { cta: "→", hook: "🎯", benefit: "✦", recipe: "🍽", script: "📄", video: "▶", clip: "▶", ugc: "▶" };
       const icon = roleIcons[desc.role] || "✦";
@@ -652,6 +662,13 @@ export class ArtboardManager {
         prompt.className = "canvas-artboard__content-prompt";
         prompt.textContent = desc.prompt;
         card.appendChild(prompt);
+      }
+
+      if (desc.status === "failed" && desc.error) {
+        const error = document.createElement("p");
+        error.className = "canvas-artboard__content-prompt";
+        error.textContent = `Generation failed: ${desc.error}`;
+        card.appendChild(error);
       }
 
       el.appendChild(card);
@@ -683,6 +700,7 @@ export class ArtboardManager {
 
       const video = document.createElement("video");
       video.muted = true;
+      video.controls = true;
       video.setAttribute("playsinline", "");
       video.preload = "metadata";
       video.src = desc.assetUrl || "";

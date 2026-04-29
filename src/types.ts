@@ -333,6 +333,7 @@ export interface GenerationRequest {
   routingTrace?: RoutingTrace;
   creativeProjectId?: string;
   creativePlan?: CreativeSystemOutput;
+  calendarSlotId?: string;
   styleControl: StyleControlledRequest;
 }
 
@@ -357,6 +358,17 @@ export interface Slide {
   asset_path?: string | null;
   uploaded_asset_url?: string | null;
   recipe?: StructuredRecipe;
+  generation?: {
+    provider: "mock" | "fal" | "tokenrouter";
+    model: string;
+    request_id?: string | null;
+    status: "queued" | "running" | "complete" | "failed";
+    error?: string | null;
+    payload?: unknown;
+    output_url?: string | null;
+    generated_at?: string;
+    retryable?: boolean;
+  };
 }
 
 export interface PlannedPackage {
@@ -378,6 +390,15 @@ export interface GeneratedArtifact {
   slide_number?: number;
   source_asset_id?: string | null;
   variant_group?: string | null;
+  provider?: "mock" | "fal" | "tokenrouter";
+  model?: string;
+  request_id?: string | null;
+  status?: "queued" | "running" | "complete" | "failed";
+  error?: string | null;
+  payload?: unknown;
+  output_url?: string | null;
+  generated_at?: string;
+  retryable?: boolean;
 }
 
 export interface ReelClipBrief {
@@ -464,7 +485,7 @@ export interface FalImageConfig {
 
 // ── Content Calendar ──────────────────────────────────────────────────────────
 
-export type CalendarSlotStatus = "idea" | "planned" | "generating" | "ready" | "published";
+export type CalendarSlotStatus = "idea" | "planned" | "brief_ready" | "generating" | "needs_review" | "approved" | "scheduled" | "published" | "failed";
 
 export interface CalendarSlot {
   id: string;
@@ -476,6 +497,18 @@ export interface CalendarSlot {
   status: CalendarSlotStatus;
   outputPostId?: string;
   jobId?: string;
+  angle?: "proof" | "education" | "product" | "opinion" | "conversion" | string;
+  format?: "carousel" | "single-image" | "video" | "text" | string;
+  audience?: string;
+  cta?: string;
+  notes?: string;
+  workflowType?: WorkflowType;
+  styleCardId?: string;
+  contentTypeId?: string;
+  thumbnailUrl?: string;
+  captionPreview?: string;
+  error?: string | null;
+  references?: string[];
   tags: string[];
   createdAt: string;
   updatedAt: string;
@@ -489,6 +522,11 @@ export interface ContentPillar {
   frequency: "daily" | "2x-week" | "weekly" | "biweekly";
   platforms: Platform[];
   defaultTone?: string;
+  defaultWorkflowType?: WorkflowType;
+  defaultStyleCardId?: string;
+  defaultContentTypeId?: string;
+  defaultGoal?: string;
+  defaultCta?: string;
   exampleIdeas: string[];
 }
 

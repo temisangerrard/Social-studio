@@ -265,6 +265,15 @@ export function populateDetailPanel(artboardDesc) {
   const imagePrompt = slide?.image_prompt || artboardDesc.prompt || "";
   const recipe = slide?.recipe || null;
   const canRegenerate = role === "recipe" || !!imagePrompt;
+  const generation = {
+    provider: slide?.provider || slide?.generation?.provider || artboardDesc.provider || "",
+    model: slide?.model || slide?.generation?.model || artboardDesc.model || "",
+    requestId: slide?.request_id || slide?.generation?.request_id || artboardDesc.requestId || "",
+    status: slide?.status || slide?.generation?.status || artboardDesc.status || "",
+    error: slide?.error || slide?.generation?.error || artboardDesc.error || "",
+    payload: slide?.payload || slide?.generation?.payload || artboardDesc.payload || null,
+    outputUrl: slide?.output_url || slide?.generation?.output_url || artboardDesc.outputUrl || "",
+  };
 
   let html = `
     <p class="eyebrow" style="margin-top:16px">Slide Detail</p>
@@ -274,6 +283,18 @@ export function populateDetailPanel(artboardDesc) {
     </div>`;
   if (text) html += `<div class="inspector-row" style="margin-top:8px"><p class="inspector-label">Text</p></div><p class="inspector-body-text inspector-slide-text">${escapeHtml(text)}</p>`;
   if (imagePrompt) html += `<div class="inspector-row" style="margin-top:8px"><p class="inspector-label">Image Prompt</p></div><p class="inspector-body-text inspector-slide-prompt">${escapeHtml(imagePrompt)}</p>`;
+  if (generation.provider || generation.model || generation.status || generation.payload || generation.error) {
+    const payloadText = generation.payload ? JSON.stringify(generation.payload, null, 2) : "";
+    html += `<div class="inspector-row" style="margin-top:8px"><p class="inspector-label">Generation Details</p></div><div class="inspector-recipe-data">`;
+    if (generation.status) html += `<p class="inspector-recipe-field"><strong>Status:</strong> ${escapeHtml(generation.status)}</p>`;
+    if (generation.provider) html += `<p class="inspector-recipe-field"><strong>Provider:</strong> ${escapeHtml(generation.provider)}</p>`;
+    if (generation.model) html += `<p class="inspector-recipe-field"><strong>Model:</strong> ${escapeHtml(generation.model)}</p>`;
+    if (generation.requestId) html += `<p class="inspector-recipe-field"><strong>Request:</strong> ${escapeHtml(generation.requestId)}</p>`;
+    if (generation.outputUrl) html += `<p class="inspector-recipe-field"><strong>Output URL:</strong> ${escapeHtml(generation.outputUrl)}</p>`;
+    if (generation.error) html += `<p class="inspector-recipe-field"><strong>Error:</strong> ${escapeHtml(generation.error)}</p>`;
+    if (payloadText) html += `<p class="inspector-body-text inspector-slide-prompt">${escapeHtml(payloadText)}</p>`;
+    html += `</div>`;
+  }
   if (recipe) {
     html += `<div class="inspector-row" style="margin-top:8px"><p class="inspector-label">Recipe</p></div><div class="inspector-recipe-data">`;
     if (recipe.name) html += `<p class="inspector-recipe-field"><strong>Name:</strong> ${escapeHtml(recipe.name)}</p>`;
