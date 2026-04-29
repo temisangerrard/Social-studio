@@ -25,6 +25,7 @@ export interface UgcGenerateParams {
   script: UgcScriptDraft;
   uploadedAssets?: UploadedAsset[];
   outputRoot: string;
+  storyboardPreviewId?: string;
 }
 
 export function normalizeUgcDraft(
@@ -98,10 +99,24 @@ export async function generateUgcPackage(params: UgcGenerateParams): Promise<{
   voiceId: string;
   videoUrl: string | null;
   audioUrl: string | null;
+  storyboardUrl: string | null;
   script: UgcScriptDraft;
   metadata: PostMetadata;
 }> {
-  const { brand, platform, voiceId, visualMode, script, uploadedAssets = [], outputRoot } = params;
+  const { brand, platform, voiceId, visualMode, script, uploadedAssets = [], outputRoot, storyboardPreviewId } = params;
+
+  // Resolve pre-generated storyboard path if an approved preview exists
+  let storyboardImagePath: string | undefined;
+  if (storyboardPreviewId) {
+    const previewPath = path.join(outputRoot, "storyboard-previews", storyboardPreviewId, "storyboard-grid.png");
+    try {
+      await fs.access(previewPath);
+      storyboardImagePath = previewPath;
+    } catch {
+      // Preview not found — pipeline will regenerate
+    }
+  }
+
   const videoPrompt = buildUgcPromptContext({ brand, platform, visualMode, script });
   const metadata = await runPipelineFromRequest(
     {
@@ -126,6 +141,15 @@ export async function generateUgcPackage(params: UgcGenerateParams): Promise<{
         aspectRatio: "9:16",
         withAudio: false,
         consistencyMode: "prompt-led"
+      },
+      videoStrategy: {
+        strategy: "storyboard-to-video",
+        duration: 15,
+        aspectRatio: "9:16",
+        resolution: "720p",
+        generateAudio: true,
+        storyboardPanels: 9,
+        ...(storyboardImagePath ? { storyboardImagePath } : {}),
       }
     },
     brand,
@@ -152,6 +176,7 @@ export async function generateUgcPackage(params: UgcGenerateParams): Promise<{
   await fs.writeFile(path.join(metadata.output_dir, "metadata.json"), `${JSON.stringify(metadata, null, 2)}\n`, "utf8");
 
   const videoArtifact = (metadata.artifacts || []).find((artifact) => artifact.kind === "video");
+  const storyboardArtifact = (metadata.artifacts || []).find((artifact) => artifact.role === "storyboard");
 
   return {
     postId: metadata.post_id,
@@ -160,6 +185,7 @@ export async function generateUgcPackage(params: UgcGenerateParams): Promise<{
     voiceId: voiceResult.voiceId,
     videoUrl: videoArtifact?.asset_path ? assetUrlFromPath(metadata.post_id, videoArtifact.asset_path) : null,
     audioUrl: assetUrlFromPath(metadata.post_id, voiceResult.audioPath),
+    storyboardUrl: storyboardArtifact?.asset_path ? assetUrlFromPath(metadata.post_id, storyboardArtifact.asset_path) : null,
     script,
     metadata
   };
