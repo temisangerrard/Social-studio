@@ -8,11 +8,12 @@ export type ConsistencyMode = "prompt-led" | "mascot-consistent";
 // ── Video Strategy System ─────────────────────────────────────────────────────
 
 export type VideoStrategy =
-  | "storyboard-to-video"   // GPT Image 2 storyboard grid → Seedance 2.0 image-to-video
+  | "storyboard-to-video"   // GPT Image 2 key frames → each animated by Seedance → stitched
+  | "frames-to-video"       // N images (uploaded or generated) → each animated by Seedance → stitched
   | "seedance-multishot"    // Seedance 2.0 text-to-video with Shot 1/2/3 labels + native audio
   | "seedance-reference"    // Seedance 2.0 reference-to-video with brand assets
   | "kling-text"            // Kling 3.0 text-to-video (single shot)
-  | "image-to-video";       // Animate an existing image via Seedance 2.0 or Kling i2v
+  | "image-to-video";       // Animate a single image via Seedance 2.0 or Kling i2v
 
 export interface VideoStrategyConfig {
   strategy: VideoStrategy;
@@ -20,10 +21,14 @@ export interface VideoStrategyConfig {
   aspectRatio: "9:16" | "16:9" | "1:1";
   resolution?: "480p" | "720p";
   generateAudio: boolean;
-  /** For storyboard-to-video: number of panels in the grid (default 9 = 3×3) */
+  /** For storyboard-to-video: number of key frames to generate (default 3) */
   storyboardPanels?: number;
-  /** For image-to-video: source image URL or path */
+  /** For image-to-video: source image URL or local path */
   sourceImageUrl?: string;
+  /** For frames-to-video: ordered image URLs or local paths */
+  sourceImageUrls?: string[];
+  /** For frames-to-video: per-frame animation prompts (parallel to sourceImageUrls) */
+  frameVideoPrompts?: string[];
   /** For seedance-reference: reference image URLs (up to 9) */
   referenceImageUrls?: string[];
   /** For seedance-reference: reference audio URL */

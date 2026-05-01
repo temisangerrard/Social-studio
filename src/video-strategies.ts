@@ -1,5 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import {
   completeGenerationMetadata,
   failedGenerationMetadata,
@@ -11,6 +13,9 @@ import type {
   VideoStrategy,
   VideoStrategyConfig,
 } from "./types.ts";
+
+const exec = promisify(execFile);
+const UPLOADS_ROOT = path.join(process.cwd(), "workspace", "uploads");
 
 // ── fal.ai model endpoints ────────────────────────────────────────────────────
 
@@ -78,6 +83,44 @@ function extractImageUrl(result: any): string | null {
   return result?.images?.[0]?.url ?? result?.image?.url ?? result?.output?.url ?? null;
 }
 
+// Resolve any image reference (local path, /api/uploads/ URL, or external URL) to a form
+// Seedance can accept. External URLs are returned as-is; local files become base64 data URLs.
+async function imageToDataUrl(imagePathOrUrl: string): Promise<string> {
+  if (imagePathOrUrl.startsWith("data:")) return imagePathOrUrl;
+  if (imagePathOrUrl.startsWith("http://") || imagePathOrUrl.startsWith("https://")) {
+    return imagePathOrUrl;
+  }
+  let filePath = imagePathOrUrl;
+  if (imagePathOrUrl.startsWith("/api/uploads/")) {
+    const filename = path.basename(imagePathOrUrl.slice("/api/uploads/".length));
+    filePath = path.join(UPLOADS_ROOT, filename);
+  }
+  const data = await fs.readFile(filePath);
+  const ext = path.extname(filePath).slice(1).toLowerCase();
+  const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg"
+    : ext === "gif" ? "image/gif"
+    : ext === "webp" ? "image/webp"
+    : "image/png";
+  return `data:${mime};base64,${data.toString("base64")}`;
+}
+
+// Concatenate multiple video clip files into one MP4 using ffmpeg.
+async function stitchClips(clipPaths: string[], outputPath: string, assetsDir: string): Promise<void> {
+  const concatContent = clipPaths.map((p) => `file '${p}'`).join("\n");
+  const concatFile = path.join(assetsDir, "clips-concat.txt");
+  await fs.writeFile(concatFile, concatContent, "utf8");
+  try {
+    await exec("ffmpeg", [
+      "-y", "-f", "concat", "-safe", "0", "-i", concatFile,
+      "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+      "-pix_fmt", "yuv420p", "-an", "-movflags", "+faststart",
+      outputPath,
+    ], { timeout: 120_000 });
+  } finally {
+    await fs.unlink(concatFile).catch(() => {});
+  }
+}
+
 // ── Default strategy config ───────────────────────────────────────────────────
 
 export function defaultVideoStrategy(): VideoStrategyConfig {
@@ -93,30 +136,40 @@ export function defaultVideoStrategy(): VideoStrategyConfig {
 export function resolveVideoStrategy(request: GenerationRequest, brand: BrandProfile): VideoStrategyConfig {
   if (request.videoStrategy) return request.videoStrategy;
 
-  // If user uploaded an image, animate it
-  const hasUploads = (request.uploadedAssets?.length ?? 0) > 0;
-  if (hasUploads) {
-    const firstImage = request.uploadedAssets?.find((a) => a.mimeType.startsWith("image/"));
-    if (firstImage) {
-      return {
-        strategy: "image-to-video",
-        duration: 15,
-        aspectRatio: "9:16",
-        resolution: "720p",
-        generateAudio: true,
-        sourceImageUrl: firstImage.url,
-      };
-    }
+  const uploadedImages = (request.uploadedAssets ?? []).filter((a) => a.mimeType.startsWith("image/"));
+
+  // Multiple uploaded images → animate each and stitch
+  if (uploadedImages.length > 1) {
+    return {
+      strategy: "frames-to-video",
+      duration: 15,
+      aspectRatio: "9:16",
+      resolution: "720p",
+      generateAudio: false,
+      sourceImageUrls: uploadedImages.map((a) => a.url),
+    };
   }
 
-  // Default: GPT Image 2 storyboard grid → Seedance 2.0 image-to-video
+  // Single uploaded image → animate it
+  if (uploadedImages.length === 1) {
+    return {
+      strategy: "image-to-video",
+      duration: 15,
+      aspectRatio: "9:16",
+      resolution: "720p",
+      generateAudio: true,
+      sourceImageUrl: uploadedImages[0].url,
+    };
+  }
+
+  // Default: GPT Image 2 key frames → Seedance clips → stitched video
   return {
     strategy: "storyboard-to-video",
     duration: 15,
     aspectRatio: "9:16",
     resolution: "720p",
-    generateAudio: true,
-    storyboardPanels: 9,
+    generateAudio: false,
+    storyboardPanels: 3,
   };
 }
 
@@ -187,7 +240,62 @@ export async function generateStoryboardPreview(params: {
   return { storyboardPath };
 }
 
+// ── Strategy: frames-to-video ─────────────────────────────────────────────────
+// Accepts any ordered set of images (generated or uploaded), animates each with
+// Seedance image-to-video, then stitches the clips into one MP4.
+
+async function runFramesToVideo(params: {
+  imagePaths: string[];
+  prompts: string[];
+  config: VideoStrategyConfig;
+  assetsDir: string;
+  falKey: string;
+}): Promise<string> {
+  const { imagePaths, prompts, config, assetsDir, falKey } = params;
+  if (imagePaths.length === 0) throw new Error("frames-to-video requires at least one image");
+
+  // Seedance image-to-video minimum is 5 s; cap per-clip so total ≈ config.duration
+  const clipDuration = Math.max(5, Math.min(10, Math.ceil(config.duration / imagePaths.length)));
+
+  const clipPaths: string[] = [];
+  for (let i = 0; i < imagePaths.length; i++) {
+    const imageUrl = await imageToDataUrl(imagePaths[i]);
+    const framePrompt = prompts[i] ?? prompts[0] ?? `Animate this image with smooth cinematic motion.`;
+
+    const result = await submitAndPoll(MODELS.seedanceImage, {
+      prompt: framePrompt,
+      image_url: imageUrl,
+      duration: String(clipDuration),
+      aspect_ratio: config.aspectRatio,
+      resolution: config.resolution ?? "720p",
+      generate_audio: false,
+    }, falKey);
+
+    const videoUrl = extractVideoUrl(result);
+    if (!videoUrl) throw new Error(`Seedance image-to-video returned no URL for frame ${i + 1}`);
+
+    const clipPath = path.join(assetsDir, `frame-${i + 1}-clip.mp4`);
+    await downloadAsset(videoUrl, clipPath);
+    clipPaths.push(clipPath);
+  }
+
+  const videoPath = path.join(assetsDir, "frames-video.mp4");
+  if (clipPaths.length === 1) {
+    await fs.rename(clipPaths[0], videoPath);
+  } else {
+    await stitchClips(clipPaths, videoPath, assetsDir);
+  }
+  return videoPath;
+}
+
 // ── Strategy: GPT Image 2 storyboard → Seedance 2.0 image-to-video ───────────
+
+// Three-beat structure used for key frame generation.
+const KEY_FRAME_BEATS = [
+  { label: "Hook",   cameraHint: "fast cut, bold angle",      desc: "attention-grabbing opening moment" },
+  { label: "Action", cameraHint: "tracking shot, handheld",   desc: "the key moment or product in use" },
+  { label: "CTA",    cameraHint: "slow pull-back, clean",     desc: "resolution or call to action" },
+] as const;
 
 async function runStoryboardToVideo(params: {
   prompt: string;
@@ -197,69 +305,86 @@ async function runStoryboardToVideo(params: {
   brand: BrandProfile;
 }): Promise<{ videoPath: string; storyboardPath: string | null }> {
   const { prompt, config, assetsDir, falKey, brand } = params;
-  const panels = config.storyboardPanels ?? 9;
 
-  // Step 1: Use pre-generated storyboard or generate via GPT Image 2
+  // Preserve the composite grid only as a display artifact (copied from preview if available).
   let storyboardPath: string | null = null;
   if (config.storyboardImagePath) {
     storyboardPath = path.join(assetsDir, "storyboard-grid.png");
     try {
       await fs.copyFile(config.storyboardImagePath, storyboardPath);
     } catch (err) {
-      console.warn(`[video-strategy] Failed to copy pre-generated storyboard: ${err instanceof Error ? err.message : err}`);
+      console.warn(`[video-strategy] Failed to copy storyboard grid: ${err instanceof Error ? err.message : err}`);
       storyboardPath = null;
     }
-  } else {
-    const storyboardPrompt = buildStoryboardPrompt(prompt, brand, panels, config.storyboardPrompt);
+  }
+
+  // Generate individual 9:16 key frames — one per beat — for Seedance to animate.
+  // This gives Seedance a proper single-scene starting image rather than a grid thumbnail.
+  const brandLine = `Brand: ${brand.name}${brand.description ? ` — ${brand.description}` : ""}.`;
+  const toneLine = `Visual tone: ${brand.tone || "bold, modern"}.`;
+  const colorLine = `Brand colors: ${brand.visual?.primaryColor ?? ""} primary.`;
+  const mascotLine = brand.mascot ? `Character: ${brand.mascot.name} — ${brand.mascot.visualPrompt}.` : "";
+
+  const framePaths: string[] = [];
+  for (let i = 0; i < KEY_FRAME_BEATS.length; i++) {
+    const beat = KEY_FRAME_BEATS[i];
+    const framePrompt = [
+      `Cinematic vertical 9:16 portrait frame.`,
+      `Scene: ${beat.label} — ${beat.desc}.`,
+      brandLine, toneLine, colorLine, mascotLine,
+      `Story: ${prompt}`,
+      `Style: high production value, photorealistic or stylized per brand tone. No text overlays.`,
+    ].filter(Boolean).join(" ");
+
     try {
-      const imgResult = await submitAndPoll(MODELS.gptImage2, {
-        prompt: storyboardPrompt,
-        size: "1024x1024",
+      const result = await submitAndPoll(MODELS.gptImage2, {
+        prompt: framePrompt,
+        size: "1024x1536",
         quality: "high",
       }, falKey);
-      const imgUrl = extractImageUrl(imgResult);
-      if (imgUrl) {
-        storyboardPath = path.join(assetsDir, "storyboard-grid.png");
-        await downloadAsset(imgUrl, storyboardPath);
+      const frameUrl = extractImageUrl(result);
+      if (frameUrl) {
+        const framePath = path.join(assetsDir, `key-frame-${i + 1}.png`);
+        await downloadAsset(frameUrl, framePath);
+        framePaths.push(framePath);
       }
     } catch (err) {
-      console.warn(`[video-strategy] Storyboard generation failed: ${err instanceof Error ? err.message : err}`);
+      console.warn(`[video-strategy] Key frame ${i + 1} (${beat.label}) generation failed: ${err instanceof Error ? err.message : err}`);
     }
   }
 
-  // Step 2: Use storyboard as input to Seedance 2.0 image-to-video
-  const videoPromptText = config.videoPrompt || [
-    `Animate this storyboard into a cinematic vertical video.`,
-    `Move through each panel as a distinct shot with smooth transitions.`,
-    ...buildPanelBeats(panels).map((beat, i) => {
-      const cameras = ["fast cut", "slow dolly", "pan right", "handheld energy", "tracking shot", "push-in", "pull-back reveal", "overhead", "static hold"];
-      return beat.replace(/\.$/, "") + `. Camera: ${cameras[i % cameras.length]}.`;
-    }),
-    `Story context: ${prompt}`,
-    `Sound: natural ambient audio matching each scene.`,
-    `Pacing: start fast, slow in the middle for the key moment, end clean.`,
-  ].join(" ");
+  // Build per-frame animation prompts for Seedance.
+  const baseVideoPrompt = config.videoPrompt ?? prompt;
+  const frameVideoPrompts = KEY_FRAME_BEATS.map((beat) =>
+    `${beat.label} scene: ${beat.desc}. ${baseVideoPrompt}. Camera: ${beat.cameraHint}. Smooth motion, no text.`
+  );
 
-  const videoInput: Record<string, unknown> = {
-    prompt: videoPromptText,
-    duration: String(config.duration),
-    aspect_ratio: config.aspectRatio,
-    resolution: config.resolution ?? "720p",
-    generate_audio: config.generateAudio,
-  };
-  if (storyboardPath) {
-    // Convert local file to data URL for fal
-    const data = await fs.readFile(storyboardPath);
-    videoInput.image_url = `data:image/png;base64,${data.toString("base64")}`;
+  // If key frame generation failed entirely, fall back to text-to-video.
+  if (framePaths.length === 0) {
+    console.warn("[video-strategy] All key frames failed — falling back to Seedance text-to-video");
+    const result = await submitAndPoll(MODELS.seedanceText, {
+      prompt: baseVideoPrompt,
+      duration: String(config.duration),
+      aspect_ratio: config.aspectRatio,
+      resolution: config.resolution ?? "720p",
+      generate_audio: config.generateAudio,
+    }, falKey);
+    const videoUrl = extractVideoUrl(result);
+    if (!videoUrl) throw new Error("Seedance text-to-video result missing URL");
+    const videoPath = path.join(assetsDir, "storyboard-video.mp4");
+    await downloadAsset(videoUrl, videoPath);
+    return { videoPath, storyboardPath };
   }
 
-  const model = storyboardPath ? MODELS.seedanceImage : MODELS.seedanceText;
-  const result = await submitAndPoll(model, videoInput, falKey);
-  const videoUrl = extractVideoUrl(result);
-  if (!videoUrl) throw new Error("Seedance video result missing URL");
+  // Animate each key frame with Seedance, then stitch into the final video.
+  const videoPath = await runFramesToVideo({
+    imagePaths: framePaths,
+    prompts: frameVideoPrompts,
+    config,
+    assetsDir,
+    falKey,
+  });
 
-  const videoPath = path.join(assetsDir, "storyboard-video.mp4");
-  await downloadAsset(videoUrl, videoPath);
   return { videoPath, storyboardPath };
 }
 
@@ -385,10 +510,11 @@ async function runImageToVideo(params: {
   falKey: string;
 }): Promise<string> {
   const { prompt, config, assetsDir, falKey } = params;
-  const imageUrl = config.sourceImageUrl;
-  if (!imageUrl) throw new Error("image-to-video requires sourceImageUrl");
+  if (!config.sourceImageUrl) throw new Error("image-to-video requires sourceImageUrl");
 
-  // Prefer Seedance 2.0 for image-to-video (better quality + audio)
+  // Resolve to data URL so Seedance can accept local uploads as well as external URLs.
+  const imageUrl = await imageToDataUrl(config.sourceImageUrl);
+
   const animatePrompt = config.videoPrompt || `Animate this image into a cinematic video. ${prompt}. Slow camera push-in, subtle motion on the subject, natural ambient sound.`;
   const result = await submitAndPoll(MODELS.seedanceImage, {
     prompt: animatePrompt,
@@ -480,6 +606,32 @@ export async function executeVideoStrategy(params: {
           }),
         });
         return { strategy: config.strategy, artifacts };
+      }
+
+      case "frames-to-video": {
+        const imageUrls = config.sourceImageUrls ?? [];
+        if (imageUrls.length === 0) throw new Error("frames-to-video requires sourceImageUrls");
+        const videoPath = await runFramesToVideo({
+          imagePaths: imageUrls,
+          prompts: config.frameVideoPrompts ?? [combinedPrompt],
+          config,
+          assetsDir,
+          falKey,
+        });
+        return {
+          strategy: config.strategy,
+          artifacts: [{
+            id: "frames-video", kind: "video", role: "ugc-video",
+            title: `${brand.name} Video`, prompt: combinedPrompt,
+            asset_path: videoPath, preview_path: videoPath,
+            source_asset_id: null, variant_group: null,
+            ...completeGenerationMetadata({
+              provider: "fal", model: MODELS.seedanceImage,
+              payload: { strategy: config.strategy, prompt: combinedPrompt, config },
+              assetPath: videoPath,
+            }),
+          }],
+        };
       }
 
       case "seedance-multishot": {
